@@ -1,0 +1,11 @@
+{
+  "watch": ["server.js", "src", "frontend"],
+  "ext": "js,json,html,css",
+  "ignore": ["tests/**", "node_modules/**", "docs/**", "scripts/**", "*.log"],
+  "exec": "node server.js",
+  "delay": 500,
+  "env": {
+    "NODE_ENV": "development",
+    "NODEMON": "true"
+  }
+}

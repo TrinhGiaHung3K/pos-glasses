@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - NCC & nhập hàng</title>
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <style>
+        .sup-grid { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+        @media (max-width: 1000px) { .sup-grid { grid-template-columns: 1fr; } }
+        .sup-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-default);
+            box-shadow: var(--shadow-xs);
+            padding: 18px;
+        }
+        .po-lines { display: grid; gap: 8px; margin: 10px 0; }
+        .po-line {
+            align-items: end;
+            display: grid;
+            gap: 8px;
+            grid-template-columns: minmax(0, 1fr) 90px 130px 36px;
+        }
+        .po-line .pos-custom-select { width: 100%; }
+        .po-line .po-product-wrap { min-width: 0; }
+    </style>
+</head>
+<body>
+<div class="pos-container">
+    <aside data-menu-component data-active-menu="suppliers"></aside>
+    <main class="pos-main">
+        <header class="pos-topbar">
+            <div><h2 class="pos-topbar-title">Nhà cung cấp</h2></div>
+            <div class="pos-topbar-actions">
+                <button class="btn btn-secondary" type="button" id="btnRefresh"><i class="ph ph-arrow-clockwise"></i> Làm mới</button>
+            </div>
+        </header>
+        <div class="pos-content">
+            <section class="pos-page-intro">
+                <div>
+                    <h2>NCC & đơn nhập (PO)</h2>
+                    <p>Tạo đơn nhập từ nhà cung cấp, nhận hàng sẽ ghi sổ kho <code>purchase_in</code>.</p>
+                </div>
+            </section>
+
+            <div class="sup-grid">
+                <div class="sup-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <strong>Danh sách NCC</strong>
+                        <button class="btn btn-primary btn-sm" type="button" id="btnAddSupplier"><i class="ph ph-plus"></i> Thêm</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead><tr><th>Tên</th><th>SĐT</th><th>Email</th></tr></thead>
+                            <tbody id="supplierBody"><tr><td colspan="3">Đang tải…</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="sup-card">
+                    <strong class="d-block mb-3">Tạo đơn nhập</strong>
+                    <label class="form-label">Nhà cung cấp</label>
+                    <select class="form-select mb-2" id="poSupplier"></select>
+                    <label class="form-label">Ghi chú</label>
+                    <input class="form-control mb-2" id="poNote" type="text" maxlength="500">
+                    <div class="po-lines" id="poLines"></div>
+                    <button class="btn btn-secondary btn-sm mb-3" type="button" id="btnAddLine"><i class="ph ph-plus"></i> Thêm dòng</button>
+                    <button class="btn btn-primary w-100" type="button" id="btnCreatePo"><i class="ph ph-file-plus"></i> Tạo PO</button>
+                </div>
+            </div>
+
+            <div class="sup-card mt-3">
+                <strong class="d-block mb-3">Đơn nhập gần đây</strong>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>NCC</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày tạo</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="poBody"><tr><td colspan="5">Đang tải…</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/format.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/components.js"></script>
+<script>
+    requireRole(["admin", "staff"]);
+    let products = [];
+    let suppliers = [];
+
+    function enhanceSelects(root) {
+        if (typeof enhanceCustomSelects === "function") {
+            enhanceCustomSelects(root || document);
+        }
+    }
+
+    function bindMoneyFields(root) {
+        if (typeof enhanceMoneyInputs === "function") {
+            enhanceMoneyInputs(root || document);
+        }
+    }
+
+    function readUnitCost(input) {
+        if (!input) return 0;
+        if (typeof getMoneyInputValue === "function") {
+            return getMoneyInputValue(input);
+        }
+        if (typeof parseCurrencyInputValue === "function") {
+            return parseCurrencyInputValue(input.value);
+        }
+        return Number(String(input.value || "0").replace(/[^\d]/g, "")) || 0;
+    }
+
+    function setUnitCost(input, amount) {
+        if (!input) return;
+        if (typeof setMoneyInputValue === "function") {
+            setMoneyInputValue(input, amount);
+            return;
+        }
+        input.value = typeof formatCurrencyInputValue === "function"
+            ? formatCurrencyInputValue(amount)
+            : String(amount || 0);
+    }
+
+    function addPoLine(prefill = {}) {
+        const wrap = document.getElementById("poLines");
+        const row = document.createElement("div");
+        row.className = "po-line";
+        row.innerHTML = `
+            <div class="po-product-wrap">
+                <label class="form-label">Sản phẩm</label>
+                <select class="form-select po-product" aria-label="Chọn sản phẩm">
+                    <option value="">— Chọn sản phẩm —</option>
+                </select>
+            </div>
+            <div>
+                <label class="form-label">SL</label>
+                <input class="form-control po-qty" type="number" min="1" value="${prefill.qty || 1}">
+            </div>
+            <div>
+                <label class="form-label">Giá vốn</label>
+                <input class="form-control po-cost pos-money-input" type="text" inputmode="numeric"
+                       data-money="vnd" placeholder="0đ" value="">
+            </div>
+            <button class="btn btn-secondary btn-sm" type="button" title="Xóa dòng"><i class="ph ph-trash"></i></button>
+        `;
+        const sel = row.querySelector(".po-product");
+        const optionsHtml = products.length
+            ? products.map((p) =>
+                `<option value="${p.id}" data-cost="${Number(p.cost_price) || 0}">${escapeHtml(p.name)} (#${p.id})</option>`
+            ).join("")
+            : `<option value="" disabled>Chưa có sản phẩm</option>`;
+        sel.innerHTML = `<option value="">— Chọn sản phẩm —</option>${optionsHtml}`;
+        if (prefill.product_id) sel.value = String(prefill.product_id);
+
+        const costInput = row.querySelector(".po-cost");
+        const initialCost = prefill.cost != null
+            ? Number(prefill.cost)
+            : Number(sel.selectedOptions[0]?.dataset.cost || 0);
+
+        sel.addEventListener("change", () => {
+            const cost = Number(sel.selectedOptions[0]?.dataset.cost || 0);
+            setUnitCost(costInput, cost);
+        });
+        row.querySelector("button").onclick = () => {
+            // Tear down custom select wrapper if present
+            const custom = sel._posCustomSelect;
+            if (custom && custom.parentNode) custom.remove();
+            row.remove();
+        };
+        wrap.appendChild(row);
+        bindMoneyFields(row);
+        setUnitCost(costInput, initialCost || 0);
+        enhanceSelects(row);
+    }
+
+    async function loadProducts() {
+        const data = await apiRequest("/products?limit=200");
+        products = Array.isArray(data) ? data : (data.items || data.data || []);
+    }
+
+    async function loadSuppliers() {
+        suppliers = await apiRequest("/api/staff/suppliers");
+        const tbody = document.getElementById("supplierBody");
+        const sel = document.getElementById("poSupplier");
+        if (!suppliers.length) {
+            tbody.innerHTML = `<tr><td colspan="3" class="text-muted">Chưa có NCC.</td></tr>`;
+            sel.innerHTML = `<option value="">— Chọn NCC —</option>`;
+            enhanceSelects(sel.parentElement || document);
+            return;
+        }
+        tbody.innerHTML = suppliers.map((s) => `
+            <tr>
+                <td>${escapeHtml(s.name)}</td>
+                <td>${escapeHtml(s.phone || "-")}</td>
+                <td>${escapeHtml(s.email || "-")}</td>
+            </tr>
+        `).join("");
+        sel.innerHTML = [
+            `<option value="">— Chọn NCC —</option>`,
+            ...suppliers.map((s) =>
+                `<option value="${s.id}">${escapeHtml(s.name)}</option>`
+            )
+        ].join("");
+        // Re-apply / sync shared custom dropdown after options reload
+        if (typeof syncCustomSelect === "function" && sel._posCustomSelect) {
+            syncCustomSelect(sel);
+        } else {
+            enhanceSelects(sel.closest(".sup-card") || document);
+        }
+    }
+
+    async function loadPos() {
+        const data = await apiRequest("/api/staff/purchase-orders?limit=40");
+        const items = data.items || data || [];
+        const tbody = document.getElementById("poBody");
+        if (!items.length) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-muted">Chưa có PO.</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = items.map((po) => `
+            <tr>
+                <td>#${po.id}</td>
+                <td>${escapeHtml(po.supplier_name || po.supplier_id)}</td>
+                <td>${escapeHtml(po.status)}</td>
+                <td>${escapeHtml(String(po.created_at || "").replace("T", " ").slice(0, 16))}</td>
+                <td class="text-end">
+                    ${po.status !== "received" && po.status !== "cancelled"
+                        ? `<button class="btn btn-primary btn-sm" data-receive="${po.id}"><i class="ph ph-package"></i> Nhận hàng</button>`
+                        : ""}
+                </td>
+            </tr>
+        `).join("");
+        tbody.querySelectorAll("[data-receive]").forEach((btn) => {
+            btn.onclick = () => receivePo(btn.dataset.receive);
+        });
+    }
+
+    async function addSupplier() {
+        const data = await showFormModal({
+            title: "Thêm nhà cung cấp",
+            fields: [
+                { name: "name", label: "Tên NCC", value: "" },
+                { name: "phone", label: "SĐT", value: "", required: false },
+                { name: "email", label: "Email", value: "", required: false },
+                { name: "address", label: "Địa chỉ", value: "", required: false },
+                { name: "note", label: "Ghi chú", value: "", required: false }
+            ],
+            submitText: "Lưu"
+        });
+        if (!data) return;
+        try {
+            await apiRequest("/api/staff/suppliers", { method: "POST", body: data });
+            showToast("Đã thêm NCC", "success");
+            await loadSuppliers();
+        } catch (error) {
+            showToast(error.message || "Lỗi", "error");
+        }
+    }
+
+    async function createPo() {
+        const supplier_id = Number(document.getElementById("poSupplier").value);
+        if (!supplier_id) {
+            showToast("Chọn nhà cung cấp", "warning");
+            return;
+        }
+        const lines = [...document.querySelectorAll(".po-line")].map((row) => ({
+            product_id: Number(row.querySelector(".po-product").value),
+            qty: Number(row.querySelector(".po-qty").value),
+            unit_cost: readUnitCost(row.querySelector(".po-cost"))
+        })).filter((line) => line.product_id > 0 && line.qty > 0);
+
+        if (!lines.length) {
+            showToast("Thêm ít nhất một dòng SP hợp lệ", "warning");
+            return;
+        }
+        try {
+            await apiRequest("/api/staff/purchase-orders", {
+                method: "POST",
+                body: {
+                    supplier_id,
+                    note: document.getElementById("poNote").value.trim() || null,
+                    items: lines
+                }
+            });
+            showToast("Đã tạo PO", "success");
+            document.getElementById("poLines").innerHTML = "";
+            addPoLine();
+            await loadPos();
+        } catch (error) {
+            showToast(error.message || "Lỗi tạo PO", "error");
+        }
+    }
+
+    async function receivePo(id) {
+        const ok = await showConfirm({
+            title: "Nhận hàng PO?",
+            message: `Nhận hàng PO #${id} và cộng tồn kho?`,
+            confirmText: "Nhận hàng",
+            type: "warning"
+        });
+        if (!ok) return;
+        try {
+            await apiRequest(`/api/staff/purchase-orders/${id}/receive`, { method: "POST", body: {} });
+            showToast("Đã nhận hàng & cập nhật kho", "success");
+            await loadPos();
+        } catch (error) {
+            showToast(error.message || "Lỗi nhận hàng", "error");
+        }
+    }
+
+    async function boot() {
+        try {
+            await loadProducts();
+            await loadSuppliers();
+            document.getElementById("poLines").innerHTML = "";
+            addPoLine();
+            enhanceSelects(document);
+            await loadPos();
+        } catch (error) {
+            showToast(error.message || "Lỗi tải dữ liệu", "error");
+        }
+    }
+
+    document.getElementById("btnAddSupplier").onclick = addSupplier;
+    document.getElementById("btnAddLine").onclick = () => addPoLine();
+    document.getElementById("btnCreatePo").onclick = createPo;
+    document.getElementById("btnRefresh").onclick = boot;
+    // Initial enhance for static supplier select shell
+    enhanceSelects(document);
+    boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,605 @@
+/* ============================
+   POS App Container Grid 
+   ============================ */
+.pos-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+/* ============================
+   Sidebar Navigation
+   Compact retail tool rail — scan fast, few flourishes.
+   ============================ */
+.pos-sidebar {
+    width: 220px;
+    background: var(--bg-sidebar);
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 8px 10px;
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    z-index: 100;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    overflow: visible;
+}
+
+/* Logo */
+.pos-logo {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    padding: 0 6px;
+    height: 46px;
+}
+
+.pos-logo-image {
+    display: block;
+    width: 176px;
+    height: 46px;
+    max-width: none;
+    object-fit: cover;
+    object-position: center;
+    flex-shrink: 0;
+}
+
+/* Navigation */
+.pos-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-height: 0;
+    overflow-x: visible;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 2px 6px;
+    scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+    scrollbar-width: thin;
+}
+
+.pos-nav--mega {
+    gap: 2px;
+}
+
+.pos-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 38px;
+    padding: 8px 10px;
+    color: rgba(255, 255, 255, 0.68);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 13px;
+    border-radius: 6px;
+    transition:
+        color var(--transition-fast),
+        background-color var(--transition-fast);
+    position: relative;
+}
+
+.pos-nav-item:hover {
+    color: rgba(255, 255, 255, 0.94);
+    background-color: var(--bg-sidebar-hover);
+}
+
+.pos-nav-item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.4);
+    color: #fff;
+}
+
+.pos-nav-item.active {
+    color: #ffffff;
+    background: rgba(45, 212, 191, 0.12);
+    font-weight: 600;
+}
+
+.pos-nav-item .nav-icon {
+    font-size: 17px;
+    width: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.78;
+}
+
+.pos-nav-item.active .nav-icon {
+    opacity: 1;
+}
+
+.pos-nav-item .nav-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Sidebar section label (legacy; unused by mega rail) */
+.pos-nav-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.28);
+    padding: 16px 12px 6px;
+}
+
+/* ─────────────────────────────────────────────
+   MEGA MENU — group triggers + simple flyout list
+   One column, no tile cards; built for counter use.
+   ───────────────────────────────────────────── */
+.pos-mega-group {
+    position: relative;
+}
+
+.pos-mega-trigger {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.68);
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    gap: 10px;
+    min-height: 38px;
+    padding: 8px 10px;
+    text-align: left;
+    transition:
+        background-color var(--transition-fast),
+        color var(--transition-fast);
+    width: 100%;
+}
+
+.pos-mega-trigger:hover {
+    background: var(--bg-sidebar-hover);
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.pos-mega-trigger:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.4);
+    color: #fff;
+}
+
+.pos-mega-group.is-active-group > .pos-mega-trigger {
+    background: rgba(45, 212, 191, 0.12);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.pos-mega-group.is-open > .pos-mega-trigger {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.pos-mega-group.is-open.is-active-group > .pos-mega-trigger {
+    background: rgba(45, 212, 191, 0.14);
+}
+
+.pos-mega-trigger .nav-icon {
+    font-size: 17px;
+    width: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.78;
+}
+
+.pos-mega-group.is-active-group > .pos-mega-trigger .nav-icon,
+.pos-mega-group.is-open > .pos-mega-trigger .nav-icon {
+    opacity: 1;
+}
+
+.pos-mega-trigger .nav-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Caret points right (flyout direction); brightens when open — no rotate. */
+.pos-mega-caret {
+    color: rgba(255, 255, 255, 0.28);
+    flex-shrink: 0;
+    font-size: 12px;
+    transition: color var(--transition-fast);
+}
+
+.pos-mega-group.is-open > .pos-mega-trigger .pos-mega-caret {
+    color: rgba(94, 234, 212, 0.85);
+}
+
+/* Compact list panel beside the rail */
+.pos-mega-panel {
+    background: var(--bg-surface);
+    border: 1px solid rgba(20, 32, 31, 0.1);
+    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+    left: 0;
+    opacity: 0;
+    padding: 4px;
+    pointer-events: none;
+    position: fixed;
+    top: 0;
+    transform: translate3d(-3px, 0, 0);
+    transition:
+        opacity var(--transition-fast),
+        transform var(--transition-fast);
+    visibility: hidden;
+    width: min(212px, calc(100vw - 240px));
+    z-index: 220;
+}
+
+.pos-mega-group.is-open > .pos-mega-panel {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate3d(0, 0, 0);
+    visibility: visible;
+}
+
+.pos-mega-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.pos-mega-tile {
+    align-items: center;
+    border-radius: 5px;
+    color: var(--text-primary);
+    display: flex;
+    gap: 9px;
+    min-height: 34px;
+    padding: 7px 9px;
+    text-decoration: none;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.pos-mega-tile:hover {
+    background: rgba(15, 118, 110, 0.07);
+    color: var(--text-primary);
+}
+
+.pos-mega-tile:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px rgba(15, 118, 110, 0.35);
+}
+
+.pos-mega-tile.is-active {
+    background: var(--accent-light);
+    color: var(--accent-hover);
+    font-weight: 600;
+}
+
+.pos-mega-tile-icon {
+    align-items: center;
+    color: var(--text-muted);
+    display: inline-flex;
+    flex-shrink: 0;
+    font-size: 15px;
+    height: 18px;
+    justify-content: center;
+    width: 18px;
+}
+
+.pos-mega-tile:hover .pos-mega-tile-icon {
+    color: var(--accent-color);
+}
+
+.pos-mega-tile.is-active .pos-mega-tile-icon {
+    color: var(--accent-color);
+}
+
+.pos-mega-tile-title {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.3;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pos-mega-tile.is-active .pos-mega-tile-title {
+    font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pos-mega-panel,
+    .pos-mega-caret,
+    .pos-mega-tile {
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Sidebar Footer */
+.pos-sidebar-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: auto;
+    padding: 12px 2px 0;
+}
+
+.pos-sidebar-footer .user-info {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 10px;
+    padding: 0 8px;
+}
+
+.pos-sidebar-footer .user-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.72);
+    flex-shrink: 0;
+}
+
+.pos-sidebar-footer .user-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.pos-sidebar-footer .username {
+    font-weight: 600;
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pos-sidebar-footer .role {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.34);
+    font-weight: 500;
+}
+
+.pos-sidebar-footer .btn-logout {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.62);
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-weight: 500;
+    font-size: 12.5px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition:
+        background-color var(--transition-fast),
+        border-color var(--transition-fast),
+        color var(--transition-fast);
+}
+
+.pos-sidebar-footer .btn-logout:hover {
+    background-color: rgba(244, 63, 94, 0.12);
+    border-color: rgba(244, 63, 94, 0.22);
+    color: #ffffff;
+}
+
+/* ============================
+   Main Content Workspace
+   ============================ */
+.pos-main {
+    flex: 1;
+    margin-left: 220px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* ============================
+   Top bar
+   ============================ */
+.pos-topbar {
+    min-height: 64px;
+    height: auto;
+    background-color: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px) saturate(1.1);
+    -webkit-backdrop-filter: blur(12px) saturate(1.1);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+}
+
+.pos-topbar-title {
+    font-size: 18px;
+    font-weight: 750;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.pos-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.pos-title-pair-button {
+    min-height: 34px;
+    padding: 6px 10px;
+    white-space: nowrap;
+}
+
+.pos-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* ============================
+   Content Padding
+   ============================ */
+.pos-content {
+    padding: 22px 24px 36px;
+    flex: 1;
+    max-width: 100%;
+}
+
+/* ============================
+   Responsive sidebar collapse
+   ============================ */
+@media (max-width: 991px) {
+    .pos-sidebar {
+        overflow-x: visible;
+        padding: 14px 6px;
+        width: 60px;
+    }
+    .pos-nav-item span:not(.nav-icon),
+    .pos-mega-trigger .nav-label,
+    .pos-mega-caret,
+    .pos-sidebar-footer .user-details,
+    .pos-sidebar-footer .btn-logout span {
+        display: none;
+    }
+    .pos-logo {
+        justify-content: center;
+        margin-bottom: 16px;
+        overflow: hidden;
+        padding-left: 0;
+        width: 44px;
+    }
+    .pos-logo-image {
+        transform: translateX(-20px);
+    }
+    .pos-nav-item,
+    .pos-mega-trigger {
+        justify-content: center;
+        padding: 9px;
+    }
+    .pos-mega-trigger {
+        min-height: 38px;
+    }
+    .pos-nav-label {
+        display: none;
+    }
+    .pos-mega-panel {
+        width: min(228px, calc(100vw - 76px));
+    }
+    .pos-main {
+        margin-left: 60px;
+    }
+    .pos-topbar {
+        padding: 0 20px;
+    }
+    .pos-content {
+        padding: 20px;
+    }
+    .pos-sidebar-footer .user-info {
+        justify-content: center;
+    }
+    .pos-sidebar-footer .btn-logout {
+        padding: 9px;
+    }
+}
+
+@media (max-width: 720px) {
+    .pos-sidebar {
+        bottom: 0;
+        flex-direction: row;
+        height: 58px;
+        left: 0;
+        overflow-x: auto;
+        overflow-y: visible;
+        padding: 6px 8px;
+        right: 0;
+        top: auto;
+        width: 100%;
+        z-index: 100;
+    }
+
+    .pos-logo,
+    .pos-sidebar-footer,
+    .pos-nav-label {
+        display: none;
+    }
+
+    .pos-nav {
+        display: flex;
+        flex-direction: row;
+        gap: 2px;
+        overflow-x: auto;
+        overflow-y: visible;
+        padding: 0;
+        width: 100%;
+    }
+
+    .pos-nav-item,
+    .pos-mega-group {
+        flex: 0 0 auto;
+    }
+
+    .pos-nav-item {
+        min-width: 48px;
+    }
+
+    .pos-mega-trigger {
+        min-width: 44px;
+        padding: 8px;
+    }
+
+    .pos-mega-panel {
+        width: min(248px, calc(100vw - 24px));
+        box-shadow: var(--shadow-lg);
+    }
+
+    .pos-main {
+        margin-left: 0;
+        padding-bottom: 58px;
+    }
+
+    .pos-topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 12px 16px;
+    }
+
+    .pos-title-row {
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .pos-topbar-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    .pos-topbar-actions .btn {
+        width: 100%;
+    }
+
+    .pos-content {
+        padding: 16px;
+    }
+}

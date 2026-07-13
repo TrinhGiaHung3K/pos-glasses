@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - Chi tiết hóa đơn</title>
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+
+    <style>
+        /* ─────────────────────────────────────────
+           Invoice detail / thermal receipt station
+           Tokens from base.css; layout aligned with
+           invoices.html operational surfaces.
+           Paper: 80mm (standard) · 58mm (compact)
+           ───────────────────────────────────────── */
+
+        .inv-shell {
+            display: grid;
+            gap: 18px;
+            grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+            align-items: start;
+        }
+
+        @media (max-width: 991px) {
+            .inv-shell {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── Control deck ── */
+        .inv-deck {
+            display: grid;
+            gap: 14px;
+            position: sticky;
+            top: 12px;
+        }
+
+        @media (max-width: 991px) {
+            .inv-deck {
+                position: static;
+            }
+        }
+
+        .inv-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            padding: 16px;
+        }
+
+        .inv-card-title {
+            align-items: center;
+            color: var(--text-primary);
+            display: flex;
+            font-size: 13px;
+            font-weight: 800;
+            gap: 8px;
+            letter-spacing: -0.01em;
+            margin: 0 0 12px;
+        }
+
+        .inv-card-title i {
+            color: var(--accent-color);
+            font-size: 16px;
+        }
+
+        .inv-lookup {
+            display: grid;
+            gap: 10px;
+        }
+
+        .inv-lookup-row {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: 1fr auto;
+        }
+
+        .inv-lookup .form-control {
+            font-family: "Roboto Mono", "Cascadia Mono", Consolas, monospace;
+            font-size: 14px !important;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .inv-hint {
+            color: var(--text-muted);
+            font-size: 11.5px;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .inv-hint kbd {
+            background: var(--bg-muted);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 1px 5px;
+        }
+
+        /* Print action grid */
+        .inv-actions {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .inv-actions .btn {
+            min-height: 40px;
+            width: 100%;
+        }
+
+        .inv-actions .btn-wide {
+            grid-column: 1 / -1;
+        }
+
+        .inv-actions-secondary {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: 1fr 1fr;
+            margin-top: 8px;
+        }
+
+        .inv-actions-secondary .btn {
+            min-height: 38px;
+        }
+
+        /* Paper size / preview mode */
+        .inv-mode-toggle {
+            background: var(--bg-muted);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            padding: 4px;
+        }
+
+        .inv-mode-btn {
+            align-items: center;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            gap: 2px;
+            min-height: 52px;
+            padding: 8px 6px;
+            transition: all var(--transition-fast);
+        }
+
+        .inv-mode-btn span {
+            color: var(--text-muted);
+            font-size: 10.5px;
+            font-weight: 600;
+        }
+
+        .inv-mode-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .inv-mode-btn.is-active {
+            background: var(--bg-surface);
+            box-shadow: var(--shadow-sm);
+            color: var(--accent-color);
+        }
+
+        .inv-mode-btn.is-active span {
+            color: var(--accent-color);
+        }
+
+        .inv-mode-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Recent chips */
+        .inv-recent {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .inv-recent-label {
+            color: var(--text-muted);
+            font-size: 11.5px;
+            font-weight: 700;
+            margin-right: 2px;
+            padding-top: 6px;
+            width: 100%;
+        }
+
+        .inv-chip {
+            align-items: center;
+            background: var(--bg-muted);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-pill);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: inline-flex;
+            font-size: 11.5px;
+            font-weight: 700;
+            gap: 5px;
+            max-width: 100%;
+            min-height: 30px;
+            padding: 4px 10px;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        .inv-chip:hover {
+            background: var(--accent-light);
+            border-color: rgba(15, 118, 110, 0.28);
+            color: var(--accent-color);
+            transform: translateY(-1px);
+        }
+
+        .inv-chip:active {
+            transform: scale(0.98);
+        }
+
+        .inv-chip code {
+            font-family: "Roboto Mono", Consolas, monospace;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .inv-chip-name {
+            color: var(--text-secondary);
+            font-weight: 600;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Loaded summary */
+        .inv-summary {
+            display: grid;
+            gap: 8px;
+        }
+
+        .inv-summary-row {
+            align-items: baseline;
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        .inv-summary-row .k {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .inv-summary-row .v {
+            color: var(--text-primary);
+            font-size: 12.5px;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .inv-summary-row.is-total .v {
+            color: var(--accent-color);
+            font-size: 16px;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .inv-status {
+            align-items: center;
+            background: var(--accent-subtle);
+            border: 1px solid rgba(15, 118, 110, 0.14);
+            border-radius: var(--radius-pill);
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 11.5px;
+            font-weight: 800;
+            gap: 6px;
+            min-height: 28px;
+            padding: 4px 10px;
+            width: fit-content;
+        }
+
+        .inv-status.is-empty {
+            background: var(--bg-muted);
+            border-color: var(--border-color);
+            color: var(--text-muted);
+        }
+
+        .inv-status.is-error {
+            background: var(--danger-light);
+            border-color: rgba(220, 38, 38, 0.18);
+            color: var(--danger-color);
+        }
+
+        /* ── Receipt stage ── */
+        .inv-stage {
+            align-items: center;
+            background:
+                radial-gradient(ellipse at 50% 0%, rgba(15, 118, 110, 0.06), transparent 55%),
+                var(--bg-muted);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-default);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-height: 520px;
+            padding: 20px 16px 28px;
+        }
+
+        .inv-stage-bar {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+            max-width: 440px;
+            width: 100%;
+        }
+
+        .inv-stage-label {
+            align-items: center;
+            color: var(--text-secondary);
+            display: flex;
+            font-size: 12px;
+            font-weight: 700;
+            gap: 6px;
+        }
+
+        .inv-stage-label i {
+            color: var(--accent-color);
+            font-size: 15px;
+        }
+
+        .inv-paper-badge {
+            align-items: center;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-pill);
+            color: var(--text-primary);
+            display: inline-flex;
+            font-family: "Roboto Mono", Consolas, monospace;
+            font-size: 11px;
+            font-weight: 800;
+            gap: 6px;
+            min-height: 28px;
+            padding: 4px 10px;
+        }
+
+        .inv-paper-badge .dot {
+            background: var(--accent-color);
+            border-radius: 50%;
+            height: 6px;
+            width: 6px;
+        }
+
+        .inv-paper-badge.is-compact .dot {
+            background: var(--warning-color);
+        }
+
+        /* ── Thermal paper card ── */
+        .receipt-paper-card {
+            background: #ffffff;
+            border: 1px solid rgba(20, 32, 31, 0.12);
+            border-radius: 2px;
+            box-shadow:
+                0 1px 0 rgba(255, 255, 255, 0.8) inset,
+                0 18px 40px -12px rgba(20, 32, 31, 0.18),
+                0 4px 10px -4px rgba(20, 32, 31, 0.08);
+            color: #111111 !important;
+            font-family: "Roboto Mono", "Courier New", Courier, monospace;
+            margin: 0 auto;
+            max-width: 380px;
+            padding: 22px 18px 20px;
+            position: relative;
+            transition: max-width var(--transition-normal), padding var(--transition-normal);
+            width: 100%;
+        }
+
+        /* Tear edge (screen only) */
+        .receipt-paper-card::before {
+            background:
+                linear-gradient(135deg, transparent 6px, #fff 0) top left,
+                linear-gradient(-135deg, transparent 6px, #fff 0) top right;
+            background-position: left top, right top;
+            background-repeat: repeat-x;
+            background-size: 12px 8px;
+            content: "";
+            height: 8px;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: -7px;
+        }
+
+        .receipt-header {
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .receipt-store-logo {
+            display: block;
+            width: 132px;
+            height: 38px;
+            margin: 0 auto 2px;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .receipt-store-title {
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            line-height: 1.25;
+            margin: 0 0 6px;
+            text-transform: uppercase;
+        }
+
+        .receipt-store-info {
+            color: #333;
+            font-size: 10.5px;
+            line-height: 1.4;
+            margin: 0 0 2px;
+        }
+
+        .receipt-print-meta {
+            color: #555;
+            font-size: 10px;
+            margin: 8px 0 0;
+        }
+
+        .receipt-divider {
+            border: 0;
+            border-top: 1px dashed #222;
+            margin: 10px 0;
+        }
+
+        .receipt-divider.is-double {
+            border-top-style: double;
+            border-top-width: 3px;
+        }
+
+        .receipt-section {
+            margin: 0;
+        }
+
+        .receipt-info-row {
+            display: flex;
+            font-size: 11.5px;
+            gap: 8px;
+            justify-content: space-between;
+            line-height: 1.35;
+            margin-bottom: 3px;
+        }
+
+        .receipt-info-label {
+            flex-shrink: 0;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .receipt-info-value {
+            text-align: right;
+            word-break: break-word;
+        }
+
+        .receipt-table {
+            border-collapse: collapse;
+            font-size: 11px;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .receipt-table th {
+            background: transparent !important;
+            border-bottom: 1px dashed #222 !important;
+            color: #000 !important;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            padding: 4px 2px !important;
+            text-transform: uppercase;
+        }
+
+        .receipt-table td {
+            border-bottom: none !important;
+            color: #000 !important;
+            padding: 4px 2px !important;
+            vertical-align: top;
+            word-break: break-word;
+        }
+
+        .receipt-table .col-name { text-align: left; width: auto; }
+        .receipt-table .col-qty  { text-align: center; width: 36px; }
+        .receipt-table .col-price { text-align: right; width: 72px; }
+        .receipt-table .col-total { text-align: right; width: 78px; font-weight: 700; }
+
+        .receipt-item-name {
+            display: block;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .receipt-item-meta {
+            color: #444;
+            display: block;
+            font-size: 10px;
+            margin-top: 1px;
+        }
+
+        .receipt-totals {
+            margin-top: 2px;
+        }
+
+        .receipt-total-row {
+            border-top: 1px dashed #222;
+            display: flex;
+            font-size: 13px;
+            font-weight: 800;
+            gap: 8px;
+            justify-content: space-between;
+            margin-top: 6px;
+            padding-top: 6px;
+        }
+
+        .receipt-payment {
+            margin-top: 2px;
+        }
+
+        .receipt-qr {
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .receipt-qr img {
+            background: #fff;
+            border: 1px solid #ddd;
+            display: inline-block;
+            height: 84px;
+            image-rendering: pixelated;
+            width: 84px;
+        }
+
+        .receipt-qr-caption {
+            color: #555;
+            font-size: 9.5px;
+            margin-top: 4px;
+        }
+
+        .receipt-footer {
+            font-size: 11px;
+            line-height: 1.4;
+            margin-top: 4px;
+            text-align: center;
+        }
+
+        .receipt-footer .thanks {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            margin: 0 0 4px;
+            text-transform: uppercase;
+        }
+
+        .receipt-footer .msg {
+            color: #333;
+            margin: 0;
+        }
+
+        .receipt-empty {
+            color: #666;
+            font-size: 12px;
+            font-style: italic;
+            margin: 12px 0;
+            text-align: center;
+        }
+
+        .receipt-empty.is-error {
+            color: #b91c1c;
+            font-style: normal;
+            font-weight: 700;
+        }
+
+        .receipt-reprint-banner {
+            border: 1px dashed #222;
+            font-size: 10.5px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+            padding: 3px 6px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        /* ── On-screen compact preview (58mm) ── */
+        .receipt-paper-card.print-compact {
+            font-size: 10.5px;
+            line-height: 1.28;
+            max-width: 248px;
+            padding: 14px 10px 12px;
+        }
+
+        .receipt-paper-card.print-compact .receipt-store-title {
+            font-size: 12.5px;
+            letter-spacing: 0.04em;
+        }
+
+        .receipt-paper-card.print-compact .receipt-store-logo {
+            width: 112px;
+            height: 32px;
+        }
+
+        .receipt-paper-card.print-compact .receipt-store-info {
+            font-size: 9.5px;
+        }
+
+        .receipt-paper-card.print-compact #storeAddress,
+        .receipt-paper-card.print-compact #storeTaxId {
+            display: none;
+        }
+
+        .receipt-paper-card.print-compact .receipt-divider {
+            margin: 6px 0;
+        }
+
+        .receipt-paper-card.print-compact .receipt-info-row {
+            font-size: 10px;
+            margin-bottom: 2px;
+        }
+
+        .receipt-paper-card.print-compact .receipt-info-row[data-key="source"],
+        .receipt-paper-card.print-compact .receipt-info-row[data-key="promotion"],
+        .receipt-paper-card.print-compact .receipt-info-row[data-key="table"] {
+            display: none;
+        }
+
+        .receipt-paper-card.print-compact .receipt-table {
+            font-size: 9.5px;
+        }
+
+        .receipt-paper-card.print-compact .receipt-table th,
+        .receipt-paper-card.print-compact .receipt-table td {
+            padding: 2px 1px !important;
+        }
+
+        .receipt-paper-card.print-compact .col-price,
+        .receipt-paper-card.print-compact th.col-price {
+            display: none !important;
+        }
+
+        .receipt-paper-card.print-compact .receipt-item-meta {
+            display: none;
+        }
+
+        .receipt-paper-card.print-compact .receipt-total-row {
+            font-size: 11.5px;
+            margin-top: 4px;
+            padding-top: 4px;
+        }
+
+        .receipt-paper-card.print-compact .receipt-qr {
+            display: none !important;
+        }
+
+        .receipt-paper-card.print-compact .receipt-footer {
+            font-size: 9.5px;
+            margin-top: 2px;
+        }
+
+        .receipt-paper-card.print-compact .receipt-footer .thanks {
+            font-size: 10.5px;
+        }
+
+        /* ── Topbar polish ── */
+        .pos-topbar-actions .btn {
+            transition: all var(--transition-fast);
+        }
+
+        .pos-topbar-actions .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        /* ── Print ── */
+        @media print {
+            @page {
+                size: auto;
+                margin: 2mm;
+            }
+
+            html, body {
+                background: #fff !important;
+                color: #000 !important;
+                font-size: 11px;
+            }
+
+            .pos-sidebar,
+            .pos-topbar,
+            .inv-deck,
+            .inv-stage-bar,
+            button,
+            .no-print {
+                display: none !important;
+            }
+
+            .pos-main {
+                margin-left: 0 !important;
+                min-height: auto !important;
+            }
+
+            .pos-content {
+                padding: 0 !important;
+            }
+
+            .inv-shell {
+                display: block;
+            }
+
+            .inv-stage {
+                background: transparent !important;
+                border: none !important;
+                border-radius: 0 !important;
+                min-height: 0 !important;
+                padding: 0 !important;
+            }
+
+            .receipt-paper-card {
+                border: none !important;
+                box-shadow: none !important;
+                margin: 0 auto !important;
+                max-width: 78mm !important;
+                padding: 0 !important;
+                width: 100% !important;
+            }
+
+            .receipt-paper-card::before {
+                display: none !important;
+            }
+
+            .receipt-paper-card .receipt-table {
+                font-size: 10.5px;
+            }
+
+            /* Compact 58mm */
+            .receipt-paper-card.print-compact {
+                font-size: 9.5px !important;
+                line-height: 1.25 !important;
+                max-width: 54mm !important;
+            }
+
+            .receipt-paper-card.print-compact .receipt-header {
+                margin-bottom: 4px !important;
+            }
+
+            .receipt-paper-card.print-compact .receipt-store-title {
+                font-size: 11px !important;
+            }
+
+            .receipt-paper-card.print-compact #storeAddress,
+            .receipt-paper-card.print-compact #storeTaxId {
+                display: none !important;
+            }
+
+            .receipt-paper-card.print-compact .receipt-divider {
+                margin: 4px 0 !important;
+            }
+
+            .receipt-paper-card.print-compact .receipt-table {
+                font-size: 9px !important;
+            }
+
+            .receipt-paper-card.print-compact .receipt-table th,
+            .receipt-paper-card.print-compact .receipt-table td {
+                padding: 1px !important;
+            }
+
+            .receipt-paper-card.print-compact .col-price,
+            .receipt-paper-card.print-compact th.col-price {
+                display: none !important;
+            }
+
+            .receipt-paper-card.print-compact .receipt-info-row {
+                font-size: 9px !important;
+                margin-bottom: 1px !important;
+            }
+
+            .receipt-paper-card.print-compact .receipt-info-row[data-key="source"],
+            .receipt-paper-card.print-compact .receipt-info-row[data-key="promotion"],
+            .receipt-paper-card.print-compact .receipt-info-row[data-key="table"] {
+                display: none !important;
+            }
+
+            .receipt-paper-card.print-compact .receipt-total-row {
+                font-size: 11px !important;
+                margin-top: 4px !important;
+                padding-top: 4px !important;
+            }
+
+            .receipt-paper-card.print-compact .receipt-qr {
+                display: none !important;
+            }
+
+            .receipt-paper-card.print-compact .receipt-footer {
+                font-size: 9px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="pos-container">
+    <aside data-menu-component data-active-menu="invoice-detail"></aside>
+
+    <main class="pos-main">
+        <header class="pos-topbar">
+            <div>
+                <h2 class="pos-topbar-title">In biên nhận</h2>
+            </div>
+            <div class="pos-topbar-actions">
+                <button type="button" class="btn btn-secondary" onclick="location.href='invoices.html'">
+                    <i class="ph ph-clock-counter-clockwise"></i> Lịch sử
+                </button>
+            </div>
+        </header>
+
+        <div class="pos-content">
+            <div class="inv-shell">
+
+                <!-- ═══════ CONTROL DECK ═══════ -->
+                <aside class="inv-deck no-print">
+
+                    <!-- Lookup -->
+                    <section class="inv-card">
+                        <h3 class="inv-card-title">
+                            <i class="ph ph-magnifying-glass"></i>
+                            Tra cứu hóa đơn
+                        </h3>
+                        <div class="inv-lookup">
+                            <div>
+                                <label class="form-label" for="orderId">Mã hóa đơn</label>
+                                <div class="inv-lookup-row">
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="orderId"
+                                        inputmode="numeric"
+                                        autocomplete="off"
+                                        placeholder="VD: 42"
+                                        onkeydown="if (event.key === 'Enter') loadOrderDetail()">
+                                    <button type="button" class="btn btn-primary" onclick="loadOrderDetail()" title="Xem biên nhận">
+                                        <i class="ph ph-eye"></i> Xem
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="inv-hint">Nhấn <kbd>/</kbd> để focus ô mã. Enter để tải.</p>
+                            <div id="loadStatus" class="inv-status is-empty" role="status">
+                                <i class="ph ph-receipt"></i>
+                                <span>Chưa tải hóa đơn</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Print modes -->
+                    <section class="inv-card">
+                        <h3 class="inv-card-title">
+                            <i class="ph ph-printer"></i>
+                            Khổ giấy &amp; in
+                        </h3>
+
+                        <div class="inv-mode-toggle" role="group" aria-label="Chọn khổ giấy xem trước">
+                            <button type="button" class="inv-mode-btn is-active" id="modeFullBtn" onclick="setPreviewMode('full')" aria-pressed="true">
+                                Đầy đủ
+                                <span>80mm quầy</span>
+                            </button>
+                            <button type="button" class="inv-mode-btn" id="modeCompactBtn" onclick="setPreviewMode('compact')" aria-pressed="false">
+                                Rút gọn
+                                <span>58mm di động</span>
+                            </button>
+                        </div>
+
+                        <div class="inv-actions" style="margin-top: 12px;">
+                            <button type="button" class="btn btn-primary btn-wide" id="btnPrintFull" onclick="printReceipt()" title="In biên nhận đầy đủ khổ 80mm">
+                                <i class="ph ph-printer"></i> In 80mm
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="btnPrintCompact" onclick="printCompact()" title="In rút gọn khổ 58mm">
+                                <i class="ph ph-receipt"></i> In 58mm
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="btnPrintCopy" onclick="printAsCopy()" title="In bản sao / reprint">
+                                <i class="ph ph-copy"></i> Bản sao
+                            </button>
+                        </div>
+
+                        <div class="inv-actions-secondary">
+                            <button type="button" class="btn btn-secondary" onclick="copyReceiptText()" title="Sao chép text biên nhận">
+                                <i class="ph ph-clipboard-text"></i> Copy text
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="downloadAsPDFHint()" title="Lưu PDF qua hộp thoại in">
+                                <i class="ph ph-file-pdf"></i> Lưu PDF
+                            </button>
+                        </div>
+
+                        <div class="inv-actions" id="voidRefundActions" style="margin-top: 12px;" hidden>
+                            <button type="button" class="btn btn-secondary btn-wide" id="btnVoidOrder" onclick="voidCurrentOrder()">
+                                <i class="ph ph-x-circle"></i> Hủy hóa đơn
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-wide" id="btnRefundOrder" onclick="refundCurrentOrder()">
+                                <i class="ph ph-arrow-u-up-left"></i> Hoàn tiền
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Loaded summary -->
+                    <section class="inv-card" id="summaryCard" hidden>
+                        <h3 class="inv-card-title">
+                            <i class="ph ph-info"></i>
+                            Tóm tắt
+                        </h3>
+                        <div class="inv-summary" id="summaryBody"></div>
+                    </section>
+
+                    <!-- Recent -->
+                    <section class="inv-card" id="recentCard">
+                        <h3 class="inv-card-title">
+                            <i class="ph ph-clock"></i>
+                            Gần đây
+                        </h3>
+                        <div class="inv-recent" id="recentInvoices"></div>
+                    </section>
+                </aside>
+
+                <!-- ═══════ RECEIPT STAGE ═══════ -->
+                <section class="inv-stage" aria-label="Xem trước biên nhận">
+                    <div class="inv-stage-bar no-print">
+                        <div class="inv-stage-label">
+                            <i class="ph ph-scroll"></i>
+                            Xem trước giấy nhiệt
+                        </div>
+                        <div class="inv-paper-badge" id="paperBadge">
+                            <span class="dot" aria-hidden="true"></span>
+                            <span id="paperBadgeText">80mm · Đầy đủ</span>
+                        </div>
+                    </div>
+
+                    <!-- Thermal receipt (print target) -->
+                    <article class="receipt-paper-card" id="printArea" aria-live="polite">
+                        <header class="receipt-header">
+                            <img
+                                class="receipt-store-logo"
+                                src="/assets/images/pos-glasses-optic-bridge-logo.png"
+                                alt="POS GLASSES"
+                            >
+                            <h1 class="receipt-store-title" id="storeName">POS GLASSES STORE</h1>
+                            <p class="receipt-store-info" id="storeAddress">123 ABC, Quận 1, TP.HCM</p>
+                            <p class="receipt-store-info" id="storeHotline">Tel: 037 9942 134</p>
+                            <p class="receipt-store-info" id="storeTaxId" hidden></p>
+                            <p class="receipt-print-meta" id="printDate"></p>
+                        </header>
+
+                        <hr class="receipt-divider">
+
+                        <!-- Meta: order / customer / staff -->
+                        <div class="receipt-section" id="infoMeta">
+                            <p class="receipt-empty">Nhập mã hóa đơn và bấm Xem để tải biên nhận</p>
+                        </div>
+
+                        <hr class="receipt-divider" id="dividerBeforeItems" hidden>
+
+                        <!-- Line items -->
+                        <table class="receipt-table" id="itemsTable" hidden>
+                            <thead>
+                                <tr>
+                                    <th class="col-name">Hàng hóa</th>
+                                    <th class="col-qty">SL</th>
+                                    <th class="col-price">Đ.giá</th>
+                                    <th class="col-total">T.tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailTable"></tbody>
+                        </table>
+
+                        <hr class="receipt-divider is-double" id="dividerBeforeTotals" hidden>
+
+                        <!-- Totals + payment -->
+                        <div class="receipt-section receipt-totals" id="infoTotals"></div>
+                        <div class="receipt-section receipt-payment" id="infoPayment"></div>
+
+                        <!-- QR (full only) -->
+                        <div class="receipt-qr" id="receiptQR" hidden></div>
+
+                        <hr class="receipt-divider" id="dividerBeforeFooter" hidden>
+
+                        <footer class="receipt-footer" id="receiptFooterBlock" hidden>
+                            <p class="thanks">Cảm ơn quý khách!</p>
+                            <p class="msg" id="receiptFooter">Hẹn gặp lại tại POS GLASSES STORE</p>
+                        </footer>
+                    </article>
+                </section>
+
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/format.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/components.js"></script>
+<script>
+    const currentUser = requireAuth();
+    if (currentUser) {
+        const w = document.getElementById("welcomeUser");
+        if (w) w.innerHTML = currentUser.username;
+    }
+
+    // Store config (customize or later load from API)
+    const STORE_CONFIG = {
+        name: "POS GLASSES STORE",
+        address: "123 ABC, Quận 1, TP.HCM",
+        hotline: "037 9942 134",
+        taxId: "", // e.g. "0301234567"
+        footer: "Hẹn gặp lại tại POS GLASSES STORE"
+    };
+
+    let currentOrderData = null;
+    let previewMode = "full"; // "full" | "compact"
+    let printCleanupTimer = null;
+
+    /* ───────── Store header ───────── */
+    function setStoreInfo() {
+        const nameEl = document.getElementById("storeName");
+        const addrEl = document.getElementById("storeAddress");
+        const hotEl = document.getElementById("storeHotline");
+        const taxEl = document.getElementById("storeTaxId");
+        const footEl = document.getElementById("receiptFooter");
+
+        if (nameEl) nameEl.textContent = STORE_CONFIG.name;
+        if (addrEl) addrEl.textContent = STORE_CONFIG.address;
+        if (hotEl) hotEl.textContent = "Tel: " + STORE_CONFIG.hotline;
+        if (taxEl) {
+            if (STORE_CONFIG.taxId) {
+                taxEl.hidden = false;
+                taxEl.textContent = "MST: " + STORE_CONFIG.taxId;
+            } else {
+                taxEl.hidden = true;
+                taxEl.textContent = "";
+            }
+        }
+        if (footEl) footEl.textContent = STORE_CONFIG.footer;
+    }
+
+    function setPrintDate() {
+        const el = document.getElementById("printDate");
+        if (el) el.textContent = "In: " + new Date().toLocaleString("vi-VN");
+    }
+
+    /* ───────── Preview mode ───────── */
+    function setPreviewMode(mode) {
+        previewMode = mode === "compact" ? "compact" : "full";
+        const card = document.getElementById("printArea");
+        const badge = document.getElementById("paperBadge");
+        const badgeText = document.getElementById("paperBadgeText");
+        const fullBtn = document.getElementById("modeFullBtn");
+        const compactBtn = document.getElementById("modeCompactBtn");
+
+        if (previewMode === "compact") {
+            card.classList.add("print-compact");
+            badge.classList.add("is-compact");
+            if (badgeText) badgeText.textContent = "58mm · Rút gọn";
+            fullBtn.classList.remove("is-active");
+            fullBtn.setAttribute("aria-pressed", "false");
+            compactBtn.classList.add("is-active");
+            compactBtn.setAttribute("aria-pressed", "true");
+        } else {
+            card.classList.remove("print-compact");
+            badge.classList.remove("is-compact");
+            if (badgeText) badgeText.textContent = "80mm · Đầy đủ";
+            fullBtn.classList.add("is-active");
+            fullBtn.setAttribute("aria-pressed", "true");
+            compactBtn.classList.remove("is-active");
+            compactBtn.setAttribute("aria-pressed", "false");
+        }
+    }
+
+    /* ───────── Status / summary ───────── */
+    function setLoadStatus(state, message) {
+        const el = document.getElementById("loadStatus");
+        if (!el) return;
+        el.classList.remove("is-empty", "is-error");
+        if (state === "empty") el.classList.add("is-empty");
+        if (state === "error") el.classList.add("is-error");
+        el.innerHTML = state === "error"
+            ? `<i class="ph ph-warning-circle"></i><span>${escapeHtml(message)}</span>`
+            : state === "ok"
+                ? `<i class="ph ph-check-circle"></i><span>${escapeHtml(message)}</span>`
+                : state === "loading"
+                    ? `<i class="ph ph-circle-notch"></i><span>${escapeHtml(message)}</span>`
+                    : `<i class="ph ph-receipt"></i><span>${escapeHtml(message)}</span>`;
+    }
+
+    function renderSummary(first) {
+        const card = document.getElementById("summaryCard");
+        const body = document.getElementById("summaryBody");
+        if (!card || !body) return;
+
+        const orderId = first.order_id || first.id;
+        body.innerHTML = `
+            <div class="inv-summary-row">
+                <span class="k">Mã HĐ</span>
+                <span class="v">#${escapeHtml(String(orderId))}</span>
+            </div>
+            <div class="inv-summary-row">
+                <span class="k">Khách</span>
+                <span class="v">${escapeHtml(first.customer_name || "-")}</span>
+            </div>
+            <div class="inv-summary-row">
+                <span class="k">Thanh toán</span>
+                <span class="v">${paymentLabel(first.payment_method)}</span>
+            </div>
+            <div class="inv-summary-row is-total">
+                <span class="k">Tổng</span>
+                <span class="v pos-money">${formatCurrency(first.total_amount)}</span>
+            </div>
+        `;
+        card.hidden = false;
+    }
+
+    function clearSummary() {
+        const card = document.getElementById("summaryCard");
+        if (card) card.hidden = true;
+    }
+
+    function setReceiptBodyVisible(visible) {
+        const ids = [
+            "dividerBeforeItems",
+            "itemsTable",
+            "dividerBeforeTotals",
+            "dividerBeforeFooter",
+            "receiptFooterBlock"
+        ];
+        ids.forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.hidden = !visible;
+        });
+    }
+
+    /* ───────── Load order ───────── */
+    async function loadOrderDetail() {
+        const input = document.getElementById("orderId");
+        const id = (input.value || "").trim();
+        if (!id) {
+            showToast("Vui lòng nhập mã hóa đơn!", "warning");
+            return;
+        }
+
+        const metaEl = document.getElementById("infoMeta");
+        const totalsEl = document.getElementById("infoTotals");
+        const paymentEl = document.getElementById("infoPayment");
+        const tableBody = document.getElementById("detailTable");
+        const qrEl = document.getElementById("receiptQR");
+
+        metaEl.innerHTML = `<p class="receipt-empty">Đang tải...</p>`;
+        totalsEl.innerHTML = "";
+        paymentEl.innerHTML = "";
+        tableBody.innerHTML = "";
+        setReceiptBodyVisible(false);
+        if (qrEl) {
+            qrEl.hidden = true;
+            qrEl.innerHTML = "";
+        }
+        clearSummary();
+        setLoadStatus("loading", "Đang tải #" + id + "...");
+
+        try {
+            const details = await apiRequest(`/orders/${id}`);
+
+            if (!details || details.length === 0) {
+                metaEl.innerHTML = `<p class="receipt-empty is-error">Không tìm thấy hóa đơn #${escapeHtml(id)}</p>`;
+                setReceiptBodyVisible(false);
+                setLoadStatus("error", "Không tìm thấy #" + id);
+                showToast("Không tìm thấy hóa đơn có mã này", "error");
+                currentOrderData = null;
+                updateVoidRefundActions(null);
+                return;
+            }
+
+            const first = details[0];
+            currentOrderData = { first, details };
+            updateVoidRefundActions(first);
+
+            const orderId = first.order_id || first.id;
+            const created = first.created_at ? formatDate(first.created_at) : "-";
+            const phone = first.customer_phone ? " · " + escapeHtml(first.customer_phone) : "";
+            const tableLabel = first.table_name || first.table_code || "";
+            const sourceLabel = sourceLabelText(first.source);
+            const hasDiscount = Number(first.discount_amount || 0) > 0
+                || Number(first.discount_percent || 0) > 0
+                || first.coupon_code
+                || first.manual_discount_type;
+
+            // 1) Meta block (classic POS header block)
+            metaEl.innerHTML = `
+                <div class="receipt-info-row" data-key="order-id">
+                    <span class="receipt-info-label">MÃ HĐ:</span>
+                    <span class="receipt-info-value">#${escapeHtml(String(orderId))}</span>
+                </div>
+                <div class="receipt-info-row" data-key="created">
+                    <span class="receipt-info-label">THỜI GIAN:</span>
+                    <span class="receipt-info-value">${created}</span>
+                </div>
+                <div class="receipt-info-row" data-key="customer">
+                    <span class="receipt-info-label">KHÁCH:</span>
+                    <span class="receipt-info-value">${escapeHtml(first.customer_name || "Khách lẻ")}${phone}</span>
+                </div>
+                <div class="receipt-info-row" data-key="staff">
+                    <span class="receipt-info-label">NV:</span>
+                    <span class="receipt-info-value">${escapeHtml(first.username || "-")}</span>
+                </div>
+                ${tableLabel ? `
+                <div class="receipt-info-row" data-key="table">
+                    <span class="receipt-info-label">BÀN:</span>
+                    <span class="receipt-info-value">${escapeHtml(tableLabel)}</span>
+                </div>` : ""}
+                <div class="receipt-info-row" data-key="source">
+                    <span class="receipt-info-label">NGUỒN:</span>
+                    <span class="receipt-info-value">${sourceLabel}</span>
+                </div>
+                ${hasDiscount ? `
+                <div class="receipt-info-row" data-key="promotion">
+                    <span class="receipt-info-label">KM:</span>
+                    <span class="receipt-info-value">${escapeHtml(first.coupon_code || "Giảm giá")} (${first.discount_percent || 0}%)</span>
+                </div>` : ""}
+            `;
+
+            // 2) Line items (qty · unit · line total)
+            let html = "";
+            details.forEach((item) => {
+                const qty = Number(item.quantity || 0);
+                const price = Number(item.price || 0);
+                const lineTotal = price * qty;
+                html += `
+                    <tr>
+                        <td class="col-name">
+                            <span class="receipt-item-name">${escapeHtml(item.product_name)}</span>
+                            <span class="receipt-item-meta">${qty} x ${formatCurrency(price)}</span>
+                        </td>
+                        <td class="col-qty">${qty}</td>
+                        <td class="col-price">${formatCurrency(price)}</td>
+                        <td class="col-total">${formatCurrency(lineTotal)}</td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = html;
+
+            // 3) Totals (standard POS order: subtotal → discount → grand total)
+            const subtotal = first.subtotal_amount != null ? first.subtotal_amount : first.total_amount;
+            const discountAmt = Number(first.discount_amount || 0);
+            let discountNote = "";
+            if (first.manual_discount_type) {
+                discountNote = first.manual_discount_type === "percent"
+                    ? ` (${first.manual_discount_value}%)`
+                    : ` (${formatCurrency(first.manual_discount_value)})`;
+            }
+
+            totalsEl.innerHTML = `
+                <div class="receipt-info-row" data-key="subtotal">
+                    <span class="receipt-info-label">TẠM TÍNH:</span>
+                    <span class="receipt-info-value">${formatCurrency(subtotal)}</span>
+                </div>
+                <div class="receipt-info-row" data-key="discount">
+                    <span class="receipt-info-label">GIẢM GIÁ:</span>
+                    <span class="receipt-info-value">-${formatCurrency(discountAmt)}${discountNote}</span>
+                </div>
+                <div class="receipt-total-row" data-key="total">
+                    <span>TỔNG CỘNG:</span>
+                    <span>${formatCurrency(first.total_amount)}</span>
+                </div>
+            `;
+
+            // 4) Payment block
+            const paid = first.amount_paid != null ? first.amount_paid : first.total_amount;
+            const change = Number(first.change_amount || 0);
+            paymentEl.innerHTML = `
+                <div class="receipt-info-row" data-key="payment">
+                    <span class="receipt-info-label">THANH TOÁN:</span>
+                    <span class="receipt-info-value">${paymentLabel(first.payment_method)}</span>
+                </div>
+                <div class="receipt-info-row" data-key="paid">
+                    <span class="receipt-info-label">KHÁCH ĐƯA:</span>
+                    <span class="receipt-info-value">${formatCurrency(paid)}</span>
+                </div>
+                <div class="receipt-info-row" data-key="change">
+                    <span class="receipt-info-label">TIỀN THỐI:</span>
+                    <span class="receipt-info-value">${formatCurrency(change)}</span>
+                </div>
+            `;
+
+            updateReceiptQR(orderId);
+            setReceiptBodyVisible(true);
+            renderSummary(first);
+            setLoadStatus("ok", "Hóa đơn #" + orderId);
+            setPrintDate();
+
+            try { localStorage.setItem("last_invoice_id", String(orderId)); } catch (e) { /* ignore */ }
+
+        } catch (error) {
+            console.error("Lỗi khi tải chi tiết hóa đơn:", error);
+            metaEl.innerHTML = `<p class="receipt-empty is-error">Lỗi tải dữ liệu</p>`;
+            totalsEl.innerHTML = "";
+            paymentEl.innerHTML = "";
+            setReceiptBodyVisible(false);
+            setLoadStatus("error", "Lỗi tải dữ liệu");
+            showToast("Lỗi tải thông tin: " + (error.message || error), "error");
+            currentOrderData = null;
+        }
+    }
+
+    function sourceLabelText(source) {
+        if (!source) return "Bán hàng";
+        const map = {
+            pos: "POS quầy",
+            staff: "Nhân viên",
+            qr: "QR bàn",
+            "table-order": "Yêu cầu QR",
+            table: "Bàn"
+        };
+        return map[source] || source;
+    }
+
+    function updateReceiptQR(orderId) {
+        const container = document.getElementById("receiptQR");
+        if (!container) return;
+
+        const url = `${window.location.origin}/invoice_detail.html?id=${orderId}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=84x84&data=${encodeURIComponent(url)}`;
+        container.hidden = false;
+        container.innerHTML = `
+            <img src="${qrUrl}" alt="QR hóa đơn #${escapeHtml(String(orderId))}" width="84" height="84">
+            <div class="receipt-qr-caption">Quét để xem biên nhận</div>
+        `;
+    }
+
+    /* ───────── Helpers ───────── */
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    function paymentLabel(method) {
+        return {
+            cash: "Tiền mặt",
+            bank_transfer: "Chuyển khoản",
+            card: "Thẻ"
+        }[method] || "Tiền mặt";
+    }
+
+    function ensureOrderLoaded() {
+        if (!currentOrderData) {
+            showToast("Vui lòng xem một hóa đơn trước khi in", "warning");
+            return false;
+        }
+        return true;
+    }
+
+    /* ───────── Print actions ─────────
+       Full 80mm: all meta, 4-col table, QR, full footer
+       Compact 58mm: narrow, hide address/tax/QR/unit price/secondary rows
+       Copy: reprint banner, same mode as current preview
+    */
+
+    function clearPrintArtifacts() {
+        const card = document.getElementById("printArea");
+        const banner = document.getElementById("reprintBanner");
+        if (banner && banner.parentNode) banner.parentNode.removeChild(banner);
+
+        // Restore preview mode after forced print modes
+        if (previewMode === "compact") {
+            card.classList.add("print-compact");
+        } else {
+            card.classList.remove("print-compact");
+        }
+        card.removeAttribute("data-reprint");
+    }
+
+    function schedulePrintCleanup() {
+        if (printCleanupTimer) clearTimeout(printCleanupTimer);
+        // Fallback if afterprint does not fire (some browsers)
+        printCleanupTimer = setTimeout(clearPrintArtifacts, 800);
+    }
+
+    function printReceipt() {
+        if (!ensureOrderLoaded()) return;
+
+        const card = document.getElementById("printArea");
+        card.classList.remove("print-compact");
+        setPrintDate();
+        window.print();
+        schedulePrintCleanup();
+    }
+
+    function printCompact() {
+        if (!ensureOrderLoaded()) return;
+
+        const card = document.getElementById("printArea");
+        card.classList.add("print-compact");
+        setPrintDate();
+
+        // Brief paint so compact styles apply before print dialog
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                window.print();
+                schedulePrintCleanup();
+            });
+        });
+    }
+
+    function printAsCopy() {
+        if (!ensureOrderLoaded()) return;
+
+        const card = document.getElementById("printArea");
+        card.setAttribute("data-reprint", "1");
+
+        // Keep current preview width (full or compact)
+        if (previewMode === "compact") {
+            card.classList.add("print-compact");
+        }
+
+        const existing = document.getElementById("reprintBanner");
+        if (existing) existing.remove();
+
+        const banner = document.createElement("div");
+        banner.id = "reprintBanner";
+        banner.className = "receipt-reprint-banner";
+        banner.textContent = "*** BẢN SAO / REPRINT ***";
+        card.insertBefore(banner, card.firstChild);
+
+        setPrintDate();
+        window.print();
+        schedulePrintCleanup();
+    }
+
+    window.addEventListener("afterprint", clearPrintArtifacts);
+
+    function copyReceiptText() {
+        if (!currentOrderData) {
+            showToast("Chưa có hóa đơn để sao chép", "warning");
+            return;
+        }
+        const { first, details } = currentOrderData;
+        const lines = [];
+        lines.push(STORE_CONFIG.name);
+        lines.push(STORE_CONFIG.address);
+        lines.push("Tel: " + STORE_CONFIG.hotline);
+        if (STORE_CONFIG.taxId) lines.push("MST: " + STORE_CONFIG.taxId);
+        lines.push("--------------------------------");
+        lines.push("MA HD: #" + (first.order_id || first.id));
+        lines.push("Ngay: " + (first.created_at ? new Date(first.created_at).toLocaleString("vi-VN") : ""));
+        lines.push("KH: " + (first.customer_name || "") + (first.customer_phone ? " - " + first.customer_phone : ""));
+        lines.push("NV: " + (first.username || ""));
+        lines.push("--------------------------------");
+        details.forEach((it) => {
+            const lt = Number(it.price || 0) * Number(it.quantity || 0);
+            lines.push(it.product_name);
+            lines.push(`  ${it.quantity} x ${formatCurrency(it.price)} = ${formatCurrency(lt)}`);
+        });
+        lines.push("--------------------------------");
+        lines.push("TAM TINH: " + formatCurrency(first.subtotal_amount != null ? first.subtotal_amount : first.total_amount));
+        lines.push("GIAM GIA: " + formatCurrency(first.discount_amount || 0));
+        lines.push("TONG: " + formatCurrency(first.total_amount));
+        lines.push("THANH TOAN: " + paymentLabel(first.payment_method));
+        lines.push("KHACH DUA: " + formatCurrency(first.amount_paid != null ? first.amount_paid : first.total_amount));
+        lines.push("THOI: " + formatCurrency(first.change_amount || 0));
+        lines.push("--------------------------------");
+        lines.push("CAM ON QUY KHACH!");
+        lines.push(STORE_CONFIG.footer);
+
+        const text = lines.join("\n");
+        navigator.clipboard.writeText(text).then(() => {
+            showToast("Đã sao chép nội dung biên nhận", "success");
+        }).catch(() => {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+            showToast("Đã sao chép (fallback)", "success");
+        });
+    }
+
+    function downloadAsPDFHint() {
+        if (!ensureOrderLoaded()) return;
+        showToast("Mở hộp thoại In → chọn 'Save as PDF' hoặc 'Microsoft Print to PDF'", "info");
+        setPrintDate();
+        // Use current preview mode for PDF export
+        setTimeout(() => {
+            const card = document.getElementById("printArea");
+            if (previewMode === "compact") {
+                card.classList.add("print-compact");
+            } else {
+                card.classList.remove("print-compact");
+            }
+            window.print();
+            schedulePrintCleanup();
+        }, 150);
+    }
+
+    /* ───────── Recent ───────── */
+    async function loadRecentInvoices() {
+        const container = document.getElementById("recentInvoices");
+        if (!container) return;
+        try {
+            const recent = await apiRequest("/latest-orders?limit=6");
+            if (!Array.isArray(recent) || recent.length === 0) {
+                container.innerHTML = `<span class="inv-hint">Chưa có hóa đơn gần đây</span>`;
+                return;
+            }
+            let html = `<span class="inv-recent-label">Chạm để xem nhanh</span>`;
+            recent.forEach((o) => {
+                const name = o.customer_name ? escapeHtml(o.customer_name) : "Khách lẻ";
+                html += `
+                    <button type="button" class="inv-chip" onclick="quickLoadInvoice(${o.id})" title="Xem hóa đơn #${o.id}">
+                        <code>#${o.id}</code>
+                        <span class="inv-chip-name">${name}</span>
+                    </button>
+                `;
+            });
+            container.innerHTML = html;
+        } catch (e) {
+            container.innerHTML = `<span class="inv-hint">Không tải được danh sách gần đây</span>`;
+        }
+    }
+
+    function quickLoadInvoice(id) {
+        document.getElementById("orderId").value = id;
+        loadOrderDetail();
+    }
+
+    function updateVoidRefundActions(first) {
+        const wrap = document.getElementById("voidRefundActions");
+        if (!wrap) return;
+        const status = String(first?.status || "").toLowerCase();
+        const canMutate = status === "completed" || status === "partial_refund";
+        wrap.hidden = !canMutate;
+        const voidBtn = document.getElementById("btnVoidOrder");
+        if (voidBtn) {
+            voidBtn.hidden = status !== "completed";
+        }
+    }
+
+    async function voidCurrentOrder() {
+        if (!currentOrderData?.first) {
+            showToast("Chưa tải hóa đơn", "warning");
+            return;
+        }
+        const id = currentOrderData.first.order_id || currentOrderData.first.id;
+        const reason = window.prompt(`Lý do hủy hóa đơn #${id}:`, "");
+        if (reason == null) return;
+        if (String(reason).trim().length < 3) {
+            showToast("Lý do hủy tối thiểu 3 ký tự", "warning");
+            return;
+        }
+        try {
+            await apiRequest(`/api/staff/orders/${id}/void`, {
+                method: "POST",
+                body: { reason: String(reason).trim() }
+            });
+            showToast(`Đã hủy hóa đơn #${id}`, "success");
+            await loadOrderDetail();
+            loadRecentInvoices();
+        } catch (error) {
+            showToast(error.message || "Hủy thất bại", "error");
+        }
+    }
+
+    async function refundCurrentOrder() {
+        if (!currentOrderData?.first) {
+            showToast("Chưa tải hóa đơn", "warning");
+            return;
+        }
+        const id = currentOrderData.first.order_id || currentOrderData.first.id;
+        const reason = window.prompt(`Lý do hoàn tiền hóa đơn #${id}:`, "");
+        if (reason == null) return;
+        if (String(reason).trim().length < 3) {
+            showToast("Lý do hoàn tối thiểu 3 ký tự", "warning");
+            return;
+        }
+        try {
+            await apiRequest(`/api/staff/orders/${id}/refund`, {
+                method: "POST",
+                body: { reason: String(reason).trim() }
+            });
+            showToast(`Đã hoàn tiền hóa đơn #${id}`, "success");
+            await loadOrderDetail();
+            loadRecentInvoices();
+        } catch (error) {
+            showToast(error.message || "Hoàn tiền thất bại", "error");
+        }
+    }
+
+    /* ───────── Init ───────── */
+    function initInvoiceDetailPage() {
+        setStoreInfo();
+        setPrintDate();
+        setPreviewMode("full");
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get("id");
+        if (id) {
+            document.getElementById("orderId").value = id;
+            setTimeout(loadOrderDetail, 30);
+        } else {
+            try {
+                const last = localStorage.getItem("last_invoice_id");
+                if (last) document.getElementById("orderId").value = last;
+            } catch (e) { /* ignore */ }
+        }
+
+        loadRecentInvoices();
+
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "/" && document.activeElement.tagName === "BODY") {
+                e.preventDefault();
+                const input = document.getElementById("orderId");
+                input.focus();
+                input.select();
+            }
+        });
+    }
+
+    initInvoiceDetailPage();
+</script>
+</body>
+</html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - Yêu cầu QR</title>
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+    <link rel="stylesheet" href="../assets/css/base.css">
+    <link rel="stylesheet" href="../assets/css/layout.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+    <style>
+        .queue-grid {
+            display: grid;
+            gap: 18px;
+            grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+        }
+
+        .queue-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .queue-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-default);
+            box-shadow: var(--shadow-sm);
+            padding: 18px;
+        }
+
+        .queue-card-header {
+            align-items: center;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .queue-table-code {
+            background: var(--accent-light);
+            border-radius: var(--radius-pill);
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            padding: 5px 10px;
+        }
+
+        .queue-total {
+            color: var(--accent-color);
+            font-size: 18px;
+            font-weight: 850;
+        }
+
+        .detail-empty {
+            align-items: center;
+            color: var(--text-secondary);
+            display: grid;
+            min-height: 280px;
+            place-items: center;
+            text-align: center;
+        }
+
+        .detail-line {
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            display: grid;
+            gap: 12px;
+            grid-template-columns: minmax(0, 1fr) auto;
+            padding: 13px 0;
+        }
+
+        @media (max-width: 960px) {
+            .queue-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="pos-container">
+    <aside data-menu-component data-active-menu="qr-orders"></aside>
+
+    <main class="pos-main">
+        <header class="pos-topbar">
+            <div>
+                <h1 class="pos-topbar-title">Yêu cầu order từ QR</h1>
+            </div>
+            <div class="pos-topbar-actions">
+                <button class="btn btn-secondary" onclick="loadOrders()">
+                    <i class="ph ph-arrow-clockwise"></i> Làm mới
+                </button>
+            </div>
+        </header>
+
+        <section class="pos-content">
+            <div class="queue-grid">
+                <div>
+                    <div class="pos-card">
+                        <h2 class="pos-card-title"><i class="ph ph-list-checks"></i> Đang chờ xác nhận</h2>
+                        <div class="queue-list" id="queueList"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="pos-card" id="detailPanel">
+                        <div class="detail-empty">
+                            <div>
+                                <i class="ph ph-hand-tap" style="font-size: 34px; color: var(--accent-color);"></i>
+                                <p style="margin-top: 10px;">Chọn một yêu cầu để xem chi tiết.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/format.js"></script>
+<script src="../assets/js/ui.js"></script>
+<script src="../assets/js/components.js"></script>
+<script>
+    const user = requireRole(["admin", "staff"]);
+    let selectedOrder = null;
+    let eventSource = null;
+
+    if (user) {
+        document.getElementById("welcomeUser").textContent = user.username;
+        document.getElementById("roleLabel").textContent = user.role === "admin" ? "Quản trị" : "Nhân viên";
+        const adminTablesLink = document.getElementById("adminTablesLink");
+        if (adminTablesLink) {
+            adminTablesLink.hidden = user.role !== "admin";
+        }
+        loadOrders();
+        startQrStream();
+    }
+
+    function startQrStream() {
+        if (eventSource) {
+            eventSource.close();
+        }
+        const token = localStorage.getItem("auth_token") || "";
+        if (!token || typeof EventSource === "undefined") {
+            // Fallback poll every 12s
+            setInterval(() => loadOrders(true), 12000);
+            return;
+        }
+        const url = `/api/staff/table-orders/stream?token=${encodeURIComponent(token)}`;
+        eventSource = new EventSource(url);
+        eventSource.onmessage = (ev) => {
+            try {
+                const data = JSON.parse(ev.data || "{}");
+                if (data.type === "created") {
+                    if (typeof showToast === "function") {
+                        showToast(`Yêu cầu QR mới${data.table_code ? ` · ${data.table_code}` : ""}`, "info");
+                    }
+                    loadOrders(true);
+                } else if (data.type === "confirmed" || data.type === "cancelled") {
+                    loadOrders(true);
+                }
+            } catch {
+                // ignore malformed
+            }
+        };
+        eventSource.onerror = () => {
+            // browser will retry; keep quiet
+        };
+    }
+
+    async function loadOrders(silent = false) {
+        const queueList = document.getElementById("queueList");
+        if (!silent) {
+            queueList.innerHTML = `<div class="status-message success" style="display:block;">Đang tải yêu cầu...</div>`;
+        }
+
+        try {
+            const orders = await apiRequest("/api/staff/table-orders");
+            // Badge pending count on document title
+            document.title = orders.length
+                ? `(${orders.length}) POS Glasses - Yêu cầu QR`
+                : "POS Glasses - Yêu cầu QR";
+
+            if (!orders.length) {
+                queueList.innerHTML = `
+                    <div class="detail-empty">
+                        <div>
+                            <i class="ph ph-check-circle" style="font-size: 34px; color: var(--success-color);"></i>
+                            <p style="margin-top: 10px;">Không có yêu cầu nào đang chờ.</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            queueList.innerHTML = orders.map((order) => `
+                <article class="queue-card">
+                    <div class="queue-card-header">
+                        <div>
+                            <span class="queue-table-code">${escapeHtml(order.table_code)}</span>
+                            <h3 style="font-size: 16px; font-weight: 800; margin: 10px 0 4px;">${escapeHtml(order.table_name)}</h3>
+                            <div style="color: var(--text-secondary); font-size: 13px;">
+                                ${Number(order.item_count || 0)} sản phẩm · ${formatDate(order.created_at)}
+                            </div>
+                        </div>
+                        <div class="queue-total">${formatCurrency(order.total_amount)}</div>
+                    </div>
+                    <button class="btn btn-primary w-100 mt-3" onclick="selectOrder(${order.id})">
+                        <i class="ph ph-eye"></i> Xem yêu cầu
+                    </button>
+                </article>
+            `).join("");
+        } catch (error) {
+            queueList.innerHTML = `<div class="status-message error" style="display:block;">${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    async function selectOrder(id) {
+        const panel = document.getElementById("detailPanel");
+        panel.innerHTML = `<h2 class="pos-card-title"><i class="ph ph-spinner"></i> Đang tải chi tiết</h2>`;
+
+        try {
+            selectedOrder = await apiRequest(`/api/staff/table-orders/${id}`);
+            renderDetail();
+        } catch (error) {
+            panel.innerHTML = `<div class="status-message error" style="display:block;">${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    function renderDetail() {
+        const total = selectedOrder.items.reduce(
+            (sum, item) => sum + Number(item.quantity) * Number(item.unit_price_snapshot),
+            0
+        );
+
+        document.getElementById("detailPanel").innerHTML = `
+            <h2 class="pos-card-title"><i class="ph ph-receipt"></i> ${escapeHtml(selectedOrder.table_name)}</h2>
+            <div style="display:flex; justify-content:space-between; gap:12px; margin-bottom: 14px;">
+                <span class="queue-table-code">${escapeHtml(selectedOrder.table_code)}</span>
+                <strong>${formatDate(selectedOrder.created_at)}</strong>
+            </div>
+            <div>
+                ${selectedOrder.items.map((item) => `
+                    <div class="detail-line">
+                        <div>
+                            <strong>${escapeHtml(item.product_name_snapshot)}</strong>
+                            <div style="color: var(--text-secondary); font-size: 13px;">
+                                ${formatCurrency(item.unit_price_snapshot)} x ${item.quantity}
+                            </div>
+                        </div>
+                        <strong>${formatCurrency(Number(item.unit_price_snapshot) * Number(item.quantity))}</strong>
+                    </div>
+                `).join("")}
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 18px;">
+                <span style="font-weight: 700;">Tổng bàn</span>
+                <span class="queue-total">${formatCurrency(total)}</span>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+                <button class="btn btn-danger flex-fill" onclick="cancelOrder(${selectedOrder.id})">
+                    <i class="ph ph-x-circle"></i> Hủy
+                </button>
+                <button class="btn btn-success flex-fill" onclick="confirmOrder(${selectedOrder.id})">
+                    <i class="ph ph-check-circle"></i> Xác nhận
+                </button>
+            </div>
+        `;
+    }
+
+    async function confirmOrder(id) {
+        const ok = await showConfirm({
+            title: "Xác nhận yêu cầu",
+            message: "Hệ thống sẽ tạo hóa đơn và trừ tồn kho theo đúng yêu cầu khách đã gửi.",
+            confirmText: "Xác nhận",
+            type: "info"
+        });
+        if (!ok) return;
+
+        try {
+            const result = await apiRequest(`/api/staff/table-orders/${id}/confirm`, { method: "POST" });
+            showToast(`Đã tạo hóa đơn #${result.order_id}`, "success");
+            selectedOrder = null;
+            await loadOrders();
+            document.getElementById("detailPanel").innerHTML = `
+                <div class="detail-empty"><p>Đã xác nhận yêu cầu. Chọn yêu cầu khác để xử lý.</p></div>
+            `;
+        } catch (error) {
+            showToast(error.message, "error");
+        }
+    }
+
+    async function cancelOrder(id) {
+        const ok = await showConfirm({
+            title: "Hủy yêu cầu",
+            message: "Yêu cầu sẽ bị hủy và khách cần gửi lại nếu muốn đặt tiếp.",
+            confirmText: "Hủy yêu cầu",
+            type: "danger"
+        });
+        if (!ok) return;
+
+        try {
+            await apiRequest(`/api/staff/table-orders/${id}/cancel`, { method: "POST" });
+            showToast("Đã hủy yêu cầu", "success");
+            selectedOrder = null;
+            await loadOrders();
+            document.getElementById("detailPanel").innerHTML = `
+                <div class="detail-empty"><p>Đã hủy yêu cầu. Chọn yêu cầu khác để xử lý.</p></div>
+            `;
+        } catch (error) {
+            showToast(error.message, "error");
+        }
+    }
+</script>
+</body>
+</html>

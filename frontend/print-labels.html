@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - In tem barcode</title>
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <style>
+        .label-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+        .label-card {
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            background: #fff;
+        }
+        .label-card .name { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+        .label-card .sku { font-family: monospace; font-size: 12px; margin-top: 4px; }
+        @media print {
+            .no-print { display: none !important; }
+            .pos-sidebar { display: none !important; }
+            .pos-main { margin: 0 !important; width: 100% !important; }
+            .label-card { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+<div class="pos-container">
+    <aside data-menu-component data-active-menu="products" class="no-print"></aside>
+    <main class="pos-main">
+        <header class="pos-topbar no-print">
+            <div><h2 class="pos-topbar-title">In tem SKU</h2></div>
+            <div class="pos-topbar-actions">
+                <button class="btn btn-secondary" type="button" onclick="loadProducts()"><i class="ph ph-arrow-clockwise"></i> Tải SP</button>
+                <button class="btn btn-primary" type="button" onclick="window.print()"><i class="ph ph-printer"></i> In</button>
+            </div>
+        </header>
+        <div class="pos-content">
+            <p class="no-print text-muted">Chọn sản phẩm để in tem barcode (JsBarcode). Logo hội viên in ở trang Khách hàng.</p>
+            <div class="no-print mb-3">
+                <input class="form-control" id="filter" placeholder="Lọc tên / SKU" oninput="render()">
+            </div>
+            <div class="label-grid" id="labelGrid"></div>
+        </div>
+    </main>
+</div>
+<script src="/vendor/jsbarcode/JsBarcode.all.min.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/components.js"></script>
+<script>
+    const user = requireRole(["admin", "staff"]);
+    let products = [];
+
+    async function loadProducts() {
+        products = await apiRequest("/products");
+        if (!Array.isArray(products) && products.items) products = products.items;
+        render();
+    }
+
+    function render() {
+        const q = (document.getElementById("filter")?.value || "").toLowerCase();
+        const list = products.filter((p) => {
+            const hay = `${p.name} ${p.sku} ${p.brand || ""}`.toLowerCase();
+            return !q || hay.includes(q);
+        }).slice(0, 60);
+
+        const grid = document.getElementById("labelGrid");
+        grid.innerHTML = list.map((p, i) => `
+            <div class="label-card">
+                <div class="name">${escapeHtml(p.name)}</div>
+                <svg id="bc${i}"></svg>
+                <div class="sku">${escapeHtml(p.sku || "")}</div>
+            </div>
+        `).join("");
+
+        list.forEach((p, i) => {
+            const code = String(p.sku || p.id);
+            try {
+                JsBarcode(`#bc${i}`, code, {
+                    format: "CODE128",
+                    width: 1.4,
+                    height: 48,
+                    displayValue: false,
+                    margin: 0
+                });
+            } catch {
+                // ignore invalid
+            }
+        });
+    }
+
+    if (user) loadProducts();
+</script>
+</body>
+</html>

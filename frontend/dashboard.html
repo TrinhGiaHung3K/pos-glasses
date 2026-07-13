@@ -1,0 +1,2015 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - Dashboard</title>
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+
+    <style>
+        .dashboard-shell {
+            display: grid;
+            gap: 18px;
+        }
+
+        .dashboard-toolbar {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .dashboard-status {
+            align-items: center;
+            background: var(--accent-subtle);
+            border: 1px solid rgba(15, 118, 110, 0.14);
+            border-radius: var(--radius-pill);
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            gap: 7px;
+            min-height: 34px;
+            padding: 7px 12px;
+            white-space: nowrap;
+        }
+
+        .dashboard-status.is-error {
+            background: var(--danger-light);
+            border-color: rgba(220, 38, 38, 0.18);
+            color: var(--danger-color);
+        }
+
+        .dashboard-kpi-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .dashboard-kpi-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            display: grid;
+            gap: 14px;
+            min-height: 138px;
+            padding: 16px;
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+        }
+
+        .dashboard-kpi-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-1px);
+        }
+
+        .dashboard-kpi-top {
+            align-items: flex-start;
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+        }
+
+        .dashboard-kpi-label {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+        }
+
+        .dashboard-kpi-icon {
+            align-items: center;
+            background: var(--accent-light);
+            border-radius: var(--radius-sm);
+            color: var(--accent-color);
+            display: inline-flex;
+            flex-shrink: 0;
+            font-size: 20px;
+            height: 42px;
+            justify-content: center;
+            width: 42px;
+        }
+
+        .dashboard-kpi-icon.warning {
+            background: var(--warning-light);
+            color: var(--warning-color);
+        }
+
+        .dashboard-kpi-icon.danger {
+            background: var(--danger-light);
+            color: var(--danger-color);
+        }
+
+        .dashboard-kpi-icon.info {
+            background: var(--info-light);
+            color: var(--info-color);
+        }
+
+        .dashboard-kpi-value {
+            color: var(--text-primary);
+            font-size: clamp(22px, 2.1vw, 30px);
+            font-weight: 950;
+            line-height: 1;
+            margin: 0;
+        }
+
+        .dashboard-kpi-note {
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.45;
+            margin: 0;
+        }
+
+        .dashboard-chart-grid {
+            display: grid;
+            gap: 18px;
+            grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.55fr);
+        }
+
+        .dashboard-two-col {
+            display: grid;
+            gap: 18px;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        }
+
+        .dashboard-chart-card,
+        .dashboard-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            min-width: 0;
+            padding: 18px;
+        }
+
+        .dashboard-card-header {
+            align-items: flex-start;
+            display: flex;
+            gap: 14px;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .dashboard-card-title {
+            align-items: center;
+            color: var(--text-primary);
+            display: flex;
+            font-size: 15px;
+            font-weight: 850;
+            gap: 8px;
+            letter-spacing: -0.2px;
+            margin: 0;
+        }
+
+        .dashboard-card-title i {
+            color: var(--accent-color);
+            font-size: 19px;
+        }
+
+        .dashboard-card-subtitle {
+            color: var(--text-secondary);
+            font-size: 12.5px;
+            margin: 4px 0 0;
+        }
+
+        .dashboard-chart-container {
+            height: 318px;
+            position: relative;
+            width: 100%;
+        }
+
+        .dashboard-chart-container.compact {
+            height: 250px;
+        }
+
+        .chart-legend {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+            min-height: 28px;
+        }
+
+        .chart-legend-item {
+            align-items: center;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-pill);
+            color: var(--text-secondary);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            gap: 7px;
+            line-height: 1;
+            padding: 7px 10px;
+            white-space: nowrap;
+        }
+
+        .chart-legend-swatch {
+            border-radius: var(--radius-pill);
+            flex-shrink: 0;
+            height: 8px;
+            width: 8px;
+        }
+
+        .chart-legend-value {
+            color: var(--text-primary);
+            font-weight: 900;
+        }
+
+        .chart-insight-row {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            margin-top: 12px;
+        }
+
+        .chart-insight-pill {
+            background: #f7fbfa;
+            border: 1px solid rgba(15, 118, 110, 0.12);
+            border-radius: var(--radius-sm);
+            display: grid;
+            gap: 3px;
+            min-width: 0;
+            padding: 10px 12px;
+        }
+
+        .chart-insight-pill span {
+            color: var(--text-secondary);
+            font-size: 11.5px;
+            font-weight: 800;
+        }
+
+        .chart-insight-pill strong {
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 900;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .chart-html-tooltip {
+            background: #10201d;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-lg);
+            color: #f8fafc;
+            min-width: 190px;
+            opacity: 0;
+            padding: 10px 12px;
+            pointer-events: none;
+            position: absolute;
+            transform: translate(-50%, calc(-100% - 12px));
+            transition: opacity var(--transition-fast);
+            z-index: 5;
+        }
+
+        .chart-html-tooltip-title {
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 900;
+            margin-bottom: 7px;
+        }
+
+        .chart-html-tooltip-row {
+            align-items: center;
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+        }
+
+        .chart-html-tooltip-row + .chart-html-tooltip-row {
+            margin-top: 6px;
+        }
+
+        .chart-html-tooltip-name {
+            align-items: center;
+            color: #cbd5e1;
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 700;
+            gap: 7px;
+        }
+
+        .chart-html-tooltip-value {
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .dashboard-alert-grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .dashboard-alert {
+            background: #f7fbfa;
+            border: 1px solid rgba(15, 118, 110, 0.12);
+            border-radius: var(--radius-sm);
+            display: grid;
+            gap: 8px;
+            padding: 14px;
+        }
+
+        .dashboard-alert.warning {
+            background: var(--warning-light);
+            border-color: rgba(217, 119, 6, 0.16);
+        }
+
+        .dashboard-alert.danger {
+            background: var(--danger-light);
+            border-color: rgba(220, 38, 38, 0.16);
+        }
+
+        .dashboard-alert strong {
+            align-items: center;
+            color: var(--text-primary);
+            display: flex;
+            font-size: 13.5px;
+            gap: 8px;
+        }
+
+        .dashboard-alert p {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .dashboard-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .dashboard-list-row {
+            align-items: center;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            display: grid;
+            gap: 12px;
+            grid-template-columns: minmax(0, 1fr) auto;
+            padding: 11px 12px;
+        }
+
+        .dashboard-list-row strong {
+            color: var(--text-primary);
+            display: block;
+            font-size: 13.5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dashboard-list-row span {
+            color: var(--text-secondary);
+            display: block;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .dashboard-list-value {
+            color: var(--accent-color);
+            font-size: 13px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .staff-performance-section {
+            margin-bottom: 0;
+        }
+
+        .staff-rank-chip {
+            background: var(--accent-subtle);
+            border-radius: var(--radius-sm);
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 900;
+            padding: 5px 8px;
+        }
+
+        .staff-performance-progress {
+            background: var(--bg-muted);
+            border-radius: var(--radius-pill);
+            height: 9px;
+            min-width: 130px;
+            overflow: hidden;
+        }
+
+        .staff-performance-progress-bar {
+            background: linear-gradient(90deg, #0f766e, #14b8a6);
+            height: 100%;
+            width: 0%;
+        }
+
+        .staff-target-note {
+            color: var(--text-secondary);
+            display: block;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .dashboard-empty-state {
+            align-items: center;
+            border: 1px dashed var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            display: grid;
+            min-height: 126px;
+            padding: 18px;
+            place-items: center;
+            text-align: center;
+        }
+
+        .dashboard-empty-state i {
+            color: var(--accent-color);
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .dashboard-skeleton {
+            animation: dashboardPulse 1.2s ease-in-out infinite;
+            background: linear-gradient(90deg, #eef3f3, #f7fbfa, #eef3f3);
+            background-size: 220% 100%;
+            border-radius: var(--radius-xs);
+            display: block;
+            height: 16px;
+        }
+
+        @keyframes dashboardPulse {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .dashboard-kpi-card,
+            .dashboard-skeleton {
+                animation: none;
+                transition: none;
+            }
+        }
+
+        @media (max-width: 1280px) {
+            .dashboard-kpi-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .dashboard-chart-grid,
+            .dashboard-two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .dashboard-toolbar {
+                justify-content: flex-start;
+                width: 100%;
+            }
+
+            .dashboard-kpi-grid,
+            .dashboard-alert-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-card-header {
+                display: grid;
+            }
+
+            .dashboard-chart-container,
+            .dashboard-chart-container.compact {
+                height: 260px;
+            }
+
+            .chart-insight-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="pos-container">
+    <aside data-menu-component data-active-menu="dashboard"></aside>
+
+    <main class="pos-main">
+        <header class="pos-topbar">
+            <div>
+                <h2 class="pos-topbar-title">Tổng quan cửa hàng</h2>
+            </div>
+            <div class="pos-topbar-actions">
+                <button class="btn btn-secondary" type="button" id="refreshDashboardButton">
+                    <i class="ph ph-arrow-clockwise"></i> Làm mới
+                </button>
+                <button class="btn btn-primary" type="button" onclick="location.href='orders.html'">
+                    <i class="ph ph-cash-register"></i> Bán hàng
+                </button>
+            </div>
+        </header>
+
+        <div class="pos-content">
+            <div class="dashboard-shell">
+                <section class="pos-page-intro">
+                    <div>
+                        <h2>Bảng điều khiển vận hành POS</h2>
+                        <p>Theo dõi doanh thu, đơn hàng, tồn kho, khách hàng và hiệu suất nhân viên trong một màn hình.</p>
+                    </div>
+                    <div class="dashboard-toolbar">
+                        <label class="form-label mb-0" for="dashboardRange" style="font-size:12px;font-weight:800;">Kỳ</label>
+                        <select class="form-select" id="dashboardRange" style="min-width:140px;">
+                            <option value="today">Hôm nay</option>
+                            <option value="7d">7 ngày</option>
+                            <option value="30d">30 ngày</option>
+                        </select>
+                        <span class="dashboard-status" id="dashboardStatus">
+                            <i class="ph ph-circle-notch"></i> Đang tải dữ liệu
+                        </span>
+                        <button class="btn btn-primary" type="button" onclick="location.href='orders.html'">
+                            <i class="ph ph-cash-register"></i> Mở quầy POS
+                        </button>
+                    </div>
+                </section>
+
+                <!-- AI revenue insights (admin) -->
+                <div id="dashboardAiInsightsHost" hidden></div>
+
+                <section class="dashboard-kpi-grid" aria-label="Chỉ số vận hành chính">
+                    <article class="dashboard-kpi-card">
+                        <div class="dashboard-kpi-top">
+                            <div>
+                                <div class="dashboard-kpi-label">Doanh thu hôm nay</div>
+                                <h3 class="dashboard-kpi-value pos-money" id="todayRevenue">0đ</h3>
+                            </div>
+                            <span class="dashboard-kpi-icon"><i class="ph ph-trend-up"></i></span>
+                        </div>
+                        <p class="dashboard-kpi-note" id="todayRevenueNote">0 hóa đơn đã ghi nhận trong ngày.</p>
+                    </article>
+
+                    <article class="dashboard-kpi-card">
+                        <div class="dashboard-kpi-top">
+                            <div>
+                                <div class="dashboard-kpi-label">Doanh thu ghi nhận</div>
+                                <h3 class="dashboard-kpi-value pos-money" id="totalRevenue">0đ</h3>
+                            </div>
+                            <span class="dashboard-kpi-icon"><i class="ph ph-currency-circle-dollar"></i></span>
+                        </div>
+                        <p class="dashboard-kpi-note" id="totalRevenueNote">Tổng doanh thu từ toàn bộ hóa đơn.</p>
+                    </article>
+
+                    <article class="dashboard-kpi-card">
+                        <div class="dashboard-kpi-top">
+                            <div>
+                                <div class="dashboard-kpi-label">Hóa đơn đã tạo</div>
+                                <h3 class="dashboard-kpi-value pos-numeric" id="totalOrders">0</h3>
+                            </div>
+                            <span class="dashboard-kpi-icon info"><i class="ph ph-receipt"></i></span>
+                        </div>
+                        <p class="dashboard-kpi-note" id="orderTrendNote">Theo dõi nhịp bán theo ca và theo ngày.</p>
+                    </article>
+
+                    <article class="dashboard-kpi-card">
+                        <div class="dashboard-kpi-top">
+                            <div>
+                                <div class="dashboard-kpi-label">Giá trị trung bình</div>
+                                <h3 class="dashboard-kpi-value pos-money" id="averageOrderValue">0đ</h3>
+                            </div>
+                            <span class="dashboard-kpi-icon"><i class="ph ph-gauge"></i></span>
+                        </div>
+                        <p class="dashboard-kpi-note">Doanh thu trung bình trên mỗi hóa đơn.</p>
+                    </article>
+
+                    <article class="dashboard-kpi-card">
+                        <div class="dashboard-kpi-top">
+                            <div>
+                                <div class="dashboard-kpi-label">Lãi gộp (kỳ chọn)</div>
+                                <h3 class="dashboard-kpi-value pos-money" id="kpiGrossProfit">0đ</h3>
+                            </div>
+                            <span class="dashboard-kpi-icon"><i class="ph ph-chart-pie-slice"></i></span>
+                        </div>
+                        <p class="dashboard-kpi-note">Margin: <span id="kpiMargin">0%</span> · QR chờ: <span id="kpiPendingQr">0</span></p>
+                    </article>
+
+                    <article class="dashboard-kpi-card">
+                        <div class="dashboard-kpi-top">
+                            <div>
+                                <div class="dashboard-kpi-label">Sản phẩm trong kho</div>
+                                <h3 class="dashboard-kpi-value pos-numeric" id="totalProducts">0</h3>
+                            </div>
+                            <span class="dashboard-kpi-icon"><i class="ph ph-eyeglasses"></i></span>
+                        </div>
+                        <p class="dashboard-kpi-note" id="stockValueNote">Đang kiểm tra giá trị tồn kho.</p>
+                    </article>
+
+                    <article class="dashboard-kpi-card">
+                        <div class="dashboard-kpi-top">
+                            <div>
+                                <div class="dashboard-kpi-label">Sắp hết hàng</div>
+                                <h3 class="dashboard-kpi-value pos-numeric" id="lowStockCount">0</h3>
+                            </div>
+                            <span class="dashboard-kpi-icon warning"><i class="ph ph-warning"></i></span>
+                        </div>
+                        <p class="dashboard-kpi-note" id="lowStockNote">Mẫu có tồn kho từ 1 đến 5 chiếc.</p>
+                    </article>
+
+                    <article class="dashboard-kpi-card">
+                        <div class="dashboard-kpi-top">
+                            <div>
+                                <div class="dashboard-kpi-label">Hết hàng</div>
+                                <h3 class="dashboard-kpi-value pos-numeric" id="outOfStockCount">0</h3>
+                            </div>
+                            <span class="dashboard-kpi-icon danger"><i class="ph ph-x-circle"></i></span>
+                        </div>
+                        <p class="dashboard-kpi-note">Cần bổ sung trước khi tư vấn khách.</p>
+                    </article>
+
+                    <article class="dashboard-kpi-card">
+                        <div class="dashboard-kpi-top">
+                            <div>
+                                <div class="dashboard-kpi-label">Hồ sơ khách hàng</div>
+                                <h3 class="dashboard-kpi-value pos-numeric" id="totalCustomers">0</h3>
+                            </div>
+                            <span class="dashboard-kpi-icon info"><i class="ph ph-users-three"></i></span>
+                        </div>
+                        <p class="dashboard-kpi-note" id="memberOrderNote">Đang tính tỷ lệ hóa đơn có khách hàng.</p>
+                    </article>
+                </section>
+
+                <section class="dashboard-alert-grid" aria-label="Cảnh báo vận hành">
+                    <article class="dashboard-alert" id="cashierAlert">
+                        <strong><i class="ph ph-timer"></i> Nhịp ca bán</strong>
+                        <p id="cashierAlertText">Đang đọc dữ liệu đơn hàng trong ngày.</p>
+                    </article>
+                    <article class="dashboard-alert warning" id="stockAlert">
+                        <strong><i class="ph ph-warehouse"></i> Ưu tiên kho</strong>
+                        <p id="stockAlertText">Đang rà soát các mẫu kính cần bổ sung.</p>
+                    </article>
+                    <article class="dashboard-alert" id="customerAlert">
+                        <strong><i class="ph ph-identification-card"></i> Khách hội viên</strong>
+                        <p id="customerAlertText">Đang tính tỷ lệ hóa đơn có hồ sơ khách.</p>
+                    </article>
+                </section>
+
+                <section class="dashboard-chart-grid">
+                    <div class="dashboard-chart-card">
+                        <div class="dashboard-card-header">
+                            <div>
+                                <h4 class="dashboard-card-title"><i class="ph ph-chart-line-up"></i> Doanh thu 14 ngày gần nhất</h4>
+                                <p class="dashboard-card-subtitle">So sánh doanh thu và số hóa đơn theo từng ngày.</p>
+                            </div>
+                        </div>
+                        <div class="dashboard-chart-container">
+                            <canvas id="dailyRevenueChart"></canvas>
+                        </div>
+                        <div class="chart-legend" id="dailyRevenueLegend" aria-label="Chú giải doanh thu 14 ngày"></div>
+                        <div class="chart-insight-row" id="dailyRevenueInsight"></div>
+                    </div>
+
+                    <div class="dashboard-chart-card">
+                        <div class="dashboard-card-header">
+                            <div>
+                                <h4 class="dashboard-card-title"><i class="ph ph-git-branch"></i> Nguồn đơn hàng</h4>
+                                <p class="dashboard-card-subtitle">Tỷ trọng POS, QR và đơn nhập thủ công.</p>
+                            </div>
+                        </div>
+                        <div class="dashboard-chart-container compact">
+                            <canvas id="orderSourceChart"></canvas>
+                        </div>
+                        <div class="chart-legend" id="orderSourceLegend" aria-label="Chú giải nguồn đơn hàng"></div>
+                    </div>
+                </section>
+
+                <section class="dashboard-two-col">
+                    <div class="dashboard-chart-card">
+                        <div class="dashboard-card-header">
+                            <div>
+                                <h4 class="dashboard-card-title"><i class="ph ph-stack"></i> Sức khỏe tồn kho</h4>
+                                <p class="dashboard-card-subtitle">Cân bằng số lượng mẫu còn hàng, sắp hết và hết hàng.</p>
+                            </div>
+                        </div>
+                        <div class="dashboard-chart-container compact">
+                            <canvas id="inventoryHealthChart"></canvas>
+                        </div>
+                        <div class="chart-legend" id="inventoryHealthLegend" aria-label="Chú giải sức khỏe tồn kho"></div>
+                    </div>
+
+                    <div class="dashboard-chart-card">
+                        <div class="dashboard-card-header">
+                            <div>
+                                <h4 class="dashboard-card-title"><i class="ph ph-user-list"></i> Doanh thu theo nhân viên</h4>
+                                <p class="dashboard-card-subtitle">Xếp theo người ghi nhận hóa đơn trong hệ thống.</p>
+                            </div>
+                        </div>
+                        <div class="dashboard-chart-container compact">
+                            <canvas id="staffRevenueChart"></canvas>
+                        </div>
+                        <div class="chart-legend" id="staffRevenueLegend" aria-label="Chú giải doanh thu nhân viên"></div>
+                    </div>
+                </section>
+
+                <section class="dashboard-two-col">
+                    <div class="dashboard-panel">
+                        <div class="dashboard-card-header">
+                            <div>
+                                <h4 class="dashboard-card-title"><i class="ph ph-receipt"></i> Hóa đơn gần đây</h4>
+                                <p class="dashboard-card-subtitle">Các giao dịch mới nhất tại quầy hoặc QR.</p>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Mã</th>
+                                        <th>Khách hàng</th>
+                                        <th>Nhân viên</th>
+                                        <th>Tổng tiền</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="latestOrders">
+                                    <tr>
+                                        <td colspan="4"><span class="dashboard-skeleton"></span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-panel">
+                        <div class="dashboard-card-header">
+                            <div>
+                                <h4 class="dashboard-card-title"><i class="ph ph-crown"></i> Khách hàng nổi bật</h4>
+                                <p class="dashboard-card-subtitle">Nhóm khách có doanh thu cao trong dữ liệu hiện có.</p>
+                            </div>
+                        </div>
+                        <div class="dashboard-list" id="topCustomersList">
+                            <div class="dashboard-empty-state">
+                                <div>
+                                    <i class="ph ph-circle-notch"></i>
+                                    <div>Đang tải danh sách khách hàng.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="dashboard-panel staff-performance-section" id="staffPerformanceSection" style="display:none;">
+                    <div class="dashboard-card-header">
+                        <div>
+                            <h4 class="dashboard-card-title"><i class="ph ph-medal"></i> Xếp hạng nhân viên</h4>
+                            <p class="dashboard-card-subtitle">Theo dõi doanh thu POS, đơn barcode và tiến độ hạng giảm giá.</p>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Nhân viên</th>
+                                    <th>Hạng</th>
+                                    <th>Giảm tối đa</th>
+                                    <th>Đơn barcode</th>
+                                    <th>Doanh thu POS</th>
+                                    <th>Tiến độ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staffPerformanceLeaderboard">
+                                <tr>
+                                    <td colspan="6">Đang tải xếp hạng nhân viên...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/components.js"></script>
+<script src="assets/js/format.js"></script>
+<script>
+    const user = requireAuth();
+    const dashboardCharts = {};
+    const dashboardPalette = {
+        accent: "#0f766e",
+        accentSoft: "rgba(15, 118, 110, 0.14)",
+        accentFaint: "rgba(15, 118, 110, 0.04)",
+        text: "#14201f",
+        muted: "#758582",
+        border: "rgba(20, 32, 31, 0.08)",
+        success: "#16a34a",
+        warning: "#d97706",
+        danger: "#dc2626",
+        info: "#0284c7"
+    };
+
+    if (user && document.getElementById("welcomeUser")) {
+        document.getElementById("welcomeUser").textContent = user.username;
+    }
+
+    if (window.Chart) {
+        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+        Chart.defaults.color = dashboardPalette.muted;
+
+        // Tooltip styling consistent with current UI (dark sidebar bg + proper gaps)
+        Chart.defaults.plugins.tooltip.backgroundColor = "#10201d";
+        Chart.defaults.plugins.tooltip.titleColor = "#f8fafc";
+        Chart.defaults.plugins.tooltip.bodyColor = "#e2e8f0";
+        Chart.defaults.plugins.tooltip.borderColor = "rgba(255, 255, 255, 0.08)";
+        Chart.defaults.plugins.tooltip.borderWidth = 1;
+        Chart.defaults.plugins.tooltip.cornerRadius = 8;
+        Chart.defaults.plugins.tooltip.padding = 10;
+        Chart.defaults.plugins.tooltip.boxPadding = 6;
+        Chart.defaults.plugins.tooltip.boxWidth = 8;
+        Chart.defaults.plugins.tooltip.boxHeight = 8;
+    }
+
+    // === Realtime dashboard ===
+    // - Fetch dữ liệu tự động mỗi 30s (giữ nguyên logic cũ)
+    // - Hiển thị thời gian thực máy tính dạng hh:mm:ss, chạy liên tục (không phải đếm ngược/elapsed từ 00:00:00)
+    const DASHBOARD_AUTO_REFRESH_MS = 30000; // 30 giây
+    let autoRefreshInterval = null;
+    let liveStatusTimer = null;
+
+    function setText(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+        }
+    }
+
+    function numberValue(value) {
+        return Number(value || 0);
+    }
+
+    function compactNumber(value) {
+        return numberValue(value).toLocaleString("vi-VN");
+    }
+
+    function safeFormatCurrency(value) {
+        if (typeof formatCurrency === "function") {
+            return formatCurrency(numberValue(value));
+        }
+
+        return `${compactNumber(value)}đ`;
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    function formatDateTime(value) {
+        if (!value) {
+            return "";
+        }
+
+        return new Date(value).toLocaleString("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    }
+
+    function dateKey(date) {
+        const target = new Date(date);
+        target.setHours(0, 0, 0, 0);
+        const year = target.getFullYear();
+        const month = String(target.getMonth() + 1).padStart(2, "0");
+        const day = String(target.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
+
+    function shortDateLabel(key) {
+        const [year, month, day] = key.split("-").map(Number);
+        return new Date(year, month - 1, day).toLocaleDateString("vi-VN", {
+            day: "2-digit",
+            month: "2-digit"
+        });
+    }
+
+    function sourceLabel(source) {
+        const labels = {
+            pos: "POS tại quầy",
+            staff: "Nhân viên nhập",
+            table: "QR tại bàn",
+            qr: "QR tại bàn"
+        };
+
+        return labels[source] || "Khác";
+    }
+
+    function makeLastDays(count) {
+        const days = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (let index = count - 1; index >= 0; index -= 1) {
+            const date = new Date(today);
+            date.setDate(today.getDate() - index);
+            days.push(dateKey(date));
+        }
+
+        return days;
+    }
+
+    async function safeApiRequest(path, fallback) {
+        try {
+            const data = await apiRequest(path);
+            return Array.isArray(fallback) && !Array.isArray(data) ? fallback : data;
+        } catch (error) {
+            console.error(`Không tải được ${path}:`, error);
+            return fallback;
+        }
+    }
+
+    function groupBy(items, getKey) {
+        return items.reduce((map, item) => {
+            const key = getKey(item);
+            if (!map.has(key)) {
+                map.set(key, []);
+            }
+            map.get(key).push(item);
+            return map;
+        }, new Map());
+    }
+
+    function sumBy(items, getValue) {
+        return items.reduce((sum, item) => sum + numberValue(getValue(item)), 0);
+    }
+
+    function orderNetRevenue(order) {
+        const status = String(order?.status || "completed").toLowerCase();
+        if (status === "voided" || status === "cancelled" || status === "canceled" || status === "refunded") {
+            return 0;
+        }
+        const total = numberValue(order?.total_amount);
+        const refunded = numberValue(order?.refunded_amount);
+        if (status === "partial_refund") {
+            return Math.max(0, total - refunded);
+        }
+        return Math.max(0, total);
+    }
+
+    function isDashboardRevenueOrder(order) {
+        const status = String(order?.status || "completed").toLowerCase();
+        return status === "completed" || status === "partial_refund" || status === "paid" || status === "done";
+    }
+
+    function buildDashboardAnalytics(summary, orders, products) {
+        const today = dateKey(new Date());
+        const completedOrders = orders.filter(isDashboardRevenueOrder);
+        const todayOrders = completedOrders.filter((order) => dateKey(order.created_at || new Date()) === today);
+        const totalRevenue = numberValue(
+            summary.revenue != null
+                ? summary.revenue
+                : (summary.totalRevenue || sumBy(completedOrders, orderNetRevenue))
+        );
+        const dailyKeys = makeLastDays(14);
+        const dailyGroups = groupBy(completedOrders, (order) => dateKey(order.created_at || new Date()));
+        const sourceGroups = groupBy(completedOrders, (order) => sourceLabel(order.source || "staff"));
+        const staffGroups = groupBy(completedOrders, (order) => order.username || "Chưa gán nhân viên");
+        const customerGroups = groupBy(
+            completedOrders.filter((order) => (order.customer_name || "").trim() && order.customer_name !== "Khách lẻ"),
+            (order) => order.customer_name
+        );
+        const inStock = products.filter((product) => numberValue(product.quantity) > 5);
+        const lowStock = products.filter((product) => numberValue(product.quantity) > 0 && numberValue(product.quantity) <= 5);
+        const outOfStock = products.filter((product) => numberValue(product.quantity) === 0);
+        const inventoryValue = sumBy(products, (product) => numberValue(product.price) * numberValue(product.quantity));
+
+        // Prefer server-side series when available (avoids full-history client recompute)
+        const seriesDaily = Array.isArray(summary.series) && summary.series.length
+            ? summary.series.map((row) => {
+                const key = dateKey(row.day || row.date || new Date());
+                return {
+                    key,
+                    label: shortDateLabel(key),
+                    revenue: numberValue(row.revenue),
+                    orders: numberValue(row.order_count || row.orders)
+                };
+            })
+            : dailyKeys.map((key) => ({
+                key,
+                label: shortDateLabel(key),
+                revenue: sumBy(dailyGroups.get(key) || [], orderNetRevenue),
+                orders: (dailyGroups.get(key) || []).length
+            }));
+
+        const staffFromSummary = Array.isArray(summary.top_staff)
+            ? summary.top_staff.map((row) => ({
+                label: row.username || row.name || "Chưa gán",
+                orders: numberValue(row.order_count),
+                revenue: numberValue(row.revenue)
+            }))
+            : null;
+
+        return {
+            completedOrders,
+            todayOrders,
+            totalRevenue,
+            todayRevenue: sumBy(todayOrders, orderNetRevenue),
+            averageOrderValue: numberValue(
+                summary.aov != null
+                    ? summary.aov
+                    : (completedOrders.length ? totalRevenue / completedOrders.length : 0)
+            ),
+            totalOrders: numberValue(summary.order_count || summary.totalOrders || completedOrders.length),
+            totalProducts: numberValue(summary.totalProducts || products.length),
+            totalCustomers: numberValue(summary.totalCustomers || customerGroups.size),
+            memberOrderCount: completedOrders.filter((order) => order.customer_name && order.customer_name !== "Khách lẻ").length,
+            daily: seriesDaily,
+            sourceBreakdown: Array.from(sourceGroups.entries()).map(([label, rows]) => ({
+                label,
+                orders: rows.length,
+                revenue: sumBy(rows, orderNetRevenue)
+            })),
+            staffBreakdown: (staffFromSummary && staffFromSummary.length
+                ? staffFromSummary
+                : Array.from(staffGroups.entries())
+                    .map(([label, rows]) => ({
+                        label,
+                        orders: rows.length,
+                        revenue: sumBy(rows, orderNetRevenue)
+                    }))
+                    .sort((left, right) => right.revenue - left.revenue)
+            ).slice(0, 7),
+            topCustomers: Array.from(customerGroups.entries())
+                .map(([label, rows]) => ({
+                    label,
+                    orders: rows.length,
+                    revenue: sumBy(rows, orderNetRevenue)
+                }))
+                .sort((left, right) => right.revenue - left.revenue)
+                .slice(0, 5),
+            stock: {
+                inStock,
+                lowStock,
+                outOfStock,
+                inventoryValue
+            }
+        };
+    }
+
+    function destroyChart(key) {
+        if (dashboardCharts[key]) {
+            dashboardCharts[key].destroy();
+            delete dashboardCharts[key];
+        }
+    }
+
+    function chartContext(id) {
+        const canvas = document.getElementById(id);
+        return canvas ? canvas.getContext("2d") : null;
+    }
+
+    function currencyTick(value) {
+        if (Math.abs(value) >= 1000000) {
+            return `${Math.round(value / 100000) / 10} Tr`;
+        }
+
+        return compactNumber(value);
+    }
+
+    function percentValue(value, total) {
+        if (!total) {
+            return "0%";
+        }
+
+        return `${Math.round((numberValue(value) / total) * 100)}%`;
+    }
+
+    function paletteByIndex(index) {
+        return [
+            dashboardPalette.accent,
+            dashboardPalette.info,
+            dashboardPalette.warning,
+            dashboardPalette.success,
+            "#64748b",
+            "#7c3aed"
+        ][index % 6];
+    }
+
+    function colorToken(color, index = 0) {
+        if (Array.isArray(color)) {
+            return color[index] || dashboardPalette.accent;
+        }
+
+        if (typeof color === "string") {
+            return color;
+        }
+
+        return dashboardPalette.accent;
+    }
+
+    function createChartGradients(context, startColor, endColor) {
+        const { chart } = context;
+        const { ctx, chartArea } = chart;
+
+        if (!chartArea) {
+            return startColor;
+        }
+
+        const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+        gradient.addColorStop(0, startColor);
+        gradient.addColorStop(1, endColor);
+        return gradient;
+    }
+
+    function renderChartLegend(chart, targetId, items = []) {
+        const target = document.getElementById(targetId);
+        if (!target || !chart) {
+            return;
+        }
+
+        const legendItems = items.length
+            ? items
+            : chart.data.datasets.map((dataset, index) => ({
+                label: dataset.label,
+                value: "",
+                color: colorToken(dataset.borderColor || dataset.backgroundColor, index)
+            }));
+
+        target.innerHTML = legendItems.map((item) => `
+            <span class="chart-legend-item">
+                <span class="chart-legend-swatch" style="background:${escapeHtml(item.color)}"></span>
+                <span>${escapeHtml(item.label)}</span>
+                ${item.value ? `<span class="chart-legend-value">${escapeHtml(item.value)}</span>` : ""}
+            </span>
+        `).join("");
+    }
+
+    function chartTooltipValue(point) {
+        const label = point.dataset.label || "";
+        const rawValue = Array.isArray(point.raw) ? point.raw[0] : point.raw;
+
+        if (point.dataset.yAxisID === "orders" || label.includes("Hóa đơn") || label.includes("Số mẫu")) {
+            return compactNumber(rawValue);
+        }
+
+        return safeFormatCurrency(rawValue);
+    }
+
+    function externalTooltipHandler(context) {
+        const { chart, tooltip } = context;
+        let tooltipEl = chart.canvas.parentNode.querySelector(".chart-html-tooltip");
+
+        if (!tooltipEl) {
+            tooltipEl = document.createElement("div");
+            tooltipEl.className = "chart-html-tooltip";
+            chart.canvas.parentNode.appendChild(tooltipEl);
+        }
+
+        if (tooltip.opacity === 0) {
+            tooltipEl.style.opacity = 0;
+            return;
+        }
+
+        const title = tooltip.title?.[0] || "";
+        const rows = tooltip.dataPoints.map((point) => {
+            const datasetColor = colorToken(point.dataset.borderColor || point.dataset.backgroundColor, point.dataIndex);
+            return `
+                <div class="chart-html-tooltip-row">
+                    <span class="chart-html-tooltip-name">
+                        <span class="chart-legend-swatch" style="background:${escapeHtml(datasetColor)}"></span>
+                        ${escapeHtml(point.dataset.label || point.label)}
+                    </span>
+                    <span class="chart-html-tooltip-value">${escapeHtml(chartTooltipValue(point))}</span>
+                </div>
+            `;
+        }).join("");
+
+        tooltipEl.innerHTML = `
+            <div class="chart-html-tooltip-title">${escapeHtml(title)}</div>
+            ${rows}
+        `;
+        tooltipEl.style.opacity = 1;
+        tooltipEl.style.left = `${chart.canvas.offsetLeft + tooltip.caretX}px`;
+        tooltipEl.style.top = `${chart.canvas.offsetTop + tooltip.caretY}px`;
+    }
+
+    const averageLinePlugin = {
+        id: "posAverageLine",
+        afterDatasetsDraw(chart, _args, pluginOptions) {
+            const value = numberValue(pluginOptions?.value);
+            const scale = chart.scales[pluginOptions?.scaleID || "y"];
+
+            if (!scale || !value) {
+                return;
+            }
+
+            const y = scale.getPixelForValue(value);
+            const { left, right, top, bottom } = chart.chartArea;
+
+            if (y < top || y > bottom) {
+                return;
+            }
+
+            const { ctx } = chart;
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = pluginOptions.color || "rgba(15, 118, 110, 0.34)";
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(left, y);
+            ctx.lineTo(right, y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = pluginOptions.labelColor || dashboardPalette.muted;
+            ctx.font = "800 11px 'Plus Jakarta Sans', sans-serif";
+            ctx.textAlign = "right";
+            ctx.fillText(pluginOptions.label || "Trung bình", right - 4, y - 8);
+            ctx.restore();
+        }
+    };
+
+    const valueLabelPlugin = {
+        id: "posValueLabels",
+        afterDatasetsDraw(chart, _args, pluginOptions) {
+            if (pluginOptions?.display === false) {
+                return;
+            }
+
+            const { ctx } = chart;
+            const isHorizontal = chart.options.indexAxis === "y";
+            const formatter = pluginOptions?.formatter || ((value) => compactNumber(value));
+
+            ctx.save();
+            ctx.fillStyle = pluginOptions?.color || dashboardPalette.text;
+            ctx.font = "800 11px 'Plus Jakarta Sans', sans-serif";
+            ctx.textBaseline = "middle";
+
+            chart.data.datasets.forEach((dataset, datasetIndex) => {
+                if (dataset.showValueLabels === false) {
+                    return;
+                }
+
+                const meta = chart.getDatasetMeta(datasetIndex);
+                if (meta.hidden) {
+                    return;
+                }
+
+                meta.data.forEach((element, dataIndex) => {
+                    const value = dataset.data[dataIndex];
+                    const numericValue = numberValue(value);
+                    if (!numericValue && pluginOptions?.hideZero !== false) {
+                        return;
+                    }
+
+                    ctx.textAlign = isHorizontal ? "left" : "center";
+                    ctx.fillText(
+                        formatter(value, { chart, dataset, dataIndex, datasetIndex }),
+                        isHorizontal ? element.x + 8 : element.x,
+                        isHorizontal ? element.y : element.y - 10
+                    );
+                });
+            });
+
+            ctx.restore();
+        }
+    };
+
+    const centerTextPlugin = {
+        id: "posCenterText",
+        afterDraw(chart, _args, pluginOptions) {
+            if (!pluginOptions?.text) {
+                return;
+            }
+
+            const { ctx, chartArea } = chart;
+            const centerX = (chartArea.left + chartArea.right) / 2;
+            const centerY = (chartArea.top + chartArea.bottom) / 2;
+
+            ctx.save();
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = dashboardPalette.text;
+            ctx.font = "900 22px 'Plus Jakarta Sans', sans-serif";
+            ctx.fillText(pluginOptions.text, centerX, centerY - 8);
+            ctx.fillStyle = dashboardPalette.muted;
+            ctx.font = "800 11px 'Plus Jakarta Sans', sans-serif";
+            ctx.fillText(pluginOptions.subtext || "", centerX, centerY + 16);
+            ctx.restore();
+        }
+    };
+
+    function renderDailyRevenueInsight(analytics) {
+        const target = document.getElementById("dailyRevenueInsight");
+        if (!target) {
+            return;
+        }
+
+        const daily = analytics.daily;
+        const latest = daily[daily.length - 1] || { label: "Hôm nay", revenue: 0, orders: 0 };
+        const previous = daily[daily.length - 2] || null;
+        const averageRevenue = sumBy(daily, (day) => day.revenue) / Math.max(daily.length, 1);
+        const peakDay = daily.reduce((best, day) => day.revenue > best.revenue ? day : best, latest);
+        const change = previous && previous.revenue
+            ? `${latest.revenue >= previous.revenue ? "+" : ""}${Math.round(((latest.revenue - previous.revenue) / previous.revenue) * 100)}%`
+            : "Mới";
+
+        target.innerHTML = `
+            <div class="chart-insight-pill">
+                <span>Ngày mới nhất</span>
+                <strong>${escapeHtml(latest.label)} · ${escapeHtml(safeFormatCurrency(latest.revenue))}</strong>
+            </div>
+            <div class="chart-insight-pill">
+                <span>So với ngày trước</span>
+                <strong>${escapeHtml(change)}</strong>
+            </div>
+            <div class="chart-insight-pill">
+                <span>Đỉnh kỳ 14 ngày</span>
+                <strong>${escapeHtml(peakDay.label)} · ${escapeHtml(safeFormatCurrency(peakDay.revenue || averageRevenue))}</strong>
+            </div>
+        `;
+    }
+
+    function renderDashboardCharts(analytics) {
+        renderDailyRevenueChart(analytics);
+        renderOrderSourceChart(analytics);
+        renderInventoryHealthChart(analytics);
+        renderStaffRevenueChart(analytics);
+    }
+
+    function renderDailyRevenueChart(analytics) {
+        const ctx = chartContext("dailyRevenueChart");
+        if (!ctx || !window.Chart) {
+            return;
+        }
+
+        destroyChart("dailyRevenue");
+        renderDailyRevenueInsight(analytics);
+        const averageRevenue = sumBy(analytics.daily, (day) => day.revenue) / Math.max(analytics.daily.length, 1);
+
+        dashboardCharts.dailyRevenue = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: analytics.daily.map((day) => day.label),
+                datasets: [
+                    {
+                        label: "Doanh thu",
+                        data: analytics.daily.map((day) => day.revenue),
+                        backgroundColor: (context) => createChartGradients(context, "rgba(15, 118, 110, 0.88)", "rgba(20, 184, 166, 0.28)"),
+                        borderColor: "rgba(15, 118, 110, 0.92)",
+                        borderRadius: {
+                            topLeft: 9,
+                            topRight: 9
+                        },
+                        borderSkipped: false,
+                        maxBarThickness: 34,
+                        order: 2,
+                        showValueLabels: false,
+                        yAxisID: "y"
+                    },
+                    {
+                        type: "line",
+                        label: "Hóa đơn",
+                        data: analytics.daily.map((day) => day.orders),
+                        borderColor: dashboardPalette.info,
+                        backgroundColor: "rgba(2, 132, 199, 0.14)",
+                        borderWidth: 2.25,
+                        fill: false,
+                        order: 1,
+                        pointBackgroundColor: "#ffffff",
+                        pointBorderColor: dashboardPalette.info,
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 6,
+                        pointRadius: 3,
+                        showValueLabels: false,
+                        tension: 0.34,
+                        yAxisID: "orders"
+                    }
+                ]
+            },
+            plugins: [averageLinePlugin],
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: "index"
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    posAverageLine: {
+                        value: averageRevenue,
+                        label: `TB ${currencyTick(averageRevenue)}`,
+                        color: "rgba(15, 118, 110, 0.34)"
+                    },
+                    tooltip: {
+                        enabled: false,
+                        external: externalTooltipHandler,
+                        callbacks: {
+                            label(context) {
+                                if (context.dataset.yAxisID === "orders") {
+                                    return `Hóa đơn: ${compactNumber(context.raw)}`;
+                                }
+
+                                return `Doanh thu: ${safeFormatCurrency(context.raw)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxRotation: 0
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        border: {
+                            display: false
+                        },
+                        grid: {
+                            color: dashboardPalette.border
+                        },
+                        ticks: {
+                            callback: currencyTick
+                        }
+                    },
+                    orders: {
+                        display: false,
+                        position: "right",
+                        beginAtZero: true,
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            }
+        });
+
+        renderChartLegend(dashboardCharts.dailyRevenue, "dailyRevenueLegend", [
+            { label: "Doanh thu", value: safeFormatCurrency(sumBy(analytics.daily, (day) => day.revenue)), color: dashboardPalette.accent },
+            { label: "Hóa đơn", value: compactNumber(sumBy(analytics.daily, (day) => day.orders)), color: dashboardPalette.info },
+            { label: "Trung bình ngày", value: currencyTick(averageRevenue), color: "rgba(15, 118, 110, 0.5)" }
+        ]);
+    }
+
+    function renderOrderSourceChart(analytics) {
+        const ctx = chartContext("orderSourceChart");
+        if (!ctx || !window.Chart) {
+            return;
+        }
+
+        destroyChart("orderSource");
+        const rows = analytics.sourceBreakdown.length
+            ? analytics.sourceBreakdown
+            : [{ label: "Chưa có đơn", orders: 1, revenue: 0 }];
+        const totalOrders = sumBy(rows, (row) => row.orders);
+        const totalRevenue = sumBy(rows, (row) => row.revenue);
+
+        dashboardCharts.orderSource = new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                labels: rows.map((row) => row.label),
+                datasets: [{
+                    label: "Hóa đơn",
+                    data: rows.map((row) => row.orders),
+                    backgroundColor: rows.map((_, index) => paletteByIndex(index)),
+                    borderColor: "#ffffff",
+                    borderWidth: 4,
+                    hoverBorderColor: "#ffffff",
+                    hoverOffset: 6
+                }]
+            },
+            plugins: [centerTextPlugin],
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "68%",
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    posCenterText: {
+                        text: compactNumber(totalOrders),
+                        subtext: "hóa đơn"
+                    },
+                    tooltip: {
+                        enabled: false,
+                        external: externalTooltipHandler,
+                        callbacks: {
+                            label(context) {
+                                const row = rows[context.dataIndex];
+                                return `${row.label}: ${compactNumber(row.orders)} hóa đơn`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        renderChartLegend(dashboardCharts.orderSource, "orderSourceLegend", rows.map((row, index) => ({
+            label: `${row.label} · ${percentValue(row.orders, totalOrders)}`,
+            value: totalRevenue ? safeFormatCurrency(row.revenue) : compactNumber(row.orders),
+            color: paletteByIndex(index)
+        })));
+    }
+
+    function renderInventoryHealthChart(analytics) {
+        const ctx = chartContext("inventoryHealthChart");
+        if (!ctx || !window.Chart) {
+            return;
+        }
+
+        destroyChart("inventoryHealth");
+        const stockRows = [
+            { label: "Còn hàng", value: analytics.stock.inStock.length, color: dashboardPalette.accent, fade: "rgba(20, 184, 166, 0.28)" },
+            { label: "Sắp hết", value: analytics.stock.lowStock.length, color: dashboardPalette.warning, fade: "rgba(251, 191, 36, 0.3)" },
+            { label: "Hết hàng", value: analytics.stock.outOfStock.length, color: dashboardPalette.danger, fade: "rgba(248, 113, 113, 0.28)" }
+        ];
+        const totalStockRows = sumBy(stockRows, (row) => row.value);
+
+        dashboardCharts.inventoryHealth = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: stockRows.map((row) => row.label),
+                datasets: [{
+                    label: "Số mẫu",
+                    data: stockRows.map((row) => row.value),
+                    backgroundColor: (context) => {
+                        const row = stockRows[context.dataIndex] || stockRows[0];
+                        return createChartGradients(context, row.color, row.fade);
+                    },
+                    borderColor: stockRows.map((row) => row.color),
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    maxBarThickness: 34
+                }]
+            },
+            plugins: [valueLabelPlugin],
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    posValueLabels: {
+                        formatter: (value) => compactNumber(value)
+                    },
+                    tooltip: {
+                        enabled: false,
+                        external: externalTooltipHandler
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        suggestedMax: Math.max(...stockRows.map((row) => row.value), 1) + 2,
+                        grid: {
+                            color: dashboardPalette.border
+                        },
+                        ticks: {
+                            precision: 0
+                        }
+                    },
+                    y: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        renderChartLegend(dashboardCharts.inventoryHealth, "inventoryHealthLegend", stockRows.map((row) => ({
+            label: `${row.label} · ${percentValue(row.value, totalStockRows)}`,
+            value: compactNumber(row.value),
+            color: row.color
+        })));
+    }
+
+    function renderStaffRevenueChart(analytics) {
+        const ctx = chartContext("staffRevenueChart");
+        if (!ctx || !window.Chart) {
+            return;
+        }
+
+        destroyChart("staffRevenue");
+        const rows = analytics.staffBreakdown.length
+            ? analytics.staffBreakdown.slice(0, 7)
+            : [{ label: "Chưa có dữ liệu", revenue: 0, orders: 0 }];
+        const totalStaffRevenue = sumBy(rows, (row) => row.revenue);
+
+        dashboardCharts.staffRevenue = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: rows.map((row) => row.label),
+                datasets: [{
+                    label: "Doanh thu",
+                    data: rows.map((row) => row.revenue),
+                    backgroundColor: (context) => {
+                        const colors = [
+                            "rgba(15, 118, 110, 0.9)",
+                            "rgba(2, 132, 199, 0.82)",
+                            "rgba(217, 119, 6, 0.78)",
+                            "rgba(100, 116, 139, 0.72)"
+                        ];
+                        return colors[Math.min(context.dataIndex, colors.length - 1)];
+                    },
+                    borderColor: rows.map((_, index) => paletteByIndex(index)),
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    maxBarThickness: 28
+                }]
+            },
+            plugins: [valueLabelPlugin],
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    posValueLabels: {
+                        formatter: (value) => currencyTick(value)
+                    },
+                    tooltip: {
+                        enabled: false,
+                        external: externalTooltipHandler,
+                        callbacks: {
+                            label(context) {
+                                const row = rows[context.dataIndex];
+                                return `Doanh thu: ${safeFormatCurrency(context.raw)} · ${compactNumber(row.orders)} hóa đơn`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: {
+                            color: dashboardPalette.border
+                        },
+                        ticks: {
+                            callback: currencyTick
+                        }
+                    },
+                    y: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            autoSkip: false
+                        }
+                    }
+                }
+            }
+        });
+
+        renderChartLegend(dashboardCharts.staffRevenue, "staffRevenueLegend", rows.slice(0, 3).map((row, index) => ({
+            label: `#${index + 1} ${row.label}`,
+            value: totalStaffRevenue ? percentValue(row.revenue, totalStaffRevenue) : safeFormatCurrency(row.revenue),
+            color: paletteByIndex(index)
+        })));
+    }
+
+    function renderTopCustomers(customers) {
+        const target = document.getElementById("topCustomersList");
+        if (!target) {
+            return;
+        }
+
+        if (!customers.length) {
+            target.innerHTML = `
+                <div class="dashboard-empty-state">
+                    <div>
+                        <i class="ph ph-users"></i>
+                        <div>Chưa có hóa đơn gắn với hồ sơ khách hàng.</div>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        target.innerHTML = customers.map((customer, index) => `
+            <div class="dashboard-list-row">
+                <div>
+                    <strong>${index + 1}. ${escapeHtml(customer.label)}</strong>
+                    <span>${compactNumber(customer.orders)} hóa đơn</span>
+                </div>
+                <div class="dashboard-list-value">${safeFormatCurrency(customer.revenue)}</div>
+            </div>
+        `).join("");
+    }
+
+    function renderLatestOrders(orders) {
+        const target = document.getElementById("latestOrders");
+        if (!target) {
+            return;
+        }
+
+        if (!orders.length) {
+            target.innerHTML = `
+                <tr>
+                    <td colspan="4">Chưa có hóa đơn nào trong hệ thống.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        target.innerHTML = orders.map((order) => `
+            <tr>
+                <td>
+                    <strong>#${escapeHtml(order.id)}</strong>
+                    <span class="staff-target-note">${formatDateTime(order.created_at)}</span>
+                </td>
+                <td>${escapeHtml(order.customer_name || "Khách lẻ")}</td>
+                <td>${escapeHtml(order.username || "Chưa gán")}</td>
+                <td style="color: var(--accent-color); font-weight: 800;">${safeFormatCurrency(order.total_amount)}</td>
+            </tr>
+        `).join("");
+    }
+
+    function renderDashboardMetrics(summary, analytics) {
+        setText("totalProducts", compactNumber(analytics.totalProducts));
+        setText("totalCustomers", compactNumber(analytics.totalCustomers));
+        setText("totalOrders", compactNumber(analytics.totalOrders));
+        setText("totalRevenue", safeFormatCurrency(analytics.totalRevenue));
+        setText("todayRevenue", safeFormatCurrency(analytics.todayRevenue));
+        setText("averageOrderValue", safeFormatCurrency(analytics.averageOrderValue));
+        setText("lowStockCount", compactNumber(analytics.stock.lowStock.length));
+        setText("outOfStockCount", compactNumber(analytics.stock.outOfStock.length));
+        setText("todayRevenueNote", `${compactNumber(analytics.todayOrders.length)} hóa đơn đã ghi nhận trong ngày.`);
+        setText("totalRevenueNote", `${compactNumber(analytics.completedOrders.length)} hóa đơn hoàn tất trong dữ liệu hiện có.`);
+        setText("orderTrendNote", `${compactNumber(analytics.daily.at(-1)?.orders || 0)} hóa đơn trong ngày gần nhất.`);
+        setText("stockValueNote", `Giá trị tồn kho ước tính ${safeFormatCurrency(analytics.stock.inventoryValue)}.`);
+        setText("lowStockNote", `${compactNumber(analytics.stock.lowStock.length)} mẫu cần theo dõi sát trong ca bán.`);
+
+        const memberRatio = analytics.completedOrders.length
+            ? Math.round(analytics.memberOrderCount / analytics.completedOrders.length * 100)
+            : 0;
+        setText("memberOrderNote", `${memberRatio}% hóa đơn có hồ sơ khách hàng.`);
+        setText("cashierAlertText", analytics.todayOrders.length
+            ? `Hôm nay đã có ${compactNumber(analytics.todayOrders.length)} hóa đơn, doanh thu ${safeFormatCurrency(analytics.todayRevenue)}.`
+            : "Hôm nay chưa phát sinh hóa đơn, cần kiểm tra trạng thái quầy.");
+        setText("stockAlertText", analytics.stock.outOfStock.length
+            ? `${compactNumber(analytics.stock.outOfStock.length)} mẫu đã hết hàng và ${compactNumber(analytics.stock.lowStock.length)} mẫu sắp hết.`
+            : `${compactNumber(analytics.stock.lowStock.length)} mẫu sắp hết, chưa có mẫu hết hàng.`);
+        setText("customerAlertText", analytics.completedOrders.length
+            ? `${compactNumber(analytics.memberOrderCount)} trên ${compactNumber(analytics.completedOrders.length)} hóa đơn có hồ sơ khách.`
+            : "Chưa đủ dữ liệu để tính tỷ lệ khách hội viên.");
+    }
+
+    // === Realtime helpers ===
+    // Hiển thị thời gian thực của máy tính (hh:mm:ss) và chạy realtime
+    function getCurrentTimeHHMMSS() {
+        const now = new Date();
+        let hours = now.getHours();
+        const period = hours >= 12 ? "PM" : "AM";
+        hours = hours % 12 || 12; // 0 → 12, 13 → 1, etc.
+        const hh = hours.toString().padStart(2, "0");
+        const mm = now.getMinutes().toString().padStart(2, "0");
+        const ss = now.getSeconds().toString().padStart(2, "0");
+        return `${hh}:${mm}:${ss} ${period}`;
+    }
+
+    function updateLiveStatus() {
+        const status = document.getElementById("dashboardStatus");
+        if (!status) return;
+        status.className = "dashboard-status";
+        const timeStr = getCurrentTimeHHMMSS();
+        status.innerHTML = `<i class="ph ph-clock"></i> Cập nhật ${escapeHtml(timeStr)}`;
+        // Tooltip: thời gian đầy đủ của máy tính
+        status.title = new Date().toLocaleString("vi-VN");
+    }
+
+    function startLiveStatusTicker() {
+        if (liveStatusTimer) {
+            clearTimeout(liveStatusTimer);
+        }
+
+        // Cập nhật mỗi giây theo thời gian thực máy tính, align giây để mượt
+        function tick() {
+            updateLiveStatus();
+
+            const now = Date.now();
+            const msIntoThisSecond = now % 1000;
+            let delay = 1000 - msIntoThisSecond;
+            if (delay < 50) delay = 1000;
+
+            liveStatusTimer = setTimeout(tick, delay);
+        }
+
+        tick();
+    }
+
+    function startAutoRefresh() {
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+        autoRefreshInterval = setInterval(() => {
+            loadDashboard(true); // silent auto refresh - giữ nguyên logic fetch
+        }, DASHBOARD_AUTO_REFRESH_MS);
+    }
+
+    function setDashboardStatus(message, type = "info") {
+        const status = document.getElementById("dashboardStatus");
+        if (!status) {
+            return;
+        }
+
+        status.className = `dashboard-status${type === "error" ? " is-error" : ""}`;
+        status.innerHTML = `<i class="ph ${type === "error" ? "ph-warning" : "ph-check-circle"}"></i> ${escapeHtml(message)}`;
+    }
+
+    async function loadDashboard(silent = false) {
+        if (!silent) {
+            setDashboardStatus("Đang tải dữ liệu");
+        }
+
+        try {
+            const range = document.getElementById("dashboardRange")?.value || "today";
+            // Scope order list to the selected range so we never re-download full history
+            const rangeDays = range === "30d" ? 29 : range === "7d" ? 6 : 0;
+            const fromDate = new Date();
+            fromDate.setHours(0, 0, 0, 0);
+            fromDate.setDate(fromDate.getDate() - rangeDays);
+            const fromSql = `${fromDate.getFullYear()}-${String(fromDate.getMonth() + 1).padStart(2, "0")}-${String(fromDate.getDate()).padStart(2, "0")} 00:00:00`;
+            const ordersQuery = range === "custom"
+                ? "/orders"
+                : `/orders?from=${encodeURIComponent(fromSql)}`;
+
+            const [summary, orders, products, latestOrders] = await Promise.all([
+                safeApiRequest(`/dashboard?range=${encodeURIComponent(range)}`, {}),
+                safeApiRequest(ordersQuery, []),
+                // Only low-stock rows needed for inventory panel (server also returns low_stock_count)
+                safeApiRequest("/products?limit=50", []),
+                safeApiRequest("/latest-orders?limit=8", [])
+            ]);
+
+            const orderList = Array.isArray(orders)
+                ? orders
+                : (Array.isArray(orders?.items) ? orders.items : []);
+            const productList = Array.isArray(products)
+                ? products
+                : (Array.isArray(products?.items) ? products.items : []);
+
+            const analytics = buildDashboardAnalytics(summary || {}, orderList, productList);
+            if (summary && summary.gross_profit != null) {
+                const profitEl = document.getElementById("kpiGrossProfit");
+                if (profitEl) {
+                    profitEl.textContent = safeFormatCurrency(summary.gross_profit);
+                }
+                const marginEl = document.getElementById("kpiMargin");
+                if (marginEl) {
+                    marginEl.textContent = `${Number(summary.margin_percent || 0)}%`;
+                }
+                const pendingQrEl = document.getElementById("kpiPendingQr");
+                if (pendingQrEl) {
+                    pendingQrEl.textContent = String(summary.pending_qr_count || 0);
+                }
+                const lowStockCountEl = document.getElementById("lowStockCount");
+                if (lowStockCountEl && summary.low_stock_count != null) {
+                    lowStockCountEl.textContent = String(summary.low_stock_count);
+                }
+            }
+
+            renderDashboardMetrics(summary || {}, analytics);
+            renderDashboardCharts(analytics);
+            renderLatestOrders(latestOrders || []);
+            renderTopCustomers(analytics.topCustomers);
+
+            // Bắt đầu hiển thị thời gian thực máy tính (sẽ chạy liên tục)
+            updateLiveStatus();
+            startLiveStatusTicker();
+        } catch (error) {
+            console.error("Lỗi khi tải dashboard:", error);
+            if (!silent) {
+                setDashboardStatus("Không tải được dashboard", "error");
+            }
+            // silent errors: keep previous live status
+        }
+    }
+
+    async function loadStaffPerformanceLeaderboard() {
+        if (!user || user.role !== "admin") {
+            return;
+        }
+
+        const section = document.getElementById("staffPerformanceSection");
+        const target = document.getElementById("staffPerformanceLeaderboard");
+        section.style.display = "";
+
+        try {
+            const rows = await apiRequest("/api/admin/staff-performance");
+            target.innerHTML = rows.map((row) => {
+                const level = row.level || { code: "NULL", discount_percent: 0 };
+                const progress = row.progress || { percent: 0, remaining_member_orders: 0, remaining_revenue: 0 };
+                const next = row.next_level;
+                const note = next
+                    ? `Còn ${compactNumber(progress.remaining_member_orders)} đơn barcode hoặc ${safeFormatCurrency(progress.remaining_revenue)} để lên ${escapeHtml(next.code)}`
+                    : "Đã đạt cấp cao nhất";
+
+                return `
+                    <tr>
+                        <td>
+                            <strong>${escapeHtml(row.username)}</strong>
+                            <span class="staff-target-note">${escapeHtml(row.role)}</span>
+                        </td>
+                        <td><span class="staff-rank-chip">${escapeHtml(level.code)}</span></td>
+                        <td>${Number(level.discount_percent || 0)}%</td>
+                        <td>${compactNumber(row.member_order_count)}</td>
+                        <td>${safeFormatCurrency(row.total_revenue)}</td>
+                        <td>
+                            <div class="staff-performance-progress">
+                                <div class="staff-performance-progress-bar" style="width:${Number(progress.percent || 0)}%"></div>
+                            </div>
+                            <span class="staff-target-note">${note}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+        } catch (error) {
+            target.innerHTML = `
+                <tr>
+                    <td colspan="6">Không tải được xếp hạng nhân viên.</td>
+                </tr>
+            `;
+        }
+    }
+
+    let dashboardAiPanel = null;
+
+    function ensureDashboardAiPanel() {
+        if (dashboardAiPanel || !window.PosAiInsights) return dashboardAiPanel;
+        if (!user || user.role !== "admin") return null;
+        dashboardAiPanel = window.PosAiInsights.mount("#dashboardAiInsightsHost", {
+            surface: "dashboard",
+            title: "Gợi ý AI doanh thu",
+            endpoint: null,
+            autoLoad: false,
+            getRange() {
+                return {
+                    range: document.getElementById("dashboardRange")?.value || "today"
+                };
+            }
+        });
+        return dashboardAiPanel;
+    }
+
+    function refreshDashboardAiInsights() {
+        const panel = ensureDashboardAiPanel();
+        if (panel && typeof panel.load === "function") {
+            panel.load();
+        }
+    }
+
+    document.getElementById("refreshDashboardButton")?.addEventListener("click", () => {
+        loadDashboard(); // manual always shows loading state
+        loadStaffPerformanceLeaderboard();
+        refreshDashboardAiInsights();
+        // reset auto timer (dựa trên thời gian máy tính)
+        startAutoRefresh();
+    });
+
+    document.getElementById("dashboardRange")?.addEventListener("change", () => {
+        loadDashboard();
+        refreshDashboardAiInsights();
+    });
+
+    if (user) {
+        loadDashboard();
+        loadStaffPerformanceLeaderboard();
+        startAutoRefresh();
+        // Defer AI insights slightly so KPI paint first
+        setTimeout(refreshDashboardAiInsights, 250);
+    }
+
+    // Dọn dẹp timer khi rời trang (best practice)
+    window.addEventListener("beforeunload", () => {
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+        if (liveStatusTimer) clearTimeout(liveStatusTimer);
+    });
+</script>
+<script src="assets/js/aiInsights.js"></script>
+<script src="assets/js/aiAssistant.js"></script>
+</body>
+</html>

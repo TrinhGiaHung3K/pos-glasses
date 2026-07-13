@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - Người dùng</title>
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+<div class="pos-container">
+    <aside data-menu-component data-active-menu="users"></aside>
+    <main class="pos-main">
+        <header class="pos-topbar">
+            <div><h2 class="pos-topbar-title">Người dùng</h2></div>
+            <div class="pos-topbar-actions">
+                <button class="btn btn-secondary" type="button" id="refreshUsers"><i class="ph ph-arrow-clockwise"></i> Làm mới</button>
+                <button class="btn btn-primary" type="button" id="createUserBtn"><i class="ph ph-user-plus"></i> Tạo tài khoản</button>
+            </div>
+        </header>
+        <div class="pos-content">
+            <section class="pos-page-intro">
+                <div>
+                    <h2>Quản trị tài khoản</h2>
+                    <p>Tạo staff/admin, vô hiệu hóa tài khoản. Đăng ký công khai đã tắt theo Phase 0.</p>
+                </div>
+            </section>
+            <div class="table-responsive" style="background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-sm);">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên đăng nhập</th>
+                            <th>Vai trò</th>
+                            <th>Trạng thái</th>
+                            <th>Tạo lúc</th>
+                            <th style="text-align:right;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersBody"><tr><td colspan="6">Đang tải…</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/format.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/components.js"></script>
+<script>
+    const user = requireRole(["admin"]);
+
+    async function loadUsers() {
+        const body = document.getElementById("usersBody");
+        try {
+            const rows = await apiRequest("/api/admin/users");
+            if (!rows.length) {
+                body.innerHTML = `<tr><td colspan="6">Chưa có user.</td></tr>`;
+                return;
+            }
+            body.innerHTML = rows.map((row) => {
+                const active = Number(row.is_active) !== 0;
+                return `<tr>
+                    <td>${row.id}</td>
+                    <td><strong>${escapeHtml(row.username)}</strong></td>
+                    <td>${row.role === "admin" ? "Quản trị" : "Nhân viên"}</td>
+                    <td>${active ? '<span class="badge text-bg-success">Hoạt động</span>' : '<span class="badge text-bg-secondary">Tắt</span>'}</td>
+                    <td>${row.created_at ? formatDate(row.created_at) : "—"}</td>
+                    <td style="text-align:right;">
+                        <button class="btn btn-secondary btn-sm" type="button" data-toggle="${row.id}" data-active="${active ? 0 : 1}">
+                            ${active ? "Vô hiệu hóa" : "Kích hoạt"}
+                        </button>
+                    </td>
+                </tr>`;
+            }).join("");
+
+            body.querySelectorAll("[data-toggle]").forEach((btn) => {
+                btn.addEventListener("click", async () => {
+                    try {
+                        await apiRequest(`/api/admin/users/${btn.dataset.toggle}/active`, {
+                            method: "PATCH",
+                            body: { is_active: Number(btn.dataset.active) === 1 }
+                        });
+                        showToast("Đã cập nhật trạng thái", "success");
+                        loadUsers();
+                    } catch (error) {
+                        showToast(error.message, "error");
+                    }
+                });
+            });
+        } catch (error) {
+            body.innerHTML = `<tr><td colspan="6">${escapeHtml(error.message)}</td></tr>`;
+        }
+    }
+
+    document.getElementById("createUserBtn")?.addEventListener("click", async () => {
+        const data = await showFormModal({
+            title: "Tạo tài khoản",
+            submitText: "Tạo",
+            fields: [
+                { name: "username", label: "Tên đăng nhập", required: true, placeholder: "staff2" },
+                { name: "password", label: "Mật khẩu (≥6)", type: "password", required: true },
+                { name: "confirmPassword", label: "Xác nhận mật khẩu", type: "password", required: true },
+                {
+                    name: "role",
+                    label: "Vai trò",
+                    type: "select",
+                    value: "staff",
+                    options: [
+                        { value: "staff", label: "Nhân viên" },
+                        { value: "admin", label: "Quản trị" }
+                    ]
+                }
+            ]
+        });
+        if (!data) return;
+        try {
+            await apiRequest("/api/admin/users", { method: "POST", body: data });
+            showToast("Đã tạo tài khoản", "success");
+            loadUsers();
+        } catch (error) {
+            showToast(error.message, "error");
+        }
+    });
+
+    document.getElementById("refreshUsers")?.addEventListener("click", loadUsers);
+    if (user) loadUsers();
+</script>
+</body>
+</html>

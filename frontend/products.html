@@ -1,0 +1,3220 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - Sản phẩm</title>
+
+    <link href="/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+
+    <style>
+        /* ─────────────────────────────────────────
+           Products page - catalog + quick POS sale
+           Tokens/patterns aligned with inventory,
+           invoices, dashboard operational UI.
+           Do NOT override global .modal-overlay
+           (breaks showConfirm / showFormModal).
+           ───────────────────────────────────────── */
+
+        .products-shell {
+            display: grid;
+            gap: 18px;
+        }
+
+        .products-topbar-search {
+            position: relative;
+            width: min(420px, 100%);
+        }
+
+        .products-topbar-search i {
+            color: var(--text-muted);
+            font-size: 18px;
+            left: 14px;
+            pointer-events: none;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .products-topbar-search .form-control {
+            border-radius: var(--radius-pill) !important;
+            min-height: 42px;
+            padding-left: 42px !important;
+        }
+
+        .products-toolbar {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .products-status {
+            align-items: center;
+            background: var(--accent-subtle);
+            border: 1px solid rgba(15, 118, 110, 0.14);
+            border-radius: var(--radius-pill);
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            gap: 7px;
+            min-height: 34px;
+            padding: 7px 12px;
+            white-space: nowrap;
+        }
+
+        .products-status.is-error {
+            background: var(--danger-light);
+            border-color: rgba(220, 38, 38, 0.18);
+            color: var(--danger-color);
+        }
+
+        .products-status.is-warn {
+            background: var(--warning-light);
+            border-color: rgba(217, 119, 6, 0.18);
+            color: #b45309;
+        }
+
+        .products-kpi-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+
+        .products-kpi-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            display: grid;
+            gap: 12px;
+            min-height: 118px;
+            padding: 16px;
+            transition:
+                border-color var(--transition-fast),
+                box-shadow var(--transition-fast),
+                transform var(--transition-fast);
+        }
+
+        .products-kpi-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-1px);
+        }
+
+        .products-kpi-card.is-active {
+            border-color: rgba(15, 118, 110, 0.35);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .products-kpi-card[data-stock] {
+            cursor: pointer;
+        }
+
+        .products-kpi-card[data-stock]:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        .products-kpi-top {
+            align-items: flex-start;
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+        }
+
+        .products-kpi-label {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+        }
+
+        .products-kpi-value {
+            color: var(--text-primary);
+            font-size: clamp(20px, 2vw, 28px);
+            font-weight: 950;
+            line-height: 1.05;
+            margin: 6px 0 0;
+        }
+
+        .products-kpi-note {
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.45;
+            margin: 0;
+        }
+
+        .products-kpi-icon {
+            align-items: center;
+            background: var(--accent-light);
+            border-radius: var(--radius-sm);
+            color: var(--accent-color);
+            display: inline-flex;
+            flex-shrink: 0;
+            font-size: 20px;
+            height: 42px;
+            justify-content: center;
+            width: 42px;
+        }
+
+        .products-kpi-icon.success { background: var(--success-light); color: var(--success-color); }
+        .products-kpi-icon.warning { background: var(--warning-light); color: var(--warning-color); }
+        .products-kpi-icon.danger { background: var(--danger-light); color: var(--danger-color); }
+        .products-kpi-icon.info { background: var(--info-light); color: var(--info-color); }
+
+        .products-filter-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            display: grid;
+            gap: 14px;
+            padding: 16px;
+        }
+
+        .products-filter-header {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        .products-filter-title {
+            align-items: center;
+            color: var(--text-primary);
+            display: flex;
+            font-size: 14px;
+            font-weight: 850;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .products-filter-title i {
+            color: var(--accent-color);
+            font-size: 18px;
+        }
+
+        .products-visible-count {
+            color: var(--text-muted);
+            font-size: 12.5px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .products-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .products-chip {
+            align-items: center;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-pill);
+            box-shadow: var(--shadow-xs);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            font-size: 13px;
+            font-weight: 700;
+            gap: 6px;
+            min-height: 36px;
+            padding: 7px 14px;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        .products-chip:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            transform: translateY(-1px);
+        }
+
+        .products-chip:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        .products-chip.active {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            box-shadow: var(--shadow-accent);
+            color: #ffffff;
+        }
+
+        .products-chip .chip-count {
+            background: rgba(20, 32, 31, 0.08);
+            border-radius: var(--radius-pill);
+            font-size: 11.5px;
+            font-weight: 850;
+            line-height: 1;
+            min-width: 22px;
+            padding: 4px 7px;
+            text-align: center;
+        }
+
+        .products-chip.active .chip-count {
+            background: rgba(255, 255, 255, 0.22);
+            color: #ffffff;
+        }
+
+        .products-filter-controls {
+            align-items: end;
+            display: grid;
+            gap: 12px;
+            grid-template-columns: minmax(160px, 220px) auto;
+        }
+
+        .products-filter-field {
+            display: grid;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .products-filter-field label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .products-grid {
+            display: grid;
+            gap: 18px;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 286px), 1fr));
+        }
+
+        .product-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-default);
+            box-shadow: var(--shadow-xs);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-width: 0;
+            overflow: hidden;
+            transition:
+                transform var(--transition-normal),
+                box-shadow var(--transition-normal),
+                border-color var(--transition-normal);
+        }
+
+        .product-card:hover,
+        .product-card:focus-within {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-2px);
+        }
+
+        .product-card.is-hidden {
+            display: none;
+        }
+
+        .product-card-img-wrapper {
+            aspect-ratio: 16 / 10;
+            background: #f4f8f7;
+            border-bottom: 1px solid var(--border-color);
+            overflow: hidden;
+            position: relative;
+            width: 100%;
+        }
+
+        .product-card .pos-product-media {
+            aspect-ratio: 16 / 10;
+            border: none;
+            border-radius: 0;
+        }
+
+        .product-card .pos-product-media img {
+            padding: 18px;
+            transition: transform var(--transition-normal);
+        }
+
+        .product-card:hover .pos-product-media img {
+            transform: scale(1.025);
+        }
+
+        .product-info {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            min-width: 0;
+            padding: 16px 16px 14px;
+        }
+
+        .product-card-header {
+            align-items: flex-start;
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .product-brand {
+            color: var(--text-secondary);
+            font-size: 12.5px;
+            font-weight: 800;
+            line-height: 1.4;
+        }
+
+        .stock-badge {
+            border: 1px solid transparent;
+            border-radius: var(--radius-pill);
+            display: inline-flex;
+            flex: 0 0 auto;
+            font-size: 11.5px;
+            font-weight: 800;
+            justify-content: center;
+            line-height: 1.2;
+            padding: 5px 10px;
+            white-space: nowrap;
+        }
+
+        .stock-badge.stock-ok {
+            background: var(--success-light);
+            border-color: rgba(16, 185, 129, 0.14);
+            color: var(--success-color);
+        }
+
+        .stock-badge.stock-low {
+            background: var(--warning-light);
+            border-color: rgba(245, 158, 11, 0.18);
+            color: #b45309;
+        }
+
+        .stock-badge.stock-out {
+            background: var(--danger-light);
+            border-color: rgba(244, 63, 94, 0.16);
+            color: var(--danger-color);
+        }
+
+        .product-name {
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            color: var(--text-primary);
+            display: -webkit-box;
+            font-size: 16px;
+            font-weight: 850;
+            line-height: 1.35;
+            margin-bottom: 8px;
+            min-height: 43px;
+            overflow: hidden;
+        }
+
+        .product-price {
+            color: var(--accent-color);
+            font-size: 21px;
+            font-weight: 900;
+            letter-spacing: -0.35px;
+            margin-bottom: 12px;
+        }
+
+        .product-meta {
+            border-bottom: 1px solid var(--border-color);
+            border-top: 1px solid var(--border-color);
+            display: grid;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding: 10px 0;
+        }
+
+        .product-meta-row {
+            align-items: center;
+            color: var(--text-secondary);
+            display: flex;
+            font-size: 12.5px;
+            font-weight: 600;
+            gap: 12px;
+            justify-content: space-between;
+            min-width: 0;
+        }
+
+        .product-meta-row strong {
+            color: var(--text-primary);
+            font-weight: 800;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .product-actions {
+            display: grid;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        .product-secondary-actions {
+            display: grid;
+            gap: 7px;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 42px;
+        }
+
+        .product-buy-button,
+        .product-secondary-actions .btn {
+            min-height: 40px;
+            min-width: 0;
+            overflow: hidden;
+            padding-inline: 10px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            width: 100%;
+        }
+
+        .product-buy-button {
+            min-height: 44px;
+        }
+
+        .product-secondary-actions .btn {
+            background: var(--bg-surface);
+            font-size: 12.5px;
+        }
+
+        .product-secondary-actions .btn i {
+            flex: 0 0 auto;
+        }
+
+        .product-icon-button {
+            background: var(--danger-light) !important;
+            border-color: rgba(220, 38, 38, 0.16) !important;
+            color: var(--danger-color) !important;
+            padding-inline: 0 !important;
+            width: 42px;
+        }
+
+        .product-icon-button:hover {
+            background: var(--danger-color) !important;
+            border-color: var(--danger-color) !important;
+            color: #ffffff !important;
+        }
+
+        .product-buy-button:disabled {
+            background: #e5e9f2 !important;
+            border-color: #e5e9f2 !important;
+            box-shadow: none !important;
+            color: var(--text-muted) !important;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* States */
+        .products-state {
+            align-items: center;
+            background: var(--bg-surface);
+            border: 1px dashed rgba(15, 118, 110, 0.28);
+            border-radius: var(--radius-default);
+            box-shadow: var(--shadow-xs);
+            display: grid;
+            gap: 10px;
+            justify-items: center;
+            min-height: 220px;
+            padding: 36px 24px;
+            place-items: center;
+            text-align: center;
+        }
+
+        .products-state.is-error {
+            border-color: rgba(244, 63, 94, 0.2);
+        }
+
+        .products-state-icon {
+            align-items: center;
+            background: var(--accent-light);
+            border-radius: var(--radius-default);
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 24px;
+            height: 52px;
+            justify-content: center;
+            width: 52px;
+        }
+
+        .products-state.is-error .products-state-icon {
+            background: var(--danger-light);
+            color: var(--danger-color);
+        }
+
+        .products-state h3 {
+            color: var(--text-primary);
+            font-size: 17px;
+            font-weight: 800;
+            margin: 0;
+        }
+
+        .products-state p {
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            line-height: 1.6;
+            margin: 0 0 8px;
+            max-width: 460px;
+        }
+
+        .products-skeleton-grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        }
+
+        .products-skeleton-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-default);
+            box-shadow: var(--shadow-xs);
+            overflow: hidden;
+        }
+
+        .products-skeleton-block,
+        .products-skeleton-line {
+            background: #eef1f7;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .products-skeleton-block {
+            aspect-ratio: 4 / 3;
+        }
+
+        .products-skeleton-content {
+            display: grid;
+            gap: 10px;
+            padding: 16px;
+        }
+
+        .products-skeleton-line {
+            border-radius: var(--radius-pill);
+            height: 12px;
+        }
+
+        .products-skeleton-line.short { width: 44%; }
+        .products-skeleton-line.medium { width: 68%; }
+        .products-skeleton-line.long { width: 92%; }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .products-skeleton-block::after,
+            .products-skeleton-line::after {
+                animation: productsShimmer 1.2s infinite;
+                background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+                content: "";
+                inset: 0;
+                position: absolute;
+                transform: translateX(-100%);
+            }
+
+            @keyframes productsShimmer {
+                to { transform: translateX(100%); }
+            }
+        }
+
+        /* Page-owned overlays (do not use bare .modal-overlay rules) */
+        .products-overlay {
+            align-items: center;
+            background: rgba(15, 23, 42, 0.45);
+            cursor: default;
+            display: none;
+            inset: 0;
+            justify-content: center;
+            padding: 20px;
+            position: fixed;
+            z-index: 10000;
+        }
+
+        .products-overlay.is-open {
+            display: flex;
+        }
+
+        .products-dialog {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            cursor: default;
+            max-height: min(92vh, 900px);
+            max-width: 560px;
+            overflow: auto;
+            padding: 24px;
+            pointer-events: auto;
+            width: min(100%, 560px);
+        }
+
+        .products-overlay button,
+        .products-overlay .btn,
+        .products-overlay .btn *,
+        .products-overlay .products-dialog-close,
+        .products-overlay .products-dialog-close *,
+        .products-overlay .payment-method-btn,
+        .products-overlay .payment-method-btn * {
+            cursor: pointer !important;
+        }
+
+        .products-overlay button:disabled,
+        .products-overlay .btn:disabled {
+            cursor: not-allowed !important;
+        }
+
+        .products-dialog.wide {
+            max-width: 720px;
+            width: min(100%, 720px);
+        }
+
+        .products-dialog-header {
+            align-items: flex-start;
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .products-dialog-header h3 {
+            align-items: center;
+            color: var(--text-primary);
+            display: flex;
+            font-size: 17px;
+            font-weight: 850;
+            gap: 8px;
+            margin: 0 0 4px;
+        }
+
+        .products-dialog-header h3 i {
+            color: var(--accent-color);
+        }
+
+        .products-dialog-header p {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin: 0;
+        }
+
+        .products-dialog-close {
+            align-items: center;
+            background: var(--bg-muted);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            display: inline-flex;
+            font-size: 18px;
+            height: 36px;
+            justify-content: center;
+            width: 36px;
+        }
+
+        .products-dialog-close:hover {
+            color: var(--text-primary);
+        }
+
+        .products-form-grid {
+            align-items: start;
+            display: grid;
+            gap: 14px;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .products-form-grid .full {
+            grid-column: 1 / -1;
+        }
+
+        .products-form-field {
+            display: grid;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        /* Keep paired controls (SKU / category, price / qty) on one baseline. */
+        .products-form-field--control {
+            grid-template-rows: auto 42px auto;
+        }
+
+        .products-form-field--control > label {
+            align-self: end;
+            line-height: 1.2;
+            min-height: 16px;
+        }
+
+        .products-form-field--control > .form-control,
+        .products-form-field--control > .form-select,
+        .products-form-field--control > .sku-input-row {
+            min-height: 42px;
+        }
+
+        .products-form-field--control > .field-error {
+            min-height: 16px;
+        }
+
+        .products-form-field--sku-meta {
+            margin-top: -6px;
+        }
+
+        .products-form-field label {
+            color: var(--text-secondary);
+            font-size: 12.5px;
+            font-weight: 700;
+        }
+
+        .products-form-field .field-error {
+            color: var(--danger-color);
+            font-size: 12px;
+            font-weight: 650;
+            min-height: 16px;
+        }
+
+        .sku-input-row {
+            align-items: stretch;
+            display: grid;
+            gap: 8px;
+            grid-template-columns: minmax(0, 1fr) auto;
+            min-height: 42px;
+        }
+
+        .sku-input-row .form-control {
+            min-height: 42px;
+        }
+
+        .sku-input-row .btn {
+            min-height: 42px;
+            white-space: nowrap;
+        }
+
+        #productFormSku {
+            font-family: "Roboto Mono", "Cascadia Mono", Consolas, monospace;
+            font-weight: 750;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        #skuHint {
+            line-height: 1.45;
+            margin: 0;
+            min-height: 18px;
+        }
+
+        #skuHint strong {
+            color: var(--accent-color);
+            font-weight: 800;
+        }
+
+        #skuHint.is-suggested {
+            color: var(--accent-color);
+        }
+
+        #skuHint.is-warning {
+            color: #b45309;
+        }
+
+        .products-form-field input.is-invalid,
+        .products-form-field select.is-invalid {
+            border-color: var(--danger-color) !important;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important;
+        }
+
+        .products-form-hint {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .product-image-tools {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: minmax(0, 1fr) auto;
+        }
+
+        .product-image-tools .btn,
+        .product-image-file-btn {
+            min-height: 42px;
+            white-space: nowrap;
+        }
+
+        .product-image-file-btn {
+            margin: 0;
+        }
+
+        .products-image-preview {
+            max-height: 280px;
+            min-height: 200px;
+        }
+
+        .products-image-preview img {
+            max-height: 280px;
+        }
+
+        #imageProcessStatus {
+            margin-top: 8px;
+        }
+
+        #imageProcessStatus.is-ok {
+            color: var(--accent-color);
+        }
+
+        #imageProcessStatus.is-error {
+            color: var(--danger-color);
+        }
+
+        @media (max-width: 768px) {
+            .product-image-tools {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .products-dialog-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        /* Quick sale */
+        .quick-sale-product {
+            align-items: center;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            display: grid;
+            gap: 14px;
+            grid-template-columns: 88px minmax(0, 1fr);
+            margin-bottom: 16px;
+            padding: 14px;
+        }
+
+        .quick-sale-product img {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            height: 88px;
+            object-fit: contain;
+            padding: 6px;
+            width: 88px;
+        }
+
+        .quick-sale-product h4 {
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 850;
+            margin: 0 0 4px;
+        }
+
+        .quick-sale-product .meta {
+            color: var(--text-secondary);
+            font-size: 12.5px;
+            margin: 0 0 8px;
+        }
+
+        .quick-sale-product .price {
+            color: var(--accent-color);
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: -0.4px;
+        }
+
+        .quick-sale-grid {
+            display: grid;
+            gap: 14px;
+        }
+
+        .qty-stepper {
+            align-items: center;
+            display: grid;
+            gap: 8px;
+            grid-template-columns: 42px minmax(0, 1fr) 42px;
+        }
+
+        .qty-stepper .btn {
+            min-height: 42px;
+            padding-inline: 0;
+        }
+
+        .qty-stepper input {
+            font-weight: 800;
+            text-align: center;
+        }
+
+        .payment-method-row {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .payment-method-btn {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 750;
+            min-height: 44px;
+            padding: 8px 10px;
+            transition: all var(--transition-fast);
+        }
+
+        .payment-method-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .payment-method-btn.active {
+            background: var(--accent-subtle);
+            border-color: rgba(15, 118, 110, 0.35);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            color: var(--accent-color);
+        }
+
+        .quick-sale-summary {
+            background: #f7fbfa;
+            border: 1px solid rgba(15, 118, 110, 0.12);
+            border-radius: var(--radius-sm);
+            display: grid;
+            gap: 8px;
+            padding: 14px;
+        }
+
+        .quick-sale-summary-row {
+            align-items: center;
+            display: flex;
+            font-size: 13.5px;
+            gap: 12px;
+            justify-content: space-between;
+        }
+
+        .quick-sale-summary-row strong {
+            color: var(--accent-color);
+            font-size: 18px;
+            font-weight: 900;
+        }
+
+        .quick-sale-actions {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: 1fr 1.2fr;
+            margin-top: 18px;
+        }
+
+        .quick-sale-actions .btn {
+            min-height: 44px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .products-kpi-card,
+            .products-chip,
+            .product-card {
+                transition: none;
+            }
+
+            .products-kpi-card:hover,
+            .products-chip:hover,
+            .product-card:hover {
+                transform: none;
+            }
+        }
+
+        @media (max-width: 1280px) {
+            .products-kpi-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .products-kpi-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .products-filter-controls {
+                grid-template-columns: 1fr auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .products-kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .products-toolbar {
+                justify-content: flex-start;
+                width: 100%;
+            }
+
+            .products-topbar-search {
+                width: 100%;
+            }
+
+            .products-form-grid,
+            .payment-method-row,
+            .quick-sale-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-sale-product {
+                grid-template-columns: 1fr;
+            }
+
+            .products-grid,
+            .products-skeleton-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .product-card {
+                margin-inline: auto;
+                max-width: 560px;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 390px) {
+            .product-info {
+                padding: 14px;
+            }
+
+            .product-secondary-actions {
+                grid-template-columns: minmax(0, 1fr) 42px 42px;
+            }
+
+            .product-secondary-actions .btn {
+                padding-inline: 0;
+            }
+
+            .product-secondary-actions .btn .action-label {
+                display: none;
+            }
+        }
+
+        /* ─────────────────────────────────────────────
+           Quick-sale QR payment waiting dialog
+           Mirrors orders.html payment-wait-* pattern
+           ───────────────────────────────────────────── */
+        .qs-pay-overlay {
+            align-items: center;
+            background: rgba(15, 23, 42, 0.5);
+            display: none;
+            inset: 0;
+            justify-content: center;
+            padding: 20px;
+            position: fixed;
+            z-index: 10100;
+        }
+
+        .qs-pay-overlay.is-open {
+            display: flex;
+        }
+
+        .qs-pay-dialog {
+            background: var(--bg-surface);
+            border: 1px solid rgba(20, 32, 31, 0.12);
+            border-radius: var(--radius-xl);
+            box-shadow: 0 28px 70px -18px rgba(16, 32, 29, 0.34);
+            color: var(--text-primary);
+            max-width: 520px;
+            overflow: hidden;
+            width: min(100%, 520px);
+        }
+
+        .qs-pay-header {
+            align-items: flex-start;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            gap: 16px;
+            justify-content: space-between;
+            padding: 20px 22px 17px;
+        }
+
+        .qs-pay-heading {
+            display: grid;
+            gap: 5px;
+        }
+
+        .qs-pay-status-line {
+            align-items: center;
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            gap: 7px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .qs-pay-pulse {
+            animation: qsPayPulse 1.6s ease-in-out infinite;
+            background: var(--accent-color);
+            border-radius: 50%;
+            box-shadow: 0 0 0 4px var(--accent-subtle);
+            height: 8px;
+            width: 8px;
+        }
+
+        .qs-pay-title {
+            font-size: 20px;
+            font-weight: 850;
+            letter-spacing: -0.025em;
+            line-height: 1.25;
+            margin: 0;
+        }
+
+        .qs-pay-close {
+            align-items: center;
+            background: var(--bg-muted);
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            flex: 0 0 auto;
+            font-size: 18px;
+            height: 36px;
+            justify-content: center;
+            transition: background-color var(--transition-fast), color var(--transition-fast);
+            width: 36px;
+        }
+
+        .qs-pay-close:hover {
+            background: var(--bg-surface);
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+
+        .qs-pay-body {
+            display: grid;
+            gap: 16px;
+            padding: 20px 22px 22px;
+        }
+
+        .qs-pay-main {
+            align-items: center;
+            display: grid;
+            gap: 18px;
+            grid-template-columns: 176px minmax(0, 1fr);
+        }
+
+        .qs-pay-visual {
+            align-items: center;
+            aspect-ratio: 1;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        .qs-pay-visual img {
+            display: block;
+            height: 100%;
+            object-fit: contain;
+            width: 100%;
+        }
+
+        .qs-pay-test-visual {
+            align-content: center;
+            background: var(--accent-light);
+            color: var(--accent-color);
+            display: grid;
+            gap: 8px;
+            justify-items: center;
+            text-align: center;
+        }
+
+        .qs-pay-test-visual i { font-size: 42px; }
+        .qs-pay-test-visual strong { font-size: 13px; }
+
+        .qs-pay-summary {
+            display: grid;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .qs-pay-label {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 700;
+            margin: 0 0 2px;
+        }
+
+        .qs-pay-amount {
+            color: var(--text-primary);
+            font-size: clamp(28px, 6vw, 36px);
+            font-weight: 900;
+            letter-spacing: -0.045em;
+            line-height: 1.1;
+        }
+
+        .qs-pay-code-box {
+            align-items: center;
+            background: var(--bg-muted);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-default);
+            display: grid;
+            gap: 8px;
+            grid-template-columns: minmax(0, 1fr) auto;
+            padding: 10px 10px 10px 12px;
+        }
+
+        .qs-pay-code {
+            font-size: 15px;
+            font-weight: 850;
+            letter-spacing: 0.06em;
+            overflow-wrap: anywhere;
+        }
+
+        .qs-pay-copy {
+            align-items: center;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            font-size: 16px;
+            height: 34px;
+            justify-content: center;
+            transition: border-color var(--transition-fast), color var(--transition-fast);
+            width: 34px;
+        }
+
+        .qs-pay-copy:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .qs-pay-meta {
+            color: var(--text-secondary);
+            display: flex;
+            flex-wrap: wrap;
+            font-size: 12.5px;
+            gap: 8px 14px;
+        }
+
+        .qs-pay-meta span {
+            align-items: center;
+            display: inline-flex;
+            gap: 6px;
+        }
+
+        .qs-pay-note {
+            align-items: flex-start;
+            background: var(--accent-light);
+            border: 1px solid rgba(15, 118, 110, 0.14);
+            border-radius: var(--radius-default);
+            color: var(--text-secondary);
+            display: grid;
+            font-size: 12.5px;
+            gap: 9px;
+            grid-template-columns: 18px 1fr;
+            line-height: 1.5;
+            padding: 11px 12px;
+        }
+
+        .qs-pay-note i {
+            color: var(--accent-color);
+            font-size: 17px;
+            margin-top: 1px;
+        }
+
+        .qs-pay-actions {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .qs-pay-actions .btn {
+            align-items: center;
+            display: inline-flex;
+            justify-content: center;
+            min-height: 42px;
+        }
+
+        .qs-pay-actions.is-single {
+            grid-template-columns: 1fr;
+        }
+
+        @keyframes qsPayPulse {
+            0%, 100% { opacity: 0.55; transform: scale(0.88); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .qs-pay-pulse { animation: none; }
+        }
+
+        @media (max-width: 680px) {
+            .qs-pay-main {
+                grid-template-columns: 1fr;
+            }
+
+            .qs-pay-visual {
+                justify-self: center;
+                max-width: 190px;
+                width: 100%;
+            }
+
+            .qs-pay-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="pos-container">
+    <aside data-menu-component data-active-menu="products"></aside>
+
+    <main class="pos-main">
+        <header class="pos-topbar">
+            <div class="products-topbar-search">
+                <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+                <input
+                    class="form-control"
+                    type="search"
+                    id="productSearch"
+                    placeholder="Tìm tên kính, SKU hoặc thương hiệu"
+                    autocomplete="off">
+            </div>
+            <div class="pos-topbar-actions">
+                <button class="btn btn-secondary" type="button" id="refreshProductsButton">
+                    <i class="ph ph-arrow-clockwise"></i> Làm mới
+                </button>
+                <button class="btn btn-primary" type="button" id="openAddProductButton">
+                    <i class="ph ph-plus"></i> Thêm mẫu
+                </button>
+                <button class="btn btn-secondary" type="button" onclick="location.href='orders.html'">
+                    <i class="ph ph-cash-register"></i> Bán hàng
+                </button>
+            </div>
+        </header>
+
+        <div class="pos-content">
+            <div class="products-shell">
+                <section class="pos-page-intro">
+                    <div>
+                        <h2>Danh mục mẫu kính</h2>
+                        <p>Quản lý giá, SKU, tồn kho và bán nhanh ngay từ catalog.</p>
+                    </div>
+                    <div class="products-toolbar">
+                        <span class="products-status" id="productsStatus" role="status" aria-live="polite">
+                            <i class="ph ph-circle-notch"></i> Đang tải
+                        </span>
+                        <button class="btn btn-secondary" type="button" onclick="location.href='inventory.html'">
+                            <i class="ph ph-warehouse"></i> Kho hàng
+                        </button>
+                    </div>
+                </section>
+
+                <section class="products-kpi-grid" aria-label="Chỉ số catalog">
+                    <article class="products-kpi-card is-active" data-stock="all" role="button" tabindex="0" aria-pressed="true">
+                        <div class="products-kpi-top">
+                            <div>
+                                <div class="products-kpi-label">Tổng mẫu</div>
+                                <h3 class="products-kpi-value pos-numeric" id="kpiTotal">0</h3>
+                            </div>
+                            <span class="products-kpi-icon"><i class="ph ph-stack"></i></span>
+                        </div>
+                        <p class="products-kpi-note" id="kpiTotalNote">Toàn bộ catalog hiện có.</p>
+                    </article>
+
+                    <article class="products-kpi-card" data-stock="ok" role="button" tabindex="0" aria-pressed="false">
+                        <div class="products-kpi-top">
+                            <div>
+                                <div class="products-kpi-label">Còn hàng</div>
+                                <h3 class="products-kpi-value pos-numeric" id="kpiOk">0</h3>
+                            </div>
+                            <span class="products-kpi-icon success"><i class="ph ph-check-circle"></i></span>
+                        </div>
+                        <p class="products-kpi-note">Tồn kho trên 5 chiếc.</p>
+                    </article>
+
+                    <article class="products-kpi-card" data-stock="low" role="button" tabindex="0" aria-pressed="false">
+                        <div class="products-kpi-top">
+                            <div>
+                                <div class="products-kpi-label">Sắp hết</div>
+                                <h3 class="products-kpi-value pos-numeric" id="kpiLow">0</h3>
+                            </div>
+                            <span class="products-kpi-icon warning"><i class="ph ph-warning"></i></span>
+                        </div>
+                        <p class="products-kpi-note">Tồn từ 1 đến 5 chiếc.</p>
+                    </article>
+
+                    <article class="products-kpi-card" data-stock="out" role="button" tabindex="0" aria-pressed="false">
+                        <div class="products-kpi-top">
+                            <div>
+                                <div class="products-kpi-label">Hết hàng</div>
+                                <h3 class="products-kpi-value pos-numeric" id="kpiOut">0</h3>
+                            </div>
+                            <span class="products-kpi-icon danger"><i class="ph ph-x-circle"></i></span>
+                        </div>
+                        <p class="products-kpi-note">Cần nhập lại trước khi bán.</p>
+                    </article>
+
+                    <article class="products-kpi-card" aria-label="Giá trị tồn">
+                        <div class="products-kpi-top">
+                            <div>
+                                <div class="products-kpi-label">Giá trị tồn</div>
+                                <h3 class="products-kpi-value pos-money" id="kpiValue">0đ</h3>
+                            </div>
+                            <span class="products-kpi-icon info"><i class="ph ph-currency-circle-dollar"></i></span>
+                        </div>
+                        <p class="products-kpi-note">Giá bán x số lượng còn lại.</p>
+                    </article>
+                </section>
+
+                <section class="products-filter-panel" aria-label="Bộ lọc sản phẩm">
+                    <div class="products-filter-header">
+                        <h2 class="products-filter-title">
+                            <i class="ph ph-funnel-simple"></i> Lọc catalog
+                        </h2>
+                        <span class="products-visible-count" id="visibleCount">0 / 0 sản phẩm</span>
+                    </div>
+
+                    <div>
+                        <div class="products-filter-field" style="margin-bottom: 8px;">
+                            <label>Trạng thái tồn</label>
+                        </div>
+                        <div class="products-chip-row" id="stockChips">
+                            <button class="products-chip active" type="button" data-stock="all">Tất cả <span class="chip-count" id="chipAll">0</span></button>
+                            <button class="products-chip" type="button" data-stock="ok">Còn hàng <span class="chip-count" id="chipOk">0</span></button>
+                            <button class="products-chip" type="button" data-stock="low">Sắp hết <span class="chip-count" id="chipLow">0</span></button>
+                            <button class="products-chip" type="button" data-stock="out">Hết hàng <span class="chip-count" id="chipOut">0</span></button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="products-filter-field" style="margin-bottom: 8px;">
+                            <label>Thương hiệu</label>
+                        </div>
+                        <div class="products-chip-row" id="brandChips"></div>
+                    </div>
+
+                    <div class="products-filter-controls">
+                        <div class="products-filter-field">
+                            <label for="productSort">Sắp xếp</label>
+                            <select class="form-select" id="productSort">
+                                <option value="name-asc">Tên A-Z</option>
+                                <option value="name-desc">Tên Z-A</option>
+                                <option value="price-asc">Giá tăng dần</option>
+                                <option value="price-desc">Giá giảm dần</option>
+                                <option value="qty-asc">Tồn thấp nhất</option>
+                                <option value="qty-desc">Tồn cao nhất</option>
+                            </select>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="btn btn-secondary" type="button" id="resetFiltersButton">
+                                <i class="ph ph-x-circle"></i> Xóa lọc
+                            </button>
+                            <button class="btn btn-primary" type="button" id="openAddProductButtonAlt">
+                                <i class="ph ph-plus"></i> Thêm mẫu
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="productList" aria-live="polite"></section>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Product form modal (add / edit) -->
+<div class="products-overlay" id="productFormOverlay" role="dialog" aria-modal="true" aria-labelledby="productFormTitle" hidden>
+    <div class="products-dialog" data-modal-panel>
+        <div class="products-dialog-header">
+            <div>
+                <h3 id="productFormTitle"><i class="ph ph-plus-circle"></i> Thêm sản phẩm</h3>
+                <p id="productFormSubtitle">Nhập thông tin mẫu kính để bán tại quầy.</p>
+            </div>
+            <button class="products-dialog-close" type="button" id="closeProductFormButton" aria-label="Đóng">
+                <i class="ph ph-x"></i>
+            </button>
+        </div>
+
+        <form id="productForm" novalidate>
+            <input type="hidden" id="productFormId" value="">
+            <div class="products-form-grid">
+                <div class="products-form-field full">
+                    <label for="productFormName">Tên sản phẩm</label>
+                    <input class="form-control" id="productFormName" name="name" type="text" placeholder="VD: RayBan Aviator Classic" required>
+                    <div class="field-error" id="errorName"></div>
+                </div>
+
+                <div class="products-form-field products-form-field--control">
+                    <label for="productFormSku">Mã SKU</label>
+                    <div class="sku-input-row">
+                        <input
+                            class="form-control pos-code"
+                            id="productFormSku"
+                            name="sku"
+                            type="text"
+                            placeholder="VD: RB014"
+                            autocomplete="off"
+                            spellcheck="false"
+                            required>
+                        <button class="btn btn-secondary" type="button" id="suggestSkuButton" title="Gợi ý mã SKU chuẩn hệ thống">
+                            <i class="ph ph-magic-wand"></i> Gợi ý
+                        </button>
+                    </div>
+                    <div class="field-error" id="errorSku"></div>
+                </div>
+
+                <div class="products-form-field products-form-field--control">
+                    <label for="productFormCategory">Danh mục</label>
+                    <select class="form-select" id="productFormCategory" name="category_id">
+                        <option value="1">Kính mát</option>
+                        <option value="2">Kính cận</option>
+                        <option value="3">Gọng kính</option>
+                        <option value="4">Kính râm thể thao</option>
+                    </select>
+                    <div class="field-error"></div>
+                </div>
+
+                <div class="products-form-field full products-form-field--sku-meta">
+                    <p class="products-form-hint" id="skuHint">
+                        Chuẩn hệ thống: <strong>BRAND + 3 số</strong> (VD: RB014, OK008). Tự gợi ý theo tên.
+                    </p>
+                </div>
+
+                <div class="products-form-field">
+                    <label for="productFormPrice">Giá bán (đ)</label>
+                    <input class="form-control pos-money-input" id="productFormPrice" name="price" type="text" inputmode="numeric" data-money="vnd" placeholder="2.890.000đ" autocomplete="off" required>
+                    <div class="field-error" id="errorPrice"></div>
+                </div>
+
+                <div class="products-form-field">
+                    <label for="productFormCost">Giá vốn (đ)</label>
+                    <input class="form-control pos-money-input" id="productFormCost" name="cost_price" type="text" inputmode="numeric" data-money="vnd" placeholder="1.200.000đ" autocomplete="off">
+                    <div class="field-error" id="errorCost"></div>
+                </div>
+
+                <div class="products-form-field">
+                    <label for="productFormBrand">Thương hiệu</label>
+                    <input class="form-control" id="productFormBrand" name="brand" type="text" placeholder="Ray-Ban, Oakley..." maxlength="80" autocomplete="off">
+                    <div class="field-error" id="errorBrand"></div>
+                </div>
+
+                <div class="products-form-field">
+                    <label for="productFormQuantity">Tồn kho</label>
+                    <input class="form-control" id="productFormQuantity" name="quantity" type="number" min="0" step="1" placeholder="0" required>
+                    <div class="field-error" id="errorQuantity"></div>
+                </div>
+
+                <div class="products-form-field full">
+                    <label for="productFormImage">Ảnh sản phẩm</label>
+                    <div class="product-image-tools">
+                        <input
+                            class="form-control"
+                            id="productFormImage"
+                            name="image"
+                            type="text"
+                            placeholder="images/... hoặc URL (local file khuyến nghị)"
+                            autocomplete="off">
+                        <label class="btn btn-secondary product-image-file-btn" for="productFormImageFile">
+                            <i class="ph ph-upload-simple"></i> Chọn file
+                        </label>
+                        <input
+                            id="productFormImageFile"
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp,image/*"
+                            hidden>
+                        <!-- processImageButton kept hidden: BG strip runs automatically on file select / save -->
+                        <button class="btn btn-primary" type="button" id="processImageButton" hidden tabindex="-1" aria-hidden="true">
+                            <i class="ph ph-sparkle"></i> Xử lý nền
+                        </button>
+                    </div>
+                    <p class="products-form-hint" id="imageProcessHint">
+                        Khi chọn ảnh hoặc lưu sản phẩm, hệ thống tự tách nền studio và lưu PNG trong suốt (chạy ngầm, không cần thao tác thêm).
+                    </p>
+                    <div class="field-error" id="errorImage"></div>
+                </div>
+
+                <div class="products-form-field full">
+                    <div class="products-image-preview pos-product-media pos-product-media--wide" id="productFormPreview" aria-hidden="true">
+                        <img id="productFormPreviewImg" src="images/wayfarer.jpg" alt="Xem trước ảnh sản phẩm">
+                    </div>
+                    <p class="products-form-hint" id="imageProcessStatus" hidden></p>
+                </div>
+            </div>
+
+            <div class="products-dialog-actions">
+                <button class="btn btn-secondary" type="button" id="cancelProductFormButton">Hủy</button>
+                <button class="btn btn-primary" type="submit" id="submitProductFormButton">
+                    <i class="ph ph-check"></i> Lưu sản phẩm
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Quick sale modal (POS express checkout) -->
+<div class="products-overlay" id="quickSaleOverlay" role="dialog" aria-modal="true" aria-labelledby="quickSaleTitle" hidden>
+    <div class="products-dialog wide" data-modal-panel>
+        <div class="products-dialog-header">
+            <div>
+                <h3 id="quickSaleTitle"><i class="ph ph-lightning"></i> Bán nhanh tại quầy</h3>
+                <p>Thanh toán 1 mẫu ngay, hoặc chuyển sang máy POS đầy đủ.</p>
+            </div>
+            <button class="products-dialog-close" type="button" id="closeQuickSaleButton" aria-label="Đóng">
+                <i class="ph ph-x"></i>
+            </button>
+        </div>
+
+        <div class="quick-sale-product" id="quickSaleProduct">
+            <!-- filled by JS -->
+        </div>
+
+        <div class="quick-sale-grid">
+            <div class="products-form-field">
+                <label for="quickSaleQty">Số lượng</label>
+                <div class="qty-stepper">
+                    <button class="btn btn-secondary" type="button" id="quickSaleQtyDown" aria-label="Giảm">
+                        <i class="ph ph-minus"></i>
+                    </button>
+                    <input class="form-control" id="quickSaleQty" type="number" min="1" value="1">
+                    <button class="btn btn-secondary" type="button" id="quickSaleQtyUp" aria-label="Tăng">
+                        <i class="ph ph-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="products-form-field">
+                <label>Phương thức thanh toán</label>
+                <div class="payment-method-row" role="group" aria-label="Phương thức thanh toán">
+                    <button class="payment-method-btn active" type="button" data-method="cash">
+                        <i class="ph ph-money"></i> Tiền mặt
+                    </button>
+                    <button class="payment-method-btn" type="button" data-method="bank_transfer">
+                        <i class="ph ph-qr-code"></i> Chuyển khoản
+                    </button>
+                    <button class="payment-method-btn" type="button" data-method="card">
+                        <i class="ph ph-credit-card"></i> Thẻ
+                    </button>
+                </div>
+            </div>
+
+            <div class="products-form-field" id="quickSaleCashField">
+                <label for="quickSaleAmountPaid">Tiền khách đưa</label>
+                <input class="form-control pos-money-input" id="quickSaleAmountPaid" name="amount_paid" type="text" inputmode="numeric" data-money="vnd" placeholder="0đ" autocomplete="off">
+                <p class="products-form-hint" id="quickSaleChangeHint">Tiền thừa sẽ được tính tự động.</p>
+            </div>
+
+            <div class="quick-sale-summary">
+                <div class="quick-sale-summary-row">
+                    <span>Đơn giá</span>
+                    <span class="pos-money" id="quickSaleUnitPrice">0đ</span>
+                </div>
+                <div class="quick-sale-summary-row">
+                    <span>Số lượng</span>
+                    <span class="pos-numeric" id="quickSaleQtyLabel">1</span>
+                </div>
+                <div class="quick-sale-summary-row">
+                    <span>Tổng thanh toán</span>
+                    <strong class="pos-money" id="quickSaleTotal">0đ</strong>
+                </div>
+                <div class="quick-sale-summary-row" id="quickSaleChangeRow" hidden>
+                    <span>Tiền thừa</span>
+                    <span class="pos-money" id="quickSaleChange">0đ</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-sale-actions">
+            <button class="btn btn-secondary" type="button" id="sendToPosButton">
+                <i class="ph ph-cash-register"></i> Mở quầy POS
+            </button>
+            <button class="btn btn-primary" type="button" id="confirmQuickSaleButton">
+                <i class="ph ph-check-circle"></i> Thanh toán ngay
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/format.js"></script>
+<script src="assets/js/sku.js"></script>
+<script src="assets/js/productImage.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/components.js"></script>
+<script>
+(function productsPage() {
+    const DEFAULT_PRODUCT_IMAGE = "images/wayfarer.jpg";
+    const LOW_STOCK_THRESHOLD = 5;
+    const POS_PENDING_CART_KEY = "pos_pending_cart";
+
+    const KNOWN_BRANDS = [
+        { value: "rayban", label: "RayBan" },
+        { value: "oakley", label: "Oakley" },
+        { value: "gucci", label: "Gucci" },
+        { value: "prada", label: "Prada" },
+        { value: "dior", label: "Dior" },
+        { value: "versace", label: "Versace" },
+        { value: "tom ford", label: "Tom Ford" },
+        { value: "police", label: "Police" },
+        { value: "persol", label: "Persol" },
+        { value: "gentle monster", label: "Gentle Monster" },
+        { value: "moscot", label: "Moscot" }
+    ];
+
+    /** @type {Array<Object>} */
+    let allProducts = [];
+    let activeBrand = "all";
+    let activeStock = "all";
+    let searchQuery = "";
+    let sortMode = "name-asc";
+    let formMode = "create";
+    /** @type {Object|null} */
+    let quickSaleProduct = null;
+    let quickSaleMethod = "cash";
+    let quickSaleSubmitting = false;
+    let formSubmitting = false;
+    /** When true, auto-suggest will not overwrite the SKU field. */
+    let skuManuallyEdited = false;
+    /** Pending processed image data URL awaiting upload on save. */
+    let pendingProcessedDataUrl = null;
+    let imageProcessing = false;
+
+    const currentUser = requireAuth();
+    if (currentUser) {
+        const welcome = document.getElementById("welcomeUser");
+        if (welcome) welcome.textContent = currentUser.username;
+    }
+
+    const els = {
+        status: document.getElementById("productsStatus"),
+        list: document.getElementById("productList"),
+        search: document.getElementById("productSearch"),
+        sort: document.getElementById("productSort"),
+        brandChips: document.getElementById("brandChips"),
+        visibleCount: document.getElementById("visibleCount"),
+        formOverlay: document.getElementById("productFormOverlay"),
+        productForm: document.getElementById("productForm"),
+        formTitle: document.getElementById("productFormTitle"),
+        formSubtitle: document.getElementById("productFormSubtitle"),
+        formId: document.getElementById("productFormId"),
+        formName: document.getElementById("productFormName"),
+        formSku: document.getElementById("productFormSku"),
+        formCategory: document.getElementById("productFormCategory"),
+        formPrice: document.getElementById("productFormPrice"),
+        formCost: document.getElementById("productFormCost"),
+        formBrand: document.getElementById("productFormBrand"),
+        formQuantity: document.getElementById("productFormQuantity"),
+        formImage: document.getElementById("productFormImage"),
+        formPreviewImg: document.getElementById("productFormPreviewImg"),
+        formImageFile: document.getElementById("productFormImageFile"),
+        processImageButton: document.getElementById("processImageButton"),
+        imageProcessStatus: document.getElementById("imageProcessStatus"),
+        submitFormBtn: document.getElementById("submitProductFormButton"),
+        suggestSkuButton: document.getElementById("suggestSkuButton"),
+        skuHint: document.getElementById("skuHint"),
+        quickOverlay: document.getElementById("quickSaleOverlay"),
+        quickProduct: document.getElementById("quickSaleProduct"),
+        quickQty: document.getElementById("quickSaleQty"),
+        quickAmount: document.getElementById("quickSaleAmountPaid"),
+        quickCashField: document.getElementById("quickSaleCashField"),
+        quickChangeRow: document.getElementById("quickSaleChangeRow"),
+        quickChange: document.getElementById("quickSaleChange"),
+        quickChangeHint: document.getElementById("quickSaleChangeHint"),
+        quickUnit: document.getElementById("quickSaleUnitPrice"),
+        quickQtyLabel: document.getElementById("quickSaleQtyLabel"),
+        quickTotal: document.getElementById("quickSaleTotal"),
+        confirmQuickSale: document.getElementById("confirmQuickSaleButton")
+    };
+
+    function numberValue(value) {
+        return Number(value || 0);
+    }
+
+    function normalizeText(value) {
+        return String(value || "")
+            .trim()
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function getProductBrand(name) {
+        const lowerName = normalizeText(name);
+        return KNOWN_BRANDS.find((brand) => lowerName.includes(brand.value))
+            || { value: "khac", label: "Khác" };
+    }
+
+    function getStockKey(quantity) {
+        const qty = numberValue(quantity);
+        if (qty <= 0) return "out";
+        if (qty <= LOW_STOCK_THRESHOLD) return "low";
+        return "ok";
+    }
+
+    function getStockState(quantity) {
+        const key = getStockKey(quantity);
+        if (key === "out") return { className: "stock-out", label: "Hết hàng", key };
+        if (key === "low") return { className: "stock-low", label: `Còn ${numberValue(quantity)}`, key };
+        return { className: "stock-ok", label: "Còn hàng", key };
+    }
+
+    function parseMoney(value) {
+        if (typeof parseCurrencyInputValue === "function") {
+            return parseCurrencyInputValue(value);
+        }
+        if (typeof toCurrencyInteger === "function") {
+            return toCurrencyInteger(value);
+        }
+        // Fallback: DB decimals like "2890000.00" must not become 289000000.
+        const raw = String(value ?? "").trim();
+        if (/^-?\d+(\.\d+)?$/.test(raw)) {
+            return Math.max(0, Math.round(Number(raw)));
+        }
+        return numberValue(raw.replace(/[^\d]/g, ""));
+    }
+
+    function formatMoneyInput(value) {
+        // Always normalize via integer dong first so MySQL decimals
+        // ("2890000.00") never inject extra digits into the input.
+        const amount = parseMoney(value);
+        if (typeof formatCurrencyInputValue === "function") {
+            return formatCurrencyInputValue(amount);
+        }
+        return amount ? `${amount.toLocaleString("vi-VN")}đ` : "";
+    }
+
+    function setStatus(kind, message, icon) {
+        if (!els.status) return;
+        els.status.classList.remove("is-error", "is-warn");
+        if (kind === "error") els.status.classList.add("is-error");
+        if (kind === "warn") els.status.classList.add("is-warn");
+        els.status.innerHTML = `<i class="ph ${icon}"></i> ${escapeHtml(message)}`;
+    }
+
+    function setText(id, value) {
+        const node = typeof id === "string" ? document.getElementById(id) : id;
+        if (node) node.textContent = value;
+    }
+
+    function openOverlay(overlay) {
+        overlay.hidden = false;
+        overlay.classList.add("is-open");
+        document.body.style.overflow = "hidden";
+    }
+
+    function closeOverlay(overlay) {
+        overlay.classList.remove("is-open");
+        overlay.hidden = true;
+        if (!document.querySelector(".products-overlay.is-open")) {
+            document.body.style.overflow = "";
+        }
+    }
+
+    function computeStats(products) {
+        let ok = 0;
+        let low = 0;
+        let out = 0;
+        let value = 0;
+
+        products.forEach((product) => {
+            const qty = numberValue(product.quantity);
+            const price = numberValue(product.price);
+            value += qty * price;
+            const key = getStockKey(qty);
+            if (key === "ok") ok += 1;
+            else if (key === "low") low += 1;
+            else out += 1;
+        });
+
+        return { total: products.length, ok, low, out, value };
+    }
+
+    function updateKpis(stats) {
+        setText("kpiTotal", String(stats.total));
+        setText("kpiOk", String(stats.ok));
+        setText("kpiLow", String(stats.low));
+        setText("kpiOut", String(stats.out));
+        setText("kpiValue", formatCurrency(stats.value));
+        setText("kpiTotalNote", `${stats.total} mẫu trong catalog.`);
+        setText("chipAll", String(stats.total));
+        setText("chipOk", String(stats.ok));
+        setText("chipLow", String(stats.low));
+        setText("chipOut", String(stats.out));
+
+        if (!stats.total) setStatus("ok", "Catalog trống", "ph-eyeglasses");
+        else if (stats.out > 0) setStatus("warn", `${stats.out} mẫu hết hàng`, "ph-warning");
+        else if (stats.low > 0) setStatus("warn", `${stats.low} mẫu sắp hết`, "ph-warning");
+        else setStatus("ok", `${stats.total} mẫu sẵn sàng`, "ph-check-circle");
+    }
+
+    function buildBrandChips(products) {
+        const counts = new Map();
+        products.forEach((product) => {
+            const brand = getProductBrand(product.name);
+            counts.set(brand.value, (counts.get(brand.value) || 0) + 1);
+        });
+
+        const chips = [
+            { value: "all", label: "Tất cả", count: products.length },
+            ...KNOWN_BRANDS
+                .map((brand) => ({ ...brand, count: counts.get(brand.value) || 0 }))
+                .filter((brand) => brand.count > 0 || brand.value === activeBrand),
+            ...(counts.get("khac")
+                ? [{ value: "khac", label: "Khác", count: counts.get("khac") }]
+                : [])
+        ];
+
+        els.brandChips.innerHTML = chips.map((chip) => `
+            <button
+                class="products-chip${activeBrand === chip.value ? " active" : ""}"
+                type="button"
+                data-brand="${escapeHtml(chip.value)}">
+                ${escapeHtml(chip.label)}
+                <span class="chip-count">${chip.count}</span>
+            </button>
+        `).join("");
+
+        els.brandChips.querySelectorAll("[data-brand]").forEach((button) => {
+            button.addEventListener("click", () => {
+                activeBrand = button.dataset.brand || "all";
+                applyView();
+            });
+        });
+    }
+
+    function syncStockControls() {
+        document.querySelectorAll("[data-stock]").forEach((node) => {
+            const isActive = node.dataset.stock === activeStock;
+            node.classList.toggle("is-active", isActive);
+            node.classList.toggle("active", isActive);
+            if (node.hasAttribute("aria-pressed")) {
+                node.setAttribute("aria-pressed", isActive ? "true" : "false");
+            }
+        });
+    }
+
+    function getFilteredProducts() {
+        const query = normalizeText(searchQuery);
+
+        let list = allProducts.filter((product) => {
+            const brand = getProductBrand(product.name);
+            const stock = getStockKey(product.quantity);
+            const name = normalizeText(product.name);
+            const sku = normalizeText(product.sku);
+
+            if (activeBrand !== "all" && brand.value !== activeBrand) return false;
+            if (activeStock !== "all" && stock !== activeStock) return false;
+            if (!query) return true;
+            return name.includes(query) || sku.includes(query) || normalizeText(brand.label).includes(query);
+        });
+
+        list = list.slice().sort((a, b) => {
+            const nameA = String(a.name || "");
+            const nameB = String(b.name || "");
+            const priceA = numberValue(a.price);
+            const priceB = numberValue(b.price);
+            const qtyA = numberValue(a.quantity);
+            const qtyB = numberValue(b.quantity);
+
+            switch (sortMode) {
+                case "name-desc": return nameB.localeCompare(nameA, "vi");
+                case "price-asc": return priceA - priceB || nameA.localeCompare(nameB, "vi");
+                case "price-desc": return priceB - priceA || nameA.localeCompare(nameB, "vi");
+                case "qty-asc": return qtyA - qtyB || nameA.localeCompare(nameB, "vi");
+                case "qty-desc": return qtyB - qtyA || nameA.localeCompare(nameB, "vi");
+                case "name-asc":
+                default: return nameA.localeCompare(nameB, "vi");
+            }
+        });
+
+        return list;
+    }
+
+    function renderSkeleton() {
+        const cards = Array.from({ length: 8 }, () => `
+            <div class="products-skeleton-card" aria-hidden="true">
+                <div class="products-skeleton-block"></div>
+                <div class="products-skeleton-content">
+                    <div class="products-skeleton-line short"></div>
+                    <div class="products-skeleton-line long"></div>
+                    <div class="products-skeleton-line medium"></div>
+                    <div class="products-skeleton-line long"></div>
+                </div>
+            </div>
+        `).join("");
+        els.list.innerHTML = `<div class="products-skeleton-grid">${cards}</div>`;
+        setText(els.visibleCount, "Đang tải...");
+    }
+
+    function renderEmptyCatalog() {
+        els.list.innerHTML = `
+            <div class="products-state">
+                <div class="products-state-icon"><i class="ph ph-eyeglasses"></i></div>
+                <h3>Chưa có sản phẩm nào</h3>
+                <p>Thêm mẫu kính đầu tiên để quản lý giá bán, SKU và tồn kho tại quầy.</p>
+                <button class="btn btn-primary" type="button" id="emptyAddButton">
+                    <i class="ph ph-plus"></i> Thêm sản phẩm
+                </button>
+            </div>
+        `;
+        document.getElementById("emptyAddButton")?.addEventListener("click", () => openProductForm("create"));
+        setText(els.visibleCount, "0 / 0 sản phẩm");
+    }
+
+    function renderFilterEmpty() {
+        els.list.innerHTML = `
+            <div class="products-state">
+                <div class="products-state-icon"><i class="ph ph-magnifying-glass"></i></div>
+                <h3>Không tìm thấy sản phẩm phù hợp</h3>
+                <p>Thử đổi từ khóa, thương hiệu, trạng thái tồn hoặc xóa bộ lọc.</p>
+                <button class="btn btn-secondary" type="button" id="emptyResetButton">
+                    <i class="ph ph-x-circle"></i> Xóa bộ lọc
+                </button>
+            </div>
+        `;
+        document.getElementById("emptyResetButton")?.addEventListener("click", resetFilters);
+        setText(els.visibleCount, `0 / ${allProducts.length} sản phẩm`);
+    }
+
+    function renderError(error) {
+        els.list.innerHTML = `
+            <div class="products-state is-error">
+                <div class="products-state-icon"><i class="ph ph-warning-circle"></i></div>
+                <h3>Không thể tải sản phẩm</h3>
+                <p>${escapeHtml(error?.message || "Vui lòng kiểm tra kết nối và thử lại.")}</p>
+                <button class="btn btn-danger" type="button" id="retryProductsButton">
+                    <i class="ph ph-arrow-clockwise"></i> Thử lại
+                </button>
+            </div>
+        `;
+        setStatus("error", "Lỗi tải dữ liệu", "ph-warning-circle");
+        document.getElementById("retryProductsButton")?.addEventListener("click", () => loadProducts());
+        setText(els.visibleCount, "0 / 0 sản phẩm");
+    }
+
+    function renderProductCard(product) {
+        const id = numberValue(product.id);
+        const name = product.name || "Sản phẩm chưa đặt tên";
+        const image = product.image || DEFAULT_PRODUCT_IMAGE;
+        const price = numberValue(product.price);
+        const qty = numberValue(product.quantity);
+        const sku = product.sku || "N/A";
+        const brand = getProductBrand(name);
+        const stock = getStockState(qty);
+        const buyDisabled = qty <= 0 ? "disabled aria-disabled=\"true\"" : "";
+
+        return `
+            <article class="product-card">
+                <div class="product-card-img-wrapper pos-product-media pos-product-media--wide pos-product-media--bare">
+                    <img src="${escapeHtml(image)}" alt="${escapeHtml(name)}" loading="lazy"
+                         onerror="this.src='${DEFAULT_PRODUCT_IMAGE}'">
+                </div>
+                <div class="product-info">
+                    <div class="product-card-header">
+                        <span class="product-brand">${escapeHtml(brand.label)}</span>
+                        <span class="stock-badge ${stock.className}">${escapeHtml(stock.label)}</span>
+                    </div>
+                    <div class="product-name" title="${escapeHtml(name)}">${escapeHtml(name)}</div>
+                    <div class="product-price pos-money">${formatCurrency(price)}</div>
+                    <div class="product-meta">
+                        <div class="product-meta-row">
+                            <span>Mã SKU</span>
+                            <strong title="${escapeHtml(sku)}">${escapeHtml(sku)}</strong>
+                        </div>
+                        <div class="product-meta-row">
+                            <span>Tồn kho</span>
+                            <strong class="pos-numeric">${qty} chiếc</strong>
+                        </div>
+                    </div>
+                    <div class="product-actions">
+                        <button
+                            class="btn btn-primary product-buy-button"
+                            type="button"
+                            data-action="buy"
+                            data-id="${id}"
+                            ${buyDisabled}>
+                            <i class="ph ph-lightning"></i> ${qty <= 0 ? "Hết hàng" : "Bán nhanh"}
+                        </button>
+                        <div class="product-secondary-actions">
+                            <button class="btn btn-secondary" type="button" data-action="qr" data-id="${id}">
+                                <i class="ph ph-qr-code"></i> <span class="action-label">Mã QR</span>
+                            </button>
+                            <button class="btn btn-secondary" type="button" data-action="edit" data-id="${id}">
+                                <i class="ph ph-pencil-simple"></i> <span class="action-label">Chỉnh sửa</span>
+                            </button>
+                            <button
+                                class="btn btn-danger product-icon-button"
+                                type="button"
+                                data-action="delete"
+                                data-id="${id}"
+                                title="Xóa ${escapeHtml(name)}"
+                                aria-label="Xóa ${escapeHtml(name)}">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        `;
+    }
+
+    function renderGrid(products) {
+        if (!products.length) {
+            if (!allProducts.length) renderEmptyCatalog();
+            else renderFilterEmpty();
+            return;
+        }
+
+        els.list.innerHTML = `
+            <div class="products-grid">
+                ${products.map(renderProductCard).join("")}
+            </div>
+        `;
+        setText(els.visibleCount, `${products.length} / ${allProducts.length} sản phẩm`);
+    }
+
+    function applyView() {
+        syncStockControls();
+        const stats = computeStats(allProducts);
+        updateKpis(stats);
+        buildBrandChips(allProducts);
+        renderGrid(getFilteredProducts());
+    }
+
+    function resetFilters() {
+        activeBrand = "all";
+        activeStock = "all";
+        searchQuery = "";
+        sortMode = "name-asc";
+        if (els.search) els.search.value = "";
+        if (els.sort) els.sort.value = "name-asc";
+        applyView();
+    }
+
+    function setStockFilter(stock) {
+        activeStock = stock || "all";
+        applyView();
+    }
+
+    function clearFormErrors() {
+        ["errorName", "errorSku", "errorPrice", "errorQuantity", "errorImage"].forEach((id) => setText(id, ""));
+        els.productForm.querySelectorAll(".is-invalid").forEach((node) => node.classList.remove("is-invalid"));
+    }
+
+    function setFieldError(input, errorId, message) {
+        if (input) input.classList.add("is-invalid");
+        setText(errorId, message);
+    }
+
+    function setImageProcessStatus(message, kind = "") {
+        if (!els.imageProcessStatus) return;
+        if (!message) {
+            els.imageProcessStatus.hidden = true;
+            els.imageProcessStatus.textContent = "";
+            els.imageProcessStatus.classList.remove("is-ok", "is-error");
+            return;
+        }
+        els.imageProcessStatus.hidden = false;
+        els.imageProcessStatus.classList.remove("is-ok", "is-error");
+        if (kind) els.imageProcessStatus.classList.add(kind);
+        els.imageProcessStatus.innerHTML = message;
+    }
+
+    function updateFormPreview(srcOverride) {
+        const src = srcOverride
+            || (pendingProcessedDataUrl)
+            || String(els.formImage.value || "").trim()
+            || DEFAULT_PRODUCT_IMAGE;
+        els.formPreviewImg.src = src;
+        els.formPreviewImg.onerror = () => {
+            els.formPreviewImg.src = DEFAULT_PRODUCT_IMAGE;
+        };
+    }
+
+    /**
+     * Run system eyewear background pipeline on the current image source.
+     * Stores a transparent PNG data URL until product save uploads it.
+     */
+    async function processCurrentProductImage(options = {}) {
+        const { silent = false } = options;
+        if (imageProcessing) return null;
+
+        const pathValue = String(els.formImage.value || "").trim();
+        const file = els.formImageFile?.files?.[0] || null;
+        const source = file || pathValue;
+
+        if (!source) {
+            if (!silent) showToast("Chọn file ảnh hoặc nhập đường dẫn trước", "warning");
+            return null;
+        }
+
+        if (typeof processProductImage !== "function") {
+            if (!silent) showToast("Module xử lý ảnh chưa sẵn sàng", "error");
+            return null;
+        }
+
+        imageProcessing = true;
+        if (els.processImageButton) {
+            els.processImageButton.disabled = true;
+            els.processImageButton.innerHTML = `<i class="ph ph-circle-notch"></i> Đang xử lý`;
+        }
+        setImageProcessStatus("Đang tách nền studio và căn khung kính...", "");
+
+        try {
+            const result = await processProductImage(source, {
+                outputSize: 800,
+                paddingRatio: 0.1
+            });
+
+            pendingProcessedDataUrl = result.dataUrl;
+            updateFormPreview(result.dataUrl);
+
+            const note = result.skipped
+                ? "Không tách được nền rõ ràng, đã chuẩn hóa khung ảnh."
+                : "Đã tách nền và căn giữa kính trên nền studio.";
+            setImageProcessStatus(`<i class="ph ph-check-circle"></i> ${note} Ảnh sẽ được lưu khi bạn bấm Lưu sản phẩm.`, "is-ok");
+            if (!silent) showToast("Đã xử lý nền ảnh kính", "success");
+            return result;
+        } catch (error) {
+            console.error(error);
+            pendingProcessedDataUrl = null;
+            setImageProcessStatus(
+                `<i class="ph ph-warning-circle"></i> ${escapeHtml(error.message || "Xử lý ảnh thất bại")}`,
+                "is-error"
+            );
+            if (!silent) showToast(error.message || "Xử lý ảnh thất bại", "error");
+            return null;
+        } finally {
+            imageProcessing = false;
+            if (els.processImageButton) {
+                els.processImageButton.disabled = false;
+                els.processImageButton.innerHTML = `<i class="ph ph-sparkle"></i> Xử lý nền`;
+            }
+        }
+    }
+
+    /**
+     * Upload processed data URL to API → returns public path images/products/...
+     */
+    async function uploadProcessedImageIfNeeded(sku) {
+        if (!pendingProcessedDataUrl) {
+            return String(els.formImage.value || "").trim() || null;
+        }
+
+        const response = await apiRequest("/products/image", {
+            method: "POST",
+            body: {
+                dataUrl: pendingProcessedDataUrl,
+                sku: sku || "product"
+            }
+        });
+
+        const savedPath = response?.path || response?.image;
+        if (!savedPath) {
+            throw new Error("Máy chủ không trả về đường dẫn ảnh");
+        }
+
+        pendingProcessedDataUrl = null;
+        els.formImage.value = savedPath;
+        if (els.formImageFile) els.formImageFile.value = "";
+        updateFormPreview(savedPath);
+        return savedPath;
+    }
+
+    function setSkuHint(message, kind = "") {
+        if (!els.skuHint) return;
+        els.skuHint.classList.remove("is-suggested", "is-warning");
+        if (kind) els.skuHint.classList.add(kind);
+        els.skuHint.innerHTML = message;
+    }
+
+    function getExistingSkuList() {
+        return allProducts.map((product) => product.sku).filter(Boolean);
+    }
+
+    /**
+     * Build system SKU suggestion from current form name + catalog.
+     * Uses shared assets/js/sku.js (POS_SKU / suggestProductSku).
+     */
+    function buildSkuSuggestion() {
+        const name = String(els.formName.value || "").trim();
+        const excludeSku = formMode === "edit" ? String(els.formSku.dataset.originalSku || "") : "";
+
+        if (typeof suggestProductSku === "function") {
+            return suggestProductSku({
+                name,
+                existing: getExistingSkuList(),
+                excludeSku
+            });
+        }
+
+        // Minimal fallback if sku.js failed to load
+        const fallback = `PG${String(allProducts.length + 1).padStart(3, "0")}`;
+        return {
+            sku: fallback,
+            source: "sequential",
+            brandCode: "PG",
+            brandLabel: "Khác",
+            reason: "Fallback SKU (sku.js chưa tải)."
+        };
+    }
+
+    function applySkuSuggestion(options = {}) {
+        const { force = false, silent = false } = options;
+        const name = String(els.formName.value || "").trim();
+
+        if (!force && skuManuallyEdited) {
+            return null;
+        }
+
+        if (!name) {
+            if (force && !silent) {
+                showToast("Nhập tên sản phẩm trước để gợi ý SKU", "warning");
+            }
+            setSkuHint(
+                'Chuẩn hệ thống: <strong>BRAND + 3 số</strong> (VD: RB014, OK008). Tự gợi ý theo tên.',
+                ""
+            );
+            return null;
+        }
+
+        const suggestion = buildSkuSuggestion();
+        const normalized = typeof normalizeSku === "function"
+            ? normalizeSku(suggestion.sku)
+            : String(suggestion.sku || "").toUpperCase();
+
+        els.formSku.value = normalized;
+        setSkuHint(
+            `<i class="ph ph-check-circle"></i> ${escapeHtml(suggestion.reason)} Mã: <strong>${escapeHtml(normalized)}</strong>`,
+            "is-suggested"
+        );
+
+        if (force && !silent) {
+            showToast(`Đã gợi ý SKU ${normalized}`, "success");
+        }
+
+        return suggestion;
+    }
+
+    function normalizeSkuFieldValue() {
+        const raw = String(els.formSku.value || "");
+        const normalized = typeof normalizeSku === "function"
+            ? normalizeSku(raw)
+            : raw.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+        if (els.formSku.value !== normalized) {
+            els.formSku.value = normalized;
+        }
+        return normalized;
+    }
+
+    function openProductForm(mode, product = null) {
+        formMode = mode;
+        clearFormErrors();
+        skuManuallyEdited = false;
+        pendingProcessedDataUrl = null;
+        setImageProcessStatus("");
+        if (els.formImageFile) els.formImageFile.value = "";
+        delete els.formSku.dataset.originalSku;
+
+        if (mode === "edit" && product) {
+            els.formTitle.innerHTML = `<i class="ph ph-pencil-simple"></i> Sửa thông tin`;
+            els.formSubtitle.textContent = `Cập nhật mẫu #${product.id} · ${product.sku || "No SKU"}`;
+            els.formId.value = String(product.id);
+            els.formName.value = product.name || "";
+            els.formSku.value = product.sku || "";
+            els.formSku.dataset.originalSku = product.sku || "";
+            // Keep existing SKU unless staff explicitly hits Gợi ý.
+            skuManuallyEdited = true;
+            els.formCategory.value = String(product.category_id || 1);
+            els.formPrice.value = formatMoneyInput(product.price);
+            if (els.formCost) {
+                els.formCost.value = numberValue(product.cost_price) > 0
+                    ? formatMoneyInput(product.cost_price)
+                    : "";
+            }
+            if (els.formBrand) {
+                els.formBrand.value = product.brand || "";
+            }
+            els.formQuantity.value = String(numberValue(product.quantity));
+            els.formImage.value = product.image || "";
+            els.submitFormBtn.innerHTML = `<i class="ph ph-check"></i> Cập nhật`;
+            setSkuHint(
+                product.sku
+                    ? `SKU hiện tại: <strong>${escapeHtml(product.sku)}</strong>. Bấm Gợi ý nếu muốn sinh mã chuẩn mới.`
+                    : 'Chưa có SKU. Bấm <strong>Gợi ý</strong> để tạo mã chuẩn hệ thống.',
+                ""
+            );
+        } else {
+            els.formTitle.innerHTML = `<i class="ph ph-plus-circle"></i> Thêm sản phẩm`;
+            els.formSubtitle.textContent = "Nhập thông tin mẫu kính để bán tại quầy.";
+            els.formId.value = "";
+            els.productForm.reset();
+            els.formCategory.value = "1";
+            els.formPrice.value = "";
+            if (els.formCost) els.formCost.value = "";
+            if (els.formBrand) els.formBrand.value = "";
+            els.formQuantity.value = "0";
+            els.formImage.value = "";
+            els.formSku.value = "";
+            els.submitFormBtn.innerHTML = `<i class="ph ph-check"></i> Lưu sản phẩm`;
+            setSkuHint(
+                'Chuẩn hệ thống: <strong>BRAND + 3 số</strong> (VD: RB014, OK008). Tự gợi ý theo tên.',
+                ""
+            );
+        }
+
+        updateFormPreview();
+        openOverlay(els.formOverlay);
+        els.formName.focus();
+    }
+
+    function closeProductForm() {
+        closeOverlay(els.formOverlay);
+    }
+
+    function validateProductForm() {
+        clearFormErrors();
+        let valid = true;
+
+        const name = String(els.formName.value || "").trim();
+        const sku = String(els.formSku.value || "").trim();
+        const price = parseMoney(els.formPrice.value);
+        const quantity = numberValue(els.formQuantity.value);
+        const image = String(els.formImage.value || "").trim();
+        const currentId = numberValue(els.formId.value);
+
+        if (!name) {
+            setFieldError(els.formName, "errorName", "Vui lòng nhập tên sản phẩm.");
+            valid = false;
+        } else if (name.length < 2) {
+            setFieldError(els.formName, "errorName", "Tên sản phẩm quá ngắn.");
+            valid = false;
+        }
+
+        const normalizedSku = typeof normalizeSku === "function"
+            ? normalizeSku(sku)
+            : String(sku || "").trim().toUpperCase();
+
+        if (!normalizedSku) {
+            // Auto-suggest once on submit for create flow if empty.
+            if (formMode === "create") {
+                const suggestion = applySkuSuggestion({ force: true, silent: true });
+                if (suggestion?.sku) {
+                    els.formSku.value = suggestion.sku;
+                }
+            }
+        }
+
+        const finalSku = typeof normalizeSku === "function"
+            ? normalizeSku(els.formSku.value)
+            : String(els.formSku.value || "").trim().toUpperCase();
+        els.formSku.value = finalSku;
+
+        if (!finalSku) {
+            setFieldError(els.formSku, "errorSku", "Vui lòng nhập hoặc gợi ý mã SKU.");
+            valid = false;
+        } else {
+            if (typeof validateSkuFormat === "function") {
+                const formatCheck = validateSkuFormat(finalSku);
+                if (!formatCheck.ok) {
+                    setFieldError(els.formSku, "errorSku", formatCheck.message || "SKU không hợp lệ.");
+                    valid = false;
+                } else if (formatCheck.warning) {
+                    setSkuHint(
+                        `<i class="ph ph-warning"></i> ${escapeHtml(formatCheck.warning)}`,
+                        "is-warning"
+                    );
+                }
+            }
+
+            const duplicate = allProducts.find((product) =>
+                normalizeText(product.sku) === normalizeText(finalSku) &&
+                numberValue(product.id) !== currentId
+            );
+            if (duplicate) {
+                setFieldError(els.formSku, "errorSku", "SKU đã tồn tại trên catalog. Hãy bấm Gợi ý.");
+                valid = false;
+            }
+        }
+
+        if (!els.formPrice.value || Number.isNaN(price) || price <= 0) {
+            setFieldError(els.formPrice, "errorPrice", "Giá bán phải lớn hơn 0.");
+            valid = false;
+        }
+
+        const costRaw = els.formCost ? String(els.formCost.value || "").trim() : "";
+        const costPrice = costRaw ? parseMoney(els.formCost.value) : 0;
+        if (costRaw && (Number.isNaN(costPrice) || costPrice < 0)) {
+            setFieldError(els.formCost, "errorCost", "Giá vốn không hợp lệ.");
+            valid = false;
+        }
+
+        if (!Number.isFinite(quantity) || quantity < 0 || !Number.isInteger(quantity)) {
+            setFieldError(els.formQuantity, "errorQuantity", "Tồn kho phải là số nguyên >= 0.");
+            valid = false;
+        }
+
+        if (image && image.length > 255) {
+            setFieldError(els.formImage, "errorImage", "Đường dẫn ảnh quá dài.");
+            valid = false;
+        }
+
+        const brand = els.formBrand
+            ? String(els.formBrand.value || "").trim().slice(0, 80)
+            : "";
+
+        return valid
+            ? {
+                category_id: numberValue(els.formCategory.value) || 1,
+                name,
+                sku: typeof normalizeSku === "function"
+                    ? normalizeSku(els.formSku.value)
+                    : String(els.formSku.value || "").trim().toUpperCase(),
+                price,
+                cost_price: costPrice || 0,
+                brand: brand || null,
+                quantity,
+                image: image || null
+            }
+            : null;
+    }
+
+    async function submitProductForm(event) {
+        event.preventDefault();
+        if (formSubmitting) return;
+
+        const payload = validateProductForm();
+        if (!payload) {
+            showToast("Vui lòng kiểm tra lại thông tin sản phẩm", "warning");
+            return;
+        }
+
+        formSubmitting = true;
+        els.submitFormBtn.disabled = true;
+
+        try {
+            // If user picked a file but didn't click process, process automatically.
+            if (!pendingProcessedDataUrl && els.formImageFile?.files?.[0]) {
+                await processCurrentProductImage({ silent: true });
+            }
+
+            if (pendingProcessedDataUrl) {
+                payload.image = await uploadProcessedImageIfNeeded(payload.sku);
+            }
+
+            if (formMode === "edit") {
+                const id = numberValue(els.formId.value);
+                await apiRequest(`/products/${id}`, {
+                    method: "PUT",
+                    body: payload
+                });
+                showToast("Đã cập nhật sản phẩm", "success");
+            } else {
+                await apiRequest("/products", {
+                    method: "POST",
+                    body: payload
+                });
+                showToast("Đã thêm sản phẩm mới", "success");
+            }
+
+            closeProductForm();
+            await loadProducts();
+        } catch (error) {
+            showToast(error.message || "Không lưu được sản phẩm", "error");
+        } finally {
+            formSubmitting = false;
+            els.submitFormBtn.disabled = false;
+        }
+    }
+
+    async function editProduct(id) {
+        try {
+            let product = allProducts.find((item) => numberValue(item.id) === numberValue(id));
+            if (!product) {
+                product = await apiRequest(`/products/${id}`);
+            }
+            openProductForm("edit", product);
+        } catch (error) {
+            showToast(error.message || "Không tải được sản phẩm", "error");
+        }
+    }
+
+    async function showProductQr(id, rotate = false) {
+        try {
+            const qr = await apiRequest(`/api/staff/products/${id}/qr${rotate ? "/rotate" : ""}`, { method: "POST", body: {} });
+            document.getElementById("productQrOverlay")?.remove();
+            const overlay = document.createElement("div");
+            overlay.id = "productQrOverlay";
+            overlay.className = "products-overlay is-open";
+            overlay.innerHTML = `
+                <div class="products-dialog" style="text-align:center">
+                    <div class="products-dialog-header"><div><h3><i class="ph ph-qr-code"></i> QR sản phẩm</h3><p>${escapeHtml(qr.product?.name || "")}</p></div><button class="products-dialog-close" data-close-qr><i class="ph ph-x"></i></button></div>
+                    <img src="${escapeHtml(qr.qr_data_url)}" alt="QR" style="width:300px;max-width:100%">
+                    <p class="pos-code" style="word-break:break-all">${escapeHtml(qr.url)}</p>
+                    <div style="display:flex;gap:8px;justify-content:center">
+                        <button class="btn btn-primary" data-print-qr><i class="ph ph-printer"></i> In QR</button>
+                        <button class="btn btn-secondary" data-rotate-qr><i class="ph ph-arrows-clockwise"></i> Đổi mã</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(overlay);
+            overlay.querySelector("[data-close-qr]").onclick = () => overlay.remove();
+            overlay.querySelector("[data-rotate-qr]").onclick = async () => {
+                const ok = await showConfirm({ title: "Đổi mã QR?", message: "Mã cũ sẽ ngừng hoạt động ngay.", confirmText: "Đổi mã", type: "warning" });
+                if (ok) { overlay.remove(); await showProductQr(id, true); }
+            };
+            overlay.querySelector("[data-print-qr]").onclick = () => {
+                const win = window.open("", "_blank", "width=500,height=650");
+                win.document.write(`<title>QR ${escapeHtml(qr.product?.sku || "")}</title><div style="font-family:sans-serif;text-align:center;padding:24px"><img src="${qr.qr_data_url}" style="width:320px"><h2>${escapeHtml(qr.product?.name || "")}</h2><b>${escapeHtml(qr.product?.sku || "")}</b></div><script>onload=()=>print()<\/script>`);
+                win.document.close();
+            };
+        } catch (error) {
+            showToast(error.message || "Không tạo được QR sản phẩm", "error");
+        }
+    }
+
+    async function deleteProduct(id) {
+        const product = allProducts.find((item) => numberValue(item.id) === numberValue(id));
+        const name = product?.name || `sản phẩm #${id}`;
+        const qty = numberValue(product?.quantity);
+        const stockNote = qty > 0
+            ? ` Mẫu này còn ${qty} chiếc trong kho.`
+            : "";
+
+        const confirmed = await showConfirm({
+            title: "Xóa sản phẩm khỏi catalog",
+            message: `Bạn sắp xóa "${name}".${stockNote} Hành động này không thể hoàn tác và có thể ảnh hưởng báo cáo lịch sử nếu sản phẩm đã từng bán.`,
+            confirmText: "Xóa sản phẩm",
+            cancelText: "Giữ lại",
+            type: "danger"
+        });
+        if (!confirmed) return;
+
+        if (qty > 0) {
+            const doubleCheck = await showConfirm({
+                title: "Xác nhận lần 2",
+                message: `Sản phẩm vẫn còn tồn ${qty} chiếc. Bạn vẫn muốn xóa hẳn khỏi hệ thống?`,
+                confirmText: "Vẫn xóa",
+                cancelText: "Hủy",
+                type: "warning"
+            });
+            if (!doubleCheck) return;
+        }
+
+        try {
+            await apiRequest(`/products/${id}`, { method: "DELETE" });
+            showToast("Đã xóa sản phẩm", "success");
+            await loadProducts();
+        } catch (error) {
+            const message = String(error.message || "");
+            if (error.status === 500 || /foreign key|constraint|cannot delete/i.test(message)) {
+                showToast("Không xóa được vì sản phẩm đã gắn giao dịch. Hãy đặt tồn = 0 thay vì xóa.", "error");
+            } else {
+                showToast(message || "Lỗi khi xóa sản phẩm", "error");
+            }
+        }
+    }
+
+    function openQuickSale(product) {
+        if (!product) return;
+        const qty = numberValue(product.quantity);
+        if (qty <= 0) {
+            showToast("Sản phẩm đang hết hàng", "warning");
+            return;
+        }
+
+        quickSaleProduct = product;
+        quickSaleMethod = "cash";
+        els.quickQty.value = "1";
+        els.quickQty.max = String(qty);
+        els.quickAmount.value = formatMoneyInput(product.price);
+
+        document.querySelectorAll(".payment-method-btn").forEach((button) => {
+            button.classList.toggle("active", button.dataset.method === "cash");
+        });
+
+        const image = product.image || DEFAULT_PRODUCT_IMAGE;
+        els.quickProduct.innerHTML = `
+            <div class="pos-product-media pos-product-media--compact" style="width:88px;height:88px;flex-shrink:0;">
+                <img src="${escapeHtml(image)}" alt="${escapeHtml(product.name || "")}" onerror="this.src='${DEFAULT_PRODUCT_IMAGE}'">
+            </div>
+            <div>
+                <h4>${escapeHtml(product.name || "Sản phẩm")}</h4>
+                <p class="meta">SKU ${escapeHtml(product.sku || "N/A")} · Tồn ${qty} chiếc</p>
+                <div class="price pos-money">${formatCurrency(product.price)}</div>
+            </div>
+        `;
+
+        updateQuickSaleSummary();
+        openOverlay(els.quickOverlay);
+    }
+
+    function closeQuickSale() {
+        closeOverlay(els.quickOverlay);
+        quickSaleProduct = null;
+        quickSaleSubmitting = false;
+        els.confirmQuickSale.disabled = false;
+    }
+
+    function clampQuickQty() {
+        if (!quickSaleProduct) return 1;
+        const max = Math.max(1, numberValue(quickSaleProduct.quantity));
+        let qty = Math.floor(numberValue(els.quickQty.value));
+        if (!Number.isFinite(qty) || qty < 1) qty = 1;
+        if (qty > max) qty = max;
+        els.quickQty.value = String(qty);
+        return qty;
+    }
+
+    function updateQuickSaleSummary() {
+        if (!quickSaleProduct) return;
+        const qty = clampQuickQty();
+        const unit = numberValue(quickSaleProduct.price);
+        const total = unit * qty;
+        const isCash = quickSaleMethod === "cash";
+
+        setText(els.quickUnit, formatCurrency(unit));
+        setText(els.quickQtyLabel, String(qty));
+        setText(els.quickTotal, formatCurrency(total));
+
+        els.quickCashField.hidden = !isCash;
+        els.quickChangeRow.hidden = !isCash;
+
+        if (isCash) {
+            const paid = parseMoney(els.quickAmount.value);
+            const change = Math.max(0, paid - total);
+            setText(els.quickChange, formatCurrency(change));
+            els.quickChangeHint.textContent = paid < total
+                ? "Tiền khách đưa chưa đủ tổng thanh toán."
+                : "Tiền thừa sẽ được tính tự động.";
+        }
+    }
+
+    function sendToPosTerminal() {
+        if (!quickSaleProduct) return;
+        const qty = clampQuickQty();
+        const payload = [{
+            product_id: numberValue(quickSaleProduct.id),
+            quantity: qty
+        }];
+
+        try {
+            sessionStorage.setItem(POS_PENDING_CART_KEY, JSON.stringify(payload));
+        } catch (error) {
+            console.error(error);
+        }
+
+        showToast("Đang mở quầy POS với sản phẩm đã chọn", "info");
+        window.location.href = "orders.html";
+    }
+
+    /* ── QR Payment Waiting helpers (bank_transfer quick sale) ── */
+    let qsPayCountdownTimer = null;
+    let qsPayEventSource = null;
+    let qsPayCompletedOrderId = null;
+
+    function closeQsPaymentWaiting() {
+        document.getElementById("qsPayOverlay")?.remove();
+        if (qsPayCountdownTimer) { clearInterval(qsPayCountdownTimer); qsPayCountdownTimer = null; }
+        if (qsPayEventSource) { qsPayEventSource.close(); qsPayEventSource = null; }
+    }
+
+    function hideQsPaymentWaiting() {
+        document.getElementById("qsPayOverlay")?.remove();
+        if (qsPayCountdownTimer) { clearInterval(qsPayCountdownTimer); qsPayCountdownTimer = null; }
+    }
+
+    async function copyQsPayContent(value, button) {
+        try {
+            await navigator.clipboard.writeText(String(value || ""));
+            button.innerHTML = '<i class="ph ph-check"></i>';
+            showToast("Đã sao chép nội dung chuyển khoản", "success");
+            setTimeout(() => {
+                if (!button.isConnected) return;
+                button.innerHTML = '<i class="ph ph-copy"></i>';
+            }, 1600);
+        } catch { showToast("Không thể sao chép tự động", "warning"); }
+    }
+
+    function startQsPayCountdown(expiresAt) {
+        const target = new Date(expiresAt).getTime();
+        const render = () => {
+            const node = document.getElementById("qsPayCountdown");
+            if (!node) return;
+            const seconds = Math.max(0, Math.ceil((target - Date.now()) / 1000));
+            const minutes = Math.floor(seconds / 60);
+            node.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+        };
+        render();
+        qsPayCountdownTimer = setInterval(render, 1000);
+    }
+
+    function completeQsPayment(orderId) {
+        if (qsPayCompletedOrderId === Number(orderId)) return;
+        qsPayCompletedOrderId = Number(orderId);
+        closeQsPaymentWaiting();
+        showToast(`Đã xác nhận chuyển khoản hóa đơn #${orderId}`, "success");
+        closeQuickSale();
+        window.location.href = `/invoice_detail.html?id=${orderId}`;
+    }
+
+    function openQsPaymentWaiting(intent) {
+        closeQsPaymentWaiting();
+        qsPayCompletedOrderId = null;
+        const overlay = document.createElement("div");
+        overlay.id = "qsPayOverlay";
+        overlay.className = "qs-pay-overlay is-open";
+        const qr = String(intent.qr_payload || "");
+        const isFake = intent.provider === "fake" || qr.startsWith("FAKE|");
+        const visual = qr.startsWith("http")
+            ? `<div class="qs-pay-visual"><img src="${escapeHtml(qr)}" alt="Mã VietQR thanh toán"></div>`
+            : `<div class="qs-pay-visual qs-pay-test-visual"><i class="ph ph-flask"></i><strong>Chế độ giả lập</strong></div>`;
+        overlay.innerHTML = `
+            <div class="qs-pay-dialog" role="dialog" aria-modal="true" aria-labelledby="qsPayTitle">
+                <header class="qs-pay-header">
+                    <div class="qs-pay-heading">
+                        <span class="qs-pay-status-line"><span class="qs-pay-pulse"></span> Đang chờ thanh toán</span>
+                        <h2 class="qs-pay-title" id="qsPayTitle">Xác nhận chuyển khoản</h2>
+                    </div>
+                    <button class="qs-pay-close" id="qsPayClose" type="button" aria-label="Ẩn cửa sổ">
+                        <i class="ph ph-x"></i>
+                    </button>
+                </header>
+                <div class="qs-pay-body">
+                    <div class="qs-pay-main">
+                        ${visual}
+                        <div class="qs-pay-summary">
+                            <div>
+                                <p class="qs-pay-label">Số tiền cần nhận</p>
+                                <div class="qs-pay-amount pos-money">${formatCurrency(intent.expected_amount)}</div>
+                            </div>
+                            <div>
+                                <p class="qs-pay-label">Nội dung chuyển khoản</p>
+                                <div class="qs-pay-code-box">
+                                    <strong class="qs-pay-code pos-code">${escapeHtml(intent.transfer_content)}</strong>
+                                    <button class="qs-pay-copy" id="qsPayCopyBtn" type="button" aria-label="Sao chép">
+                                        <i class="ph ph-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="qs-pay-meta">
+                                ${intent.account_number_masked ? `<span><i class="ph ph-bank"></i> TK ${escapeHtml(intent.account_number_masked)}</span>` : ""}
+                                <span><i class="ph ph-timer"></i> Hết hạn sau <strong id="qsPayCountdown">--:--</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="qs-pay-note">
+                        <i class="ph ph-info"></i>
+                        <span id="qsPayStatus">${isFake
+                            ? "Đây là môi trường giả lập. Nhấn nút mô phỏng để kiểm tra toàn bộ luồng xác nhận mà không chuyển tiền thật."
+                            : "Giữ nguyên số tiền và nội dung trên QR. Hệ thống sẽ tự hoàn tất hóa đơn khi ngân hàng xác nhận."}</span>
+                    </div>
+                    <div class="qs-pay-actions ${isFake ? "" : "is-single"}">
+                        ${isFake ? `<button class="btn btn-primary" id="qsPaySimulateBtn" type="button"><i class="ph ph-check-circle"></i> Mô phỏng đã chuyển khoản</button>` : ""}
+                        <button class="btn btn-secondary" id="qsPayHideBtn" type="button"><i class="ph ph-eye-slash"></i> Ẩn và tiếp tục chờ</button>
+                    </div>
+                </div>
+            </div>`;
+        document.body.appendChild(overlay);
+        document.getElementById("qsPayClose").addEventListener("click", hideQsPaymentWaiting);
+        document.getElementById("qsPayHideBtn").addEventListener("click", hideQsPaymentWaiting);
+        document.getElementById("qsPayCopyBtn").addEventListener("click", (e) => {
+            copyQsPayContent(intent.transfer_content, e.currentTarget);
+        });
+        if (isFake) {
+            document.getElementById("qsPaySimulateBtn").addEventListener("click", async (e) => {
+                const btn = e.currentTarget;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="ph ph-circle-notch ph-spin"></i> Đang mô phỏng';
+                try {
+                    const result = await apiRequest(`/api/staff/payment-intents/${encodeURIComponent(intent.public_id)}/simulate`, {
+                        method: "POST", body: {}
+                    });
+                    if (result.status === "paid") completeQsPayment(result.order_id || intent.order_id);
+                } catch (err) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="ph ph-check-circle"></i> Thử lại mô phỏng';
+                    showToast(err.message || "Không thể mô phỏng thanh toán", "error");
+                }
+            });
+        }
+        startQsPayCountdown(intent.expires_at);
+        const token = getAuthToken();
+        const url = `/api/staff/payment-intents/${encodeURIComponent(intent.public_id)}/stream?token=${encodeURIComponent(token)}`;
+        qsPayEventSource = new EventSource(url);
+        qsPayEventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data || "{}");
+            if (data.type === "payment.paid") completeQsPayment(data.order_id || intent.order_id);
+            if (data.type === "payment.expired") {
+                const status = document.getElementById("qsPayStatus");
+                if (status) status.textContent = "QR đã hết hạn. Tồn kho đã được hoàn giữ chỗ.";
+                const simBtn = document.getElementById("qsPaySimulateBtn");
+                if (simBtn) simBtn.disabled = true;
+                qsPayEventSource?.close();
+            }
+        };
+    }
+
+    async function confirmQuickSale() {
+        if (!quickSaleProduct || quickSaleSubmitting) return;
+
+        const qty = clampQuickQty();
+        const unit = numberValue(quickSaleProduct.price);
+        const total = unit * qty;
+        let amountPaid = total;
+        const isBankTransfer = quickSaleMethod === "bank_transfer";
+
+        if (quickSaleMethod === "cash") {
+            amountPaid = parseMoney(els.quickAmount.value);
+            if (amountPaid < total) {
+                showToast("Tiền khách đưa chưa đủ", "warning");
+                els.quickAmount.focus();
+                return;
+            }
+        }
+
+        const confirmed = await showConfirm({
+            title: "Xác nhận thanh toán",
+            message: `Thu ${formatCurrency(total)} cho ${qty} x ${quickSaleProduct.name || "sản phẩm"} bằng ${
+                quickSaleMethod === "cash" ? "tiền mặt" :
+                quickSaleMethod === "card" ? "thẻ" : "chuyển khoản"
+            }?`,
+            confirmText: "Thanh toán",
+            cancelText: "Quay lại",
+            type: "info"
+        });
+        if (!confirmed) return;
+
+        quickSaleSubmitting = true;
+        els.confirmQuickSale.disabled = true;
+
+        try {
+            const payload = {
+                customer_id: null,
+                items: [{
+                    product_id: numberValue(quickSaleProduct.id),
+                    quantity: qty
+                }],
+                coupon_code: null,
+                manual_discount: { type: null, value: 0 },
+                payment: {
+                    method: quickSaleMethod,
+                    amount_paid: isBankTransfer ? 0 : amountPaid
+                }
+            };
+
+            const endpoint = isBankTransfer
+                ? "/api/staff/pos/payment-intents"
+                : "/api/staff/pos/checkout";
+
+            const result = await apiRequest(endpoint, {
+                method: "POST",
+                body: payload
+            });
+
+            if (isBankTransfer && result.payment_status !== "paid") {
+                openQsPaymentWaiting(result);
+                showToast("Đã tạo QR, đang chờ xác nhận từ ngân hàng", "info");
+                quickSaleSubmitting = false;
+                els.confirmQuickSale.disabled = false;
+                return;
+            }
+
+            showToast(`Đã tạo hóa đơn #${result.order_id}`, "success");
+            closeQuickSale();
+            window.location.href = `invoice_detail.html?id=${result.order_id}`;
+        } catch (error) {
+            showToast(error.message || "Thanh toán thất bại", "error");
+            quickSaleSubmitting = false;
+            els.confirmQuickSale.disabled = false;
+            await loadProducts();
+        }
+    }
+
+    async function loadProducts() {
+        renderSkeleton();
+        setStatus("ok", "Đang tải", "ph-circle-notch");
+
+        try {
+            const products = await apiRequest("/products");
+            allProducts = Array.isArray(products) ? products : [];
+            applyView();
+        } catch (error) {
+            console.error("Lỗi khi load sản phẩm:", error);
+            allProducts = [];
+            updateKpis(computeStats([]));
+            renderError(error);
+        }
+    }
+
+    // Events: list actions
+    els.list.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-action]");
+        if (!button) return;
+        const id = numberValue(button.dataset.id);
+        const action = button.dataset.action;
+        const product = allProducts.find((item) => numberValue(item.id) === id);
+
+        if (action === "buy") openQuickSale(product);
+        if (action === "qr") showProductQr(id);
+        if (action === "edit") editProduct(id);
+        if (action === "delete") deleteProduct(id);
+    });
+
+    // Filters
+    document.querySelectorAll(".products-kpi-card[data-stock], #stockChips [data-stock]").forEach((node) => {
+        node.addEventListener("click", () => setStockFilter(node.dataset.stock));
+        node.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setStockFilter(node.dataset.stock);
+            }
+        });
+    });
+
+    els.search.addEventListener("input", () => {
+        searchQuery = els.search.value || "";
+        applyView();
+    });
+
+    els.sort.addEventListener("change", () => {
+        sortMode = els.sort.value || "name-asc";
+        applyView();
+    });
+
+    document.getElementById("resetFiltersButton")?.addEventListener("click", resetFilters);
+    document.getElementById("refreshProductsButton")?.addEventListener("click", () => loadProducts());
+    document.getElementById("openAddProductButton")?.addEventListener("click", () => openProductForm("create"));
+    document.getElementById("openAddProductButtonAlt")?.addEventListener("click", () => openProductForm("create"));
+
+    // Product form
+    document.getElementById("closeProductFormButton")?.addEventListener("click", closeProductForm);
+    document.getElementById("cancelProductFormButton")?.addEventListener("click", closeProductForm);
+    if (typeof bindBackdropDismiss === "function") {
+        bindBackdropDismiss(els.formOverlay, closeProductForm);
+    }
+    els.productForm.addEventListener("submit", submitProductForm);
+    els.formImage.addEventListener("input", () => {
+        pendingProcessedDataUrl = null;
+        setImageProcessStatus("");
+        updateFormPreview();
+    });
+
+    els.formImageFile?.addEventListener("change", async () => {
+        const file = els.formImageFile.files?.[0];
+        if (!file) return;
+        pendingProcessedDataUrl = null;
+        // Local object URL for immediate preview before processing
+        const previewUrl = URL.createObjectURL(file);
+        updateFormPreview(previewUrl);
+        setImageProcessStatus("Đã chọn file. Đang xử lý nền kính...", "");
+        const result = await processCurrentProductImage({ silent: true });
+        URL.revokeObjectURL(previewUrl);
+        if (!result) {
+            updateFormPreview();
+        }
+    });
+
+    // SKU suggestion: auto while typing name (create mode), manual via button.
+    els.formName.addEventListener("input", () => {
+        if (formMode === "create") {
+            applySkuSuggestion({ force: false, silent: true });
+        }
+    });
+
+    els.formSku.addEventListener("input", () => {
+        skuManuallyEdited = true;
+        normalizeSkuFieldValue();
+        const value = String(els.formSku.value || "");
+        if (!value) {
+            setSkuHint(
+                'Chuẩn hệ thống: <strong>BRAND + 3 số</strong> (VD: RB014, OK008). Bấm Gợi ý để tạo lại.',
+                ""
+            );
+            return;
+        }
+        if (typeof validateSkuFormat === "function") {
+            const check = validateSkuFormat(value);
+            if (!check.ok) {
+                setSkuHint(`<i class="ph ph-warning"></i> ${escapeHtml(check.message || "SKU không hợp lệ.")}`, "is-warning");
+            } else if (check.warning) {
+                setSkuHint(`<i class="ph ph-warning"></i> ${escapeHtml(check.warning)}`, "is-warning");
+            } else {
+                setSkuHint(
+                    `<i class="ph ph-pencil-simple"></i> SKU tùy chỉnh: <strong>${escapeHtml(value)}</strong>`,
+                    ""
+                );
+            }
+        }
+    });
+
+    els.suggestSkuButton?.addEventListener("click", () => {
+        skuManuallyEdited = false;
+        applySkuSuggestion({ force: true, silent: false });
+        els.formSku.focus();
+        els.formSku.select();
+    });
+
+    els.formPrice.addEventListener("input", () => {
+        const caret = els.formPrice.selectionStart;
+        const before = els.formPrice.value;
+        if (typeof formatCurrencyInputEdit === "function") {
+            const next = formatCurrencyInputEdit(before, caret);
+            els.formPrice.value = next.value;
+            els.formPrice.setSelectionRange(next.selectionStart, next.selectionEnd);
+        } else {
+            els.formPrice.value = formatMoneyInput(before);
+        }
+    });
+
+    // Quick sale
+    document.getElementById("closeQuickSaleButton")?.addEventListener("click", closeQuickSale);
+    if (typeof bindBackdropDismiss === "function") {
+        bindBackdropDismiss(els.quickOverlay, closeQuickSale);
+    }
+    document.getElementById("quickSaleQtyDown")?.addEventListener("click", () => {
+        els.quickQty.value = String(Math.max(1, clampQuickQty() - 1));
+        updateQuickSaleSummary();
+    });
+    document.getElementById("quickSaleQtyUp")?.addEventListener("click", () => {
+        els.quickQty.value = String(clampQuickQty() + 1);
+        updateQuickSaleSummary();
+    });
+    els.quickQty.addEventListener("input", updateQuickSaleSummary);
+    els.quickAmount.addEventListener("input", () => {
+        if (typeof formatCurrencyInputEdit === "function") {
+            const next = formatCurrencyInputEdit(els.quickAmount.value, els.quickAmount.selectionStart);
+            els.quickAmount.value = next.value;
+            els.quickAmount.setSelectionRange(next.selectionStart, next.selectionEnd);
+        } else {
+            els.quickAmount.value = formatMoneyInput(els.quickAmount.value);
+        }
+        updateQuickSaleSummary();
+    });
+    document.querySelectorAll(".payment-method-btn").forEach((button) => {
+        button.addEventListener("click", () => {
+            quickSaleMethod = button.dataset.method || "cash";
+            document.querySelectorAll(".payment-method-btn").forEach((node) => {
+                node.classList.toggle("active", node === button);
+            });
+            if (quickSaleMethod !== "cash" && quickSaleProduct) {
+                els.quickAmount.value = formatMoneyInput(
+                    numberValue(quickSaleProduct.price) * clampQuickQty()
+                );
+            }
+            updateQuickSaleSummary();
+        });
+    });
+    document.getElementById("sendToPosButton")?.addEventListener("click", sendToPosTerminal);
+    document.getElementById("confirmQuickSaleButton")?.addEventListener("click", confirmQuickSale);
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") return;
+        if (els.quickOverlay.classList.contains("is-open")) closeQuickSale();
+        else if (els.formOverlay.classList.contains("is-open")) closeProductForm();
+    });
+
+    loadProducts();
+})();
+</script>
+
+</body>
+</html>

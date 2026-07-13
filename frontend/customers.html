@@ -1,0 +1,2223 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - Khách hàng hội viên</title>
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+
+    <style>
+        /* ─────────────────────────────────────────
+           Membership desk - explicit registration
+           Tokens from base.css; CR80 member card
+           ───────────────────────────────────────── */
+
+        .cust-shell { display: grid; gap: 18px; }
+
+        .cust-kpi-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        @media (max-width: 1100px) {
+            .cust-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 576px) {
+            .cust-kpi-grid { grid-template-columns: 1fr; }
+        }
+
+        .cust-kpi {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-default);
+            box-shadow: var(--shadow-xs);
+            display: grid;
+            gap: 8px;
+            min-height: 96px;
+            padding: 16px 18px;
+            transition:
+                border-color var(--transition-normal),
+                box-shadow var(--transition-normal),
+                transform var(--transition-normal);
+        }
+
+        .cust-kpi:hover {
+            border-color: rgba(15, 118, 110, 0.22);
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-2px);
+        }
+
+        .cust-kpi-top {
+            align-items: flex-start;
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        .cust-kpi-label {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .cust-kpi-value {
+            color: var(--text-primary);
+            font-size: clamp(20px, 2vw, 26px);
+            font-variant-numeric: tabular-nums;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            line-height: 1.05;
+            margin: 4px 0 0;
+        }
+
+        .cust-kpi-note {
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .cust-kpi-icon {
+            align-items: center;
+            background: var(--accent-light);
+            border-radius: var(--radius-sm);
+            color: var(--accent-color);
+            display: inline-flex;
+            flex-shrink: 0;
+            font-size: 18px;
+            height: 38px;
+            justify-content: center;
+            width: 38px;
+        }
+
+        .cust-kpi-icon.is-success { background: var(--success-light); color: var(--success-color); }
+        .cust-kpi-icon.is-warn { background: var(--warning-light); color: var(--warning-color); }
+        .cust-kpi-icon.is-muted { background: var(--bg-muted); color: var(--text-muted); }
+
+        .cust-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-default);
+            box-shadow: var(--shadow-xs);
+            padding: 18px 20px;
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        .cust-panel:focus-within {
+            border-color: rgba(15, 118, 110, 0.18);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .cust-panel-title {
+            align-items: center;
+            color: var(--text-primary);
+            display: flex;
+            font-size: 14px;
+            font-weight: 800;
+            gap: 8px;
+            letter-spacing: -0.01em;
+            margin: 0 0 14px;
+        }
+
+        .cust-panel-title i { color: var(--accent-color); font-size: 18px; }
+
+        .cust-panel-desc {
+            color: var(--text-secondary);
+            font-size: 12.5px;
+            line-height: 1.5;
+            margin: -6px 0 16px;
+            max-width: 72ch;
+        }
+
+        .cust-reg-grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        @media (max-width: 991px) {
+            .cust-reg-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 576px) {
+            .cust-reg-grid { grid-template-columns: 1fr; }
+        }
+
+        .cust-reg-grid .span-2 { grid-column: span 2; }
+        .cust-reg-grid .span-3 { grid-column: 1 / -1; }
+
+        @media (max-width: 991px) {
+            .cust-reg-grid .span-2,
+            .cust-reg-grid .span-3 { grid-column: 1 / -1; }
+        }
+
+        .cust-field-error {
+            color: var(--danger-color);
+            font-size: 11.5px;
+            font-weight: 600;
+            min-height: 16px;
+            margin-top: 4px;
+        }
+
+        .form-control.is-invalid,
+        .form-select.is-invalid {
+            border-color: var(--danger-color) !important;
+        }
+
+        .cust-reg-actions {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+            margin-top: 4px;
+        }
+
+        .cust-reg-actions .hint {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .cust-toolbar {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .cust-toolbar-left {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            min-width: 200px;
+        }
+
+        .cust-search {
+            max-width: 320px;
+            min-width: 200px;
+            position: relative;
+            width: 100%;
+        }
+
+        .cust-search i {
+            color: var(--text-muted);
+            left: 12px;
+            pointer-events: none;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .cust-search .form-control { padding-left: 38px !important; }
+
+        .cust-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .cust-chip {
+            align-items: center;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-pill);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            font-size: 12.5px;
+            font-weight: 700;
+            gap: 5px;
+            min-height: 34px;
+            padding: 6px 14px;
+            transition:
+                background-color var(--transition-fast),
+                border-color var(--transition-fast),
+                color var(--transition-fast),
+                box-shadow var(--transition-fast),
+                transform var(--transition-fast);
+        }
+
+        .cust-chip:hover {
+            background: var(--accent-subtle);
+            border-color: rgba(15, 118, 110, 0.28);
+            color: var(--accent-color);
+        }
+
+        .cust-chip:active {
+            transform: scale(0.97);
+        }
+
+        .cust-chip:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .cust-chip.is-active {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            box-shadow: 0 2px 8px rgba(15, 118, 110, 0.22);
+            color: #fff;
+        }
+
+        .cust-chip.is-active:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+            color: #fff;
+        }
+
+        .cust-status {
+            align-items: center;
+            background: var(--accent-subtle);
+            border: 1px solid rgba(15, 118, 110, 0.14);
+            border-radius: var(--radius-pill);
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            gap: 6px;
+            min-height: 30px;
+            padding: 4px 10px;
+        }
+
+        .cust-status.is-error {
+            background: var(--danger-light);
+            border-color: rgba(220, 38, 38, 0.18);
+            color: var(--danger-color);
+        }
+
+        .cust-status.is-empty {
+            background: var(--bg-muted);
+            border-color: var(--border-color);
+            color: var(--text-muted);
+        }
+
+        .cust-table-wrap { overflow-x: auto; }
+
+        .cust-table {
+            margin: 0;
+            min-width: 1040px;
+            width: 100%;
+        }
+
+        .cust-table thead th {
+            background: var(--bg-muted) !important;
+            border-bottom: 1px solid var(--border-color) !important;
+            color: var(--text-muted) !important;
+            font-size: 11.5px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            padding: 10px 12px !important;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .cust-table thead th.col-actions {
+            text-align: right;
+            width: 228px;
+        }
+
+        .cust-table tbody td {
+            border-bottom: 1px solid var(--border-color) !important;
+            padding: 11px 12px !important;
+            vertical-align: middle;
+        }
+
+        .cust-table tbody td.col-actions {
+            padding-left: 8px !important;
+            padding-right: 12px !important;
+            text-align: right;
+            white-space: nowrap;
+            width: 228px;
+        }
+
+        .cust-table tbody tr:last-child td { border-bottom: none !important; }
+        .cust-table tbody tr:hover { background: rgba(15, 118, 110, 0.03); }
+        .cust-table tbody tr.is-inactive { opacity: 0.72; }
+
+        .cust-id {
+            color: var(--text-secondary);
+            font-family: "Roboto Mono", Consolas, monospace;
+            font-size: 12.5px;
+            font-weight: 800;
+        }
+
+        .cust-name {
+            color: var(--text-primary);
+            display: block;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .cust-name-meta {
+            color: var(--text-muted);
+            font-size: 11.5px;
+            margin-top: 2px;
+        }
+
+        .cust-phone {
+            font-family: "Roboto Mono", Consolas, monospace;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .member-code-chip {
+            align-items: center;
+            background: var(--accent-subtle);
+            border: 1px solid rgba(15, 118, 110, 0.16);
+            border-radius: 6px;
+            color: var(--accent-color);
+            display: inline-flex;
+            font-family: "Roboto Mono", Consolas, monospace;
+            font-size: 11.5px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            padding: 4px 8px;
+        }
+
+        .member-barcode-cell { display: grid; gap: 6px; min-width: 160px; }
+
+        .member-barcode-svg {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            min-height: 38px;
+            padding: 4px 6px;
+            width: 160px;
+        }
+
+        .badge-pill {
+            align-items: center;
+            border-radius: var(--radius-pill);
+            display: inline-flex;
+            font-size: 11px;
+            font-weight: 800;
+            gap: 4px;
+            min-height: 24px;
+            padding: 2px 9px;
+            transition:
+                background-color 0.28s var(--ease-out),
+                color 0.28s var(--ease-out),
+                box-shadow 0.28s var(--ease-out);
+            white-space: nowrap;
+        }
+
+        .badge-status-active { background: var(--success-light); color: var(--success-color); }
+        .badge-status-inactive { background: var(--bg-muted); color: var(--text-muted); }
+        .badge-status-suspended { background: var(--danger-light); color: var(--danger-color); }
+
+        .badge-tier-standard { background: var(--bg-muted); color: var(--text-secondary); }
+        .badge-tier-silver { background: #eef2f7; color: #475569; }
+        .badge-tier-gold { background: #fff7ed; color: #c2410c; }
+
+        /* Row actions — single compact toolbar, no wrap clutter */
+        .cust-actions {
+            display: inline-flex;
+            justify-content: flex-end;
+            max-width: 100%;
+            vertical-align: middle;
+        }
+
+        .cust-actions-bar {
+            align-items: center;
+            background: linear-gradient(180deg, #f7fafb 0%, var(--bg-muted) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: var(--shadow-xs);
+            display: inline-flex;
+            flex-wrap: nowrap;
+            gap: 2px;
+            height: 38px;
+            padding: 3px;
+            transition:
+                border-color var(--transition-fast),
+                box-shadow var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        tr:hover .cust-actions-bar {
+            border-color: rgba(15, 118, 110, 0.18);
+            box-shadow: 0 2px 8px rgba(20, 32, 31, 0.06);
+        }
+
+        .cust-actions-sep {
+            align-self: stretch;
+            background: var(--border-color);
+            flex-shrink: 0;
+            margin: 5px 4px;
+            width: 1px;
+        }
+
+        .cust-action-btn {
+            align-items: center;
+            background: transparent;
+            border: 0;
+            border-radius: 7px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            flex-shrink: 0;
+            font-size: 16px;
+            height: 30px;
+            justify-content: center;
+            line-height: 1;
+            padding: 0;
+            transition:
+                background-color var(--transition-fast),
+                color var(--transition-fast),
+                box-shadow var(--transition-fast);
+            width: 30px;
+        }
+
+        .cust-action-btn:hover {
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+        }
+
+        .cust-action-btn:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            color: var(--accent-color);
+        }
+
+        .cust-action-btn:active {
+            transform: scale(0.96);
+        }
+
+        .cust-action-btn.is-accent:hover {
+            background: var(--accent-light);
+            color: var(--accent-color);
+        }
+
+        .cust-action-btn.is-danger {
+            color: var(--text-muted);
+        }
+
+        .cust-action-btn.is-danger:hover {
+            background: var(--danger-light);
+            color: var(--danger-color);
+            box-shadow: none;
+        }
+
+        .cust-action-btn.is-danger:focus-visible {
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18);
+            color: var(--danger-color);
+        }
+
+        /* Active / inactive status switch — GPU-friendly spring motion */
+        .cust-status-switch {
+            --switch-w: 38px;
+            --switch-h: 22px;
+            --thumb: 16px;
+            --thumb-pad: 3px;
+            --travel: calc(var(--switch-w) - var(--thumb) - (var(--thumb-pad) * 2));
+            align-items: center;
+            background: transparent;
+            border: 0;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            flex-shrink: 0;
+            height: 30px;
+            justify-content: center;
+            padding: 0 7px;
+            -webkit-tap-highlight-color: transparent;
+            transition: background-color 0.22s var(--ease-out);
+        }
+
+        .cust-status-switch:hover:not(:disabled) {
+            background: var(--bg-surface);
+        }
+
+        .cust-status-switch:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .cust-status-switch__track {
+            background: #c5d0d4;
+            border-radius: 999px;
+            box-shadow: inset 0 1px 2px rgba(20, 32, 31, 0.14);
+            flex-shrink: 0;
+            height: var(--switch-h);
+            overflow: hidden;
+            position: relative;
+            transition:
+                background-color 0.34s var(--ease-out),
+                box-shadow 0.34s var(--ease-out);
+            width: var(--switch-w);
+        }
+
+        /* Soft fill bloom as the track turns on */
+        .cust-status-switch__track::before {
+            background: radial-gradient(circle at 30% 50%, rgba(255, 255, 255, 0.35), transparent 65%);
+            content: "";
+            inset: 0;
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            transition: opacity 0.34s var(--ease-out);
+        }
+
+        .cust-status-switch__thumb {
+            background: #fff;
+            border-radius: 50%;
+            box-shadow:
+                0 1px 2px rgba(20, 32, 31, 0.16),
+                0 2px 6px rgba(20, 32, 31, 0.1);
+            height: var(--thumb);
+            left: var(--thumb-pad);
+            position: absolute;
+            top: var(--thumb-pad);
+            transform: translate3d(0, 0, 0) scale(1);
+            transition:
+                transform 0.38s cubic-bezier(0.22, 1.35, 0.36, 1),
+                box-shadow 0.28s var(--ease-out);
+            width: var(--thumb);
+            will-change: transform;
+            z-index: 1;
+        }
+
+        .cust-status-switch.is-on .cust-status-switch__track {
+            background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
+            box-shadow:
+                inset 0 1px 1px rgba(255, 255, 255, 0.22),
+                0 0 0 1px rgba(15, 118, 110, 0.12);
+        }
+
+        .cust-status-switch.is-on .cust-status-switch__track::before {
+            opacity: 1;
+        }
+
+        .cust-status-switch.is-on .cust-status-switch__thumb {
+            box-shadow:
+                0 1px 2px rgba(15, 118, 110, 0.2),
+                0 3px 8px rgba(15, 118, 110, 0.18);
+            transform: translate3d(var(--travel), 0, 0) scale(1);
+        }
+
+        /* Press: slight squash toward travel direction (no layout thrash) */
+        .cust-status-switch:active:not(:disabled):not(.is-busy) .cust-status-switch__thumb {
+            transform: translate3d(0, 0, 0) scale(0.92, 0.92);
+            transition-duration: 0.12s;
+        }
+
+        .cust-status-switch.is-on:active:not(:disabled):not(.is-busy) .cust-status-switch__thumb {
+            transform: translate3d(var(--travel), 0, 0) scale(0.92, 0.92);
+        }
+
+        .cust-status-switch:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+
+        .cust-status-switch.is-busy {
+            pointer-events: none;
+        }
+
+        .cust-status-switch.is-busy .cust-status-switch__track {
+            animation: custSwitchPulse 0.9s var(--ease-smooth) infinite;
+        }
+
+        @keyframes custSwitchPulse {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.06); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .cust-status-switch__track,
+            .cust-status-switch__track::before,
+            .cust-status-switch__thumb {
+                transition-duration: 0.01ms !important;
+            }
+
+            .cust-status-switch.is-busy .cust-status-switch__track {
+                animation: none;
+            }
+        }
+
+        .cust-empty {
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            line-height: 1.5;
+            padding: 44px 20px;
+            text-align: center;
+        }
+
+        .cust-empty i {
+            background: var(--bg-muted);
+            border-radius: 50%;
+            color: var(--text-muted);
+            display: inline-flex;
+            font-size: 26px;
+            height: 56px;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 12px;
+            width: 56px;
+        }
+
+        .cust-table tbody tr.is-inactive {
+            opacity: 1;
+        }
+
+        .cust-table tbody tr.is-inactive td {
+            opacity: 0.72;
+            transition: opacity 0.32s var(--ease-out);
+        }
+
+        .cust-table tbody tr.is-inactive td.col-actions {
+            opacity: 1;
+        }
+
+        /* CR80 card modal — outer shell padding so content never hugs edges */
+        .member-card-modal {
+            max-width: 480px;
+            width: calc(100% - 32px);
+        }
+
+        .member-card-modal .form-modal-header {
+            padding: 18px 22px 14px;
+        }
+
+        .member-card-modal .form-modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding: 16px 22px 22px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .member-card-stage {
+            background:
+                radial-gradient(ellipse at 30% 0%, rgba(15, 118, 110, 0.1), transparent 55%),
+                var(--bg-muted);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 18px 16px 16px;
+        }
+
+        .member-card-stage-label {
+            align-items: center;
+            color: var(--text-secondary);
+            display: flex;
+            font-size: 11.5px;
+            font-weight: 700;
+            gap: 6px;
+            justify-content: space-between;
+        }
+
+        .member-card-stage-label span {
+            font-family: "Roboto Mono", Consolas, monospace;
+            font-size: 10.5px;
+            font-weight: 800;
+        }
+
+        .pg-member-card {
+            --pg-card-w: 340px;
+            --pg-card-h: 214px;
+            background: linear-gradient(145deg, #0f1f1c 0%, #14352f 48%, #0f766e 140%);
+            border-radius: 14px;
+            box-shadow:
+                0 1px 0 rgba(255, 255, 255, 0.08) inset,
+                0 16px 36px -12px rgba(16, 32, 29, 0.45);
+            color: #f4faf8;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            height: var(--pg-card-h);
+            margin: 0 auto;
+            overflow: hidden;
+            position: relative;
+            width: var(--pg-card-w);
+        }
+
+        .pg-member-card::before {
+            background:
+                radial-gradient(circle at 92% 12%, rgba(255, 255, 255, 0.12), transparent 28%),
+                radial-gradient(circle at 8% 90%, rgba(20, 184, 166, 0.18), transparent 36%);
+            content: "";
+            inset: 0;
+            pointer-events: none;
+            position: absolute;
+        }
+
+        .pg-member-card::after {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            content: "";
+            inset: 5px;
+            pointer-events: none;
+            position: absolute;
+        }
+
+        .pg-card-body {
+            display: grid;
+            gap: 8px;
+            padding: 14px 16px 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .pg-card-top {
+            align-items: center;
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        .pg-brand-logo-plate {
+            align-items: center;
+            background: #f4faf8;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            border-radius: 8px;
+            display: flex;
+            height: 42px;
+            justify-content: center;
+            overflow: hidden;
+            width: 142px;
+        }
+
+        .pg-brand-logo {
+            display: block;
+            height: 36px;
+            object-fit: cover;
+            object-position: center;
+            width: 134px;
+        }
+
+        .pg-card-badge {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 999px;
+            color: #ecfdf5;
+            font-size: 9.5px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            padding: 4px 9px;
+            text-transform: uppercase;
+        }
+
+        .pg-card-member-label {
+            color: rgba(244, 250, 248, 0.55);
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .pg-card-member-name {
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+            margin: 2px 0 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .pg-card-member-phone {
+            color: rgba(244, 250, 248, 0.78);
+            font-family: "Roboto Mono", Consolas, monospace;
+            font-size: 11.5px;
+            font-weight: 600;
+            margin: 2px 0 0;
+        }
+
+        .pg-card-tier {
+            color: rgba(244, 250, 248, 0.7);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            margin: 2px 0 0;
+            text-transform: uppercase;
+        }
+
+        .pg-card-scan {
+            background: #fff;
+            border-radius: 0 0 12px 12px;
+            padding: 8px 12px 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .pg-card-barcode {
+            display: block;
+            height: 46px;
+            margin: 0 auto;
+            max-width: 100%;
+            width: 280px;
+        }
+
+        .pg-card-scan-meta {
+            align-items: center;
+            color: #14201f;
+            display: flex;
+            font-size: 10px;
+            font-weight: 700;
+            justify-content: space-between;
+            padding: 0 2px;
+        }
+
+        .pg-card-code {
+            font-family: "Roboto Mono", Consolas, monospace;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+        }
+
+        .pg-card-hint {
+            color: #5a6e6b;
+            font-size: 9.5px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .member-card-actions {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: 1fr 1fr;
+            margin-top: 14px;
+        }
+
+        .member-card-actions .btn-wide { grid-column: 1 / -1; }
+
+        .member-card-hint {
+            color: var(--text-muted);
+            font-size: 11.5px;
+            line-height: 1.45;
+            margin: 12px 0 0;
+        }
+
+        .member-detail-grid {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: 1fr 1fr;
+            margin-top: 14px;
+        }
+
+        .member-detail-grid .row-full { grid-column: 1 / -1; }
+
+        .member-detail-item {
+            background: var(--bg-muted);
+            border-radius: 8px;
+            padding: 8px 10px;
+        }
+
+        .member-detail-item .k {
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .member-detail-item .v {
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 700;
+            margin-top: 2px;
+            word-break: break-word;
+        }
+    </style>
+</head>
+
+<body>
+<div class="pos-container">
+    <aside data-menu-component data-active-menu="customers"></aside>
+
+    <main class="pos-main">
+        <header class="pos-topbar">
+            <div>
+                <h2 class="pos-topbar-title">Hội viên</h2>
+            </div>
+            <div class="pos-topbar-actions">
+                <button type="button" class="btn btn-primary" onclick="focusRegisterForm()">
+                    <i class="ph ph-user-plus"></i> Đăng ký
+                </button>
+            </div>
+        </header>
+
+        <div class="pos-content">
+            <div class="cust-shell">
+
+                <section class="pos-page-intro">
+                    <div>
+                        <h2>Đăng ký &amp; quản lý hội viên</h2>
+                        <p>Nhân viên đăng ký tường minh: hồ sơ, hạng thẻ, barcode EAN-13 quét tại quầy.</p>
+                    </div>
+                </section>
+
+                <section class="cust-kpi-grid" aria-label="Thống kê hội viên">
+                    <article class="cust-kpi">
+                        <div class="cust-kpi-top">
+                            <div>
+                                <div class="cust-kpi-label">Tổng hồ sơ</div>
+                                <p class="cust-kpi-value" id="kpiTotal">0</p>
+                            </div>
+                            <div class="cust-kpi-icon"><i class="ph ph-users-three"></i></div>
+                        </div>
+                        <p class="cust-kpi-note">Mọi trạng thái</p>
+                    </article>
+                    <article class="cust-kpi">
+                        <div class="cust-kpi-top">
+                            <div>
+                                <div class="cust-kpi-label">Đang hoạt động</div>
+                                <p class="cust-kpi-value" id="kpiActive">0</p>
+                            </div>
+                            <div class="cust-kpi-icon is-success"><i class="ph ph-check-circle"></i></div>
+                        </div>
+                        <p class="cust-kpi-note">Được quét thanh toán</p>
+                    </article>
+                    <article class="cust-kpi">
+                        <div class="cust-kpi-top">
+                            <div>
+                                <div class="cust-kpi-label">Tạm khóa / NGƯNG</div>
+                                <p class="cust-kpi-value" id="kpiBlocked">0</p>
+                            </div>
+                            <div class="cust-kpi-icon is-warn"><i class="ph ph-prohibit"></i></div>
+                        </div>
+                        <p class="cust-kpi-note">Inactive + suspended</p>
+                    </article>
+                    <article class="cust-kpi">
+                        <div class="cust-kpi-top">
+                            <div>
+                                <div class="cust-kpi-label">Đang hiển thị</div>
+                                <p class="cust-kpi-value" id="kpiShown">0</p>
+                            </div>
+                            <div class="cust-kpi-icon is-muted"><i class="ph ph-funnel"></i></div>
+                        </div>
+                        <p class="cust-kpi-note" id="kpiShownNote">Theo bộ lọc</p>
+                    </article>
+                </section>
+
+                <!-- Explicit membership registration -->
+                <section class="cust-panel" id="registerPanel">
+                    <h3 class="cust-panel-title">
+                        <i class="ph ph-identification-badge"></i>
+                        Đăng ký hội viên mới
+                    </h3>
+                    <p class="cust-panel-desc">
+                        Bắt buộc: họ tên + SĐT. Hệ thống cấp barcode EAN-13, gắn nhân viên đăng ký và ngày vào hội.
+                    </p>
+
+                    <form id="registerForm" autocomplete="off" novalidate>
+                        <div class="cust-reg-grid">
+                            <div>
+                                <label class="form-label" for="regName">Họ và tên <span class="text-danger">*</span></label>
+                                <input class="form-control" id="regName" name="name" type="text"
+                                       maxlength="120" placeholder="VD: Trần Minh Anh" required>
+                                <div class="cust-field-error" id="errName" aria-live="polite"></div>
+                            </div>
+                            <div>
+                                <label class="form-label" for="regPhone">Số điện thoại <span class="text-danger">*</span></label>
+                                <input class="form-control" id="regPhone" name="phone" type="tel"
+                                       inputmode="tel" maxlength="15" placeholder="09xxxxxxxx" required>
+                                <div class="cust-field-error" id="errPhone" aria-live="polite"></div>
+                            </div>
+                            <div>
+                                <label class="form-label" for="regEmail">Email</label>
+                                <input class="form-control" id="regEmail" name="email" type="email"
+                                       maxlength="255" placeholder="email@domain.com">
+                                <div class="cust-field-error" id="errEmail" aria-live="polite"></div>
+                            </div>
+
+                            <div>
+                                <label class="form-label" for="regGender">Giới tính</label>
+                                <select class="form-select" id="regGender" name="gender">
+                                    <option value="unknown">Không xác định</option>
+                                    <option value="male">Nam</option>
+                                    <option value="female">Nữ</option>
+                                    <option value="other">Khác</option>
+                                </select>
+                                <div class="cust-field-error" id="errGender"></div>
+                            </div>
+                            <div>
+                                <label class="form-label" for="regDob">Ngày sinh</label>
+                                <input class="form-control" id="regDob" name="date_of_birth" type="date">
+                                <div class="cust-field-error" id="errDob" aria-live="polite"></div>
+                            </div>
+                            <div>
+                                <label class="form-label" for="regTier">Hạng hội viên</label>
+                                <select class="form-select" id="regTier" name="membership_tier">
+                                    <option value="standard" selected>Standard</option>
+                                    <option value="silver">Silver</option>
+                                    <option value="gold">Gold</option>
+                                </select>
+                                <div class="cust-field-error" id="errTier"></div>
+                            </div>
+
+                            <div class="span-2">
+                                <label class="form-label" for="regAddress">Địa chỉ</label>
+                                <input class="form-control" id="regAddress" name="address" type="text"
+                                       maxlength="500" placeholder="Quận / Thành phố">
+                                <div class="cust-field-error" id="errAddress"></div>
+                            </div>
+                            <div>
+                                <label class="form-label" for="regStatus">Trạng thái ban đầu</label>
+                                <select class="form-select" id="regStatus" name="membership_status">
+                                    <option value="active" selected>Active - hoạt động</option>
+                                    <option value="inactive">Inactive - chưa kích hoạt</option>
+                                </select>
+                                <div class="cust-field-error" id="errStatus"></div>
+                            </div>
+
+                            <div class="span-3">
+                                <label class="form-label" for="regNotes">Ghi chú nội bộ</label>
+                                <textarea class="form-control" id="regNotes" name="notes" rows="2"
+                                          maxlength="1000" placeholder="Ghi chú cho nhân viên (không in lên thẻ)"></textarea>
+                                <div class="cust-field-error" id="errNotes"></div>
+                            </div>
+                        </div>
+
+                        <div class="cust-reg-actions">
+                            <span class="hint" id="registerStaffHint">NV đăng ký: -</span>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <button type="button" class="btn btn-secondary" id="btnResetForm">
+                                    <i class="ph ph-arrow-counter-clockwise"></i> Xóa form
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="btnRegister">
+                                    <i class="ph ph-user-plus"></i> Đăng ký hội viên
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- List -->
+                <section class="cust-panel">
+                    <div class="cust-toolbar">
+                        <div class="cust-toolbar-left">
+                            <h3 class="cust-panel-title" style="margin:0">
+                                <i class="ph ph-address-book"></i>
+                                Danh sách hội viên
+                            </h3>
+                            <div class="cust-status is-empty" id="listStatus" role="status">
+                                <i class="ph ph-circle-notch"></i>
+                                <span>Đang tải...</span>
+                            </div>
+                        </div>
+                        <div class="cust-search">
+                            <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+                            <input type="search" class="form-control" id="customerSearch"
+                                   placeholder="Tên, SĐT, email, mã thẻ, #ID..." autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="cust-chips" role="tablist" aria-label="Lọc trạng thái">
+                        <button type="button" class="cust-chip is-active" data-filter="all">Tất cả</button>
+                        <button type="button" class="cust-chip" data-filter="active">Active</button>
+                        <button type="button" class="cust-chip" data-filter="inactive">Inactive</button>
+                        <button type="button" class="cust-chip" data-filter="suspended">Suspended</button>
+                        <button type="button" class="cust-chip" data-filter="gold">Hạng Gold</button>
+                        <button type="button" class="cust-chip" data-filter="silver">Hạng Silver</button>
+                    </div>
+
+                    <div class="cust-table-wrap">
+                        <table class="table cust-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th style="width:64px;">Mã</th>
+                                    <th style="width:180px;">Barcode</th>
+                                    <th>Hội viên</th>
+                                    <th style="width:120px;">Điện thoại</th>
+                                    <th style="width:100px;">Hạng</th>
+                                    <th style="width:100px;">Trạng thái</th>
+                                    <th style="width:110px;">Ngày vào</th>
+                                    <th class="col-actions">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customerTable">
+                                <tr>
+                                    <td colspan="8">
+                                        <div class="cust-empty">
+                                            <i class="ph ph-spinner"></i>
+                                            Đang tải danh sách...
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/components.js"></script>
+<script src="/vendor/jsbarcode/JsBarcode.all.min.js"></script>
+<script>
+    const currentUser = requireAuth();
+    if (currentUser) {
+        const welcome = document.getElementById("welcomeUser");
+        if (welcome) welcome.textContent = currentUser.username;
+        const hint = document.getElementById("registerStaffHint");
+        if (hint) {
+            hint.textContent = `NV đăng ký: ${currentUser.username || "-"} (#${currentUser.id || "?"})`;
+        }
+    }
+
+    /** @type {Array<Object>} */
+    let customersCache = [];
+    let searchQuery = "";
+    let statusFilter = "all";
+    let searchTimer = null;
+    let isSubmitting = false;
+
+    const STORE_BRAND = {
+        name: "POS GLASSES"
+    };
+
+    const TIER_LABELS = {
+        standard: "Standard",
+        silver: "Silver",
+        gold: "Gold"
+    };
+
+    const STATUS_LABELS = {
+        active: "Active",
+        inactive: "Inactive",
+        suspended: "Suspended"
+    };
+
+    const GENDER_LABELS = {
+        male: "Nam",
+        female: "Nữ",
+        other: "Khác",
+        unknown: "Không rõ"
+    };
+
+    /* ───────── Utils ───────── */
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    function normalizePhone(value) {
+        let phone = String(value || "")
+            .replace(/[０-９]/g, (d) => String(d.charCodeAt(0) - 0xff10))
+            .replace(/[^\d+]/g, "");
+        if (phone.startsWith("+84")) phone = "0" + phone.slice(3);
+        else if (phone.startsWith("84") && phone.length >= 11) phone = "0" + phone.slice(2);
+        return phone.replace(/\D+/g, "");
+    }
+
+    function isValidPhone(phone) {
+        const p = normalizePhone(phone);
+        return /^0\d{8,10}$/.test(p);
+    }
+
+    function isValidEmail(email) {
+        if (!email) return true;
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function formatDateShort(value) {
+        if (!value) return "-";
+        try {
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return String(value).slice(0, 10);
+            return d.toLocaleDateString("vi-VN");
+        } catch {
+            return "-";
+        }
+    }
+
+    function focusRegisterForm() {
+        document.getElementById("registerPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById("regName")?.focus();
+    }
+
+    function setListStatus(state, message) {
+        const el = document.getElementById("listStatus");
+        if (!el) return;
+        el.classList.remove("is-error", "is-empty");
+        if (state === "error") el.classList.add("is-error");
+        if (state === "empty" || state === "loading") el.classList.add("is-empty");
+        const icon =
+            state === "error" ? "ph-warning-circle" :
+            state === "loading" ? "ph-circle-notch" :
+            state === "ok" ? "ph-check-circle" : "ph-users";
+        el.innerHTML = `<i class="ph ${icon}"></i><span>${escapeHtml(message)}</span>`;
+    }
+
+    function clearFieldErrors() {
+        document.querySelectorAll(".cust-field-error").forEach((el) => { el.textContent = ""; });
+        document.querySelectorAll("#registerForm .is-invalid").forEach((el) => el.classList.remove("is-invalid"));
+    }
+
+    function setFieldError(inputId, errId, message) {
+        const input = document.getElementById(inputId);
+        const err = document.getElementById(errId);
+        if (input) input.classList.add("is-invalid");
+        if (err) err.textContent = message || "";
+    }
+
+    /* ───────── Member code / barcode ───────── */
+    function calculateEan13CheckDigit(body) {
+        if (!/^\d{12}$/.test(String(body || ""))) return "";
+        const total = String(body).split("").reduce((sum, digit, index) => {
+            return sum + Number(digit) * (index % 2 === 0 ? 1 : 3);
+        }, 0);
+        return String((10 - (total % 10)) % 10);
+    }
+
+    function generateMemberCode(customerId) {
+        const numericId = Number(customerId);
+        if (!Number.isSafeInteger(numericId) || numericId < 0) return "";
+        const paddedId = String(numericId).padStart(10, "0");
+        if (paddedId.length > 10) return "";
+        const body = `29${paddedId}`;
+        return `${body}${calculateEan13CheckDigit(body)}`;
+    }
+
+    function memberCodeForCustomer(customer) {
+        return customer?.member_code || (customer?.id ? generateMemberCode(customer.id) : "");
+    }
+
+    function renderBarcodeSvg(target, memberCode, options = {}) {
+        if (!target || !memberCode || typeof JsBarcode !== "function") return false;
+        try {
+            JsBarcode(target, memberCode, {
+                format: "EAN13",
+                lineColor: options.lineColor || "#10201d",
+                width: options.width || 1.3,
+                height: options.height || 38,
+                displayValue: options.displayValue ?? false,
+                font: "Roboto Mono, Consolas, monospace",
+                fontSize: options.fontSize || 12,
+                margin: options.margin ?? 2,
+                background: options.background || "#ffffff"
+            });
+            return true;
+        } catch (error) {
+            console.warn("Barcode render failed:", error);
+            return false;
+        }
+    }
+
+    function renderCustomerBarcodes() {
+        document.querySelectorAll(".member-barcode-svg").forEach((el) => {
+            renderBarcodeSvg(el, el.dataset.memberCode, { width: 1.2, height: 34, margin: 1 });
+        });
+    }
+
+    /* ───────── Filter + KPIs ───────── */
+    function updateKpis(filtered) {
+        const total = customersCache.length;
+        const active = customersCache.filter((c) => (c.membership_status || "active") === "active").length;
+        const blocked = customersCache.filter((c) => {
+            const s = c.membership_status || "active";
+            return s === "inactive" || s === "suspended";
+        }).length;
+
+        document.getElementById("kpiTotal").textContent = String(total);
+        document.getElementById("kpiActive").textContent = String(active);
+        document.getElementById("kpiBlocked").textContent = String(blocked);
+        document.getElementById("kpiShown").textContent = String(filtered.length);
+
+        const note = document.getElementById("kpiShownNote");
+        if (note) {
+            const parts = [];
+            if (statusFilter !== "all") parts.push(statusFilter);
+            if (searchQuery) parts.push(`"${searchQuery}"`);
+            note.textContent = parts.length ? `Lọc: ${parts.join(" · ")}` : "Theo bộ lọc";
+        }
+    }
+
+    function getFilteredCustomers() {
+        const q = searchQuery.trim().toLowerCase();
+        return customersCache.filter((c) => {
+            const status = c.membership_status || "active";
+            const tier = c.membership_tier || "standard";
+
+            if (statusFilter === "active" || statusFilter === "inactive" || statusFilter === "suspended") {
+                if (status !== statusFilter) return false;
+            } else if (statusFilter === "gold" || statusFilter === "silver") {
+                if (tier !== statusFilter) return false;
+            }
+
+            if (!q) return true;
+
+            const hay = [
+                c.id,
+                c.name,
+                c.phone,
+                c.email,
+                c.address,
+                c.notes,
+                memberCodeForCustomer(c),
+                status,
+                tier,
+                c.registered_by_name
+            ].map((v) => String(v || "").toLowerCase()).join(" ");
+
+            return hay.includes(q);
+        });
+    }
+
+    function statusBadge(status) {
+        const s = status || "active";
+        return `<span class="badge-pill badge-status-${escapeHtml(s)}">${escapeHtml(STATUS_LABELS[s] || s)}</span>`;
+    }
+
+    function tierBadge(tier) {
+        const t = tier || "standard";
+        return `<span class="badge-pill badge-tier-${escapeHtml(t)}">${escapeHtml(TIER_LABELS[t] || t)}</span>`;
+    }
+
+    function renderCustomerRows(list) {
+        const tbody = document.getElementById("customerTable");
+        if (!tbody) return;
+
+        if (!list.length) {
+            const emptyMsg = searchQuery || statusFilter !== "all"
+                ? "Không có hội viên khớp bộ lọc."
+                : "Chưa có hội viên. Đăng ký hồ sơ phía trên để bắt đầu.";
+            tbody.innerHTML = `
+                <tr><td colspan="8">
+                    <div class="cust-empty"><i class="ph ph-users"></i>${emptyMsg}</div>
+                </td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = list.map((customer) => {
+            const code = memberCodeForCustomer(customer);
+            const status = customer.membership_status || "active";
+            const tier = customer.membership_tier || "standard";
+            const isActive = status === "active";
+            const inactiveClass = isActive ? "" : "is-inactive";
+            const gender = GENDER_LABELS[customer.gender] || "";
+            const metaParts = [gender, customer.email].filter(Boolean);
+            const switchTitle = isActive
+                ? "Tắt trạng thái hội viên (Inactive)"
+                : "Bật trạng thái hội viên (Active)";
+
+            return `
+                <tr class="${inactiveClass}" data-customer-id="${customer.id}">
+                    <td><span class="cust-id">#${customer.id}</span></td>
+                    <td>
+                        <div class="member-barcode-cell">
+                            <span class="member-code-chip">${escapeHtml(code || "-")}</span>
+                            ${code ? `<svg class="member-barcode-svg" data-member-code="${escapeHtml(code)}"
+                                role="img" aria-label="Barcode ${escapeHtml(code)}"></svg>` : ""}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="cust-name">${escapeHtml(customer.name || "")}</span>
+                        <div class="cust-name-meta">${escapeHtml(metaParts.join(" · ") || " ")}</div>
+                    </td>
+                    <td><span class="cust-phone">${escapeHtml(customer.phone || "-")}</span></td>
+                    <td>${tierBadge(tier)}</td>
+                    <td>${statusBadge(status)}</td>
+                    <td>${escapeHtml(formatDateShort(customer.member_since || customer.created_at))}</td>
+                    <td class="col-actions">
+                        <div class="cust-actions">
+                            <div class="cust-actions-bar" role="group" aria-label="Thao tác hội viên">
+                                <button
+                                    type="button"
+                                    class="cust-action-btn is-accent"
+                                    data-action="card"
+                                    data-id="${customer.id}"
+                                    title="Thẻ hội viên"
+                                    aria-label="Xem thẻ hội viên"
+                                >
+                                    <i class="ph ph-identification-card" aria-hidden="true"></i>
+                                </button>
+                                <button
+                                    type="button"
+                                    class="cust-action-btn"
+                                    data-action="edit"
+                                    data-id="${customer.id}"
+                                    title="Sửa"
+                                    aria-label="Sửa hội viên"
+                                >
+                                    <i class="ph ph-pencil-simple" aria-hidden="true"></i>
+                                </button>
+                                <span class="cust-actions-sep" aria-hidden="true"></span>
+                                <button
+                                    type="button"
+                                    class="cust-status-switch${isActive ? " is-on" : ""}"
+                                    data-action="toggle"
+                                    data-id="${customer.id}"
+                                    role="switch"
+                                    aria-checked="${isActive ? "true" : "false"}"
+                                    aria-label="${isActive ? "Hội viên đang active - bấm để tắt" : "Hội viên đang inactive - bấm để bật"}"
+                                    title="${switchTitle}"
+                                >
+                                    <span class="cust-status-switch__track" aria-hidden="true">
+                                        <span class="cust-status-switch__thumb"></span>
+                                    </span>
+                                </button>
+                                <span class="cust-actions-sep" aria-hidden="true"></span>
+                                <button
+                                    type="button"
+                                    class="cust-action-btn is-danger"
+                                    data-action="delete"
+                                    data-id="${customer.id}"
+                                    title="Vô hiệu hóa / xóa"
+                                    aria-label="Vô hiệu hóa hoặc xóa hội viên"
+                                >
+                                    <i class="ph ph-trash" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+
+        renderCustomerBarcodes();
+    }
+
+    function refreshTable() {
+        const filtered = getFilteredCustomers();
+        updateKpis(filtered);
+        renderCustomerRows(filtered);
+        if (!customersCache.length) setListStatus("empty", "Chưa có dữ liệu");
+        else if (!filtered.length) setListStatus("empty", "Không khớp bộ lọc");
+        else setListStatus("ok", `${filtered.length} hội viên`);
+    }
+
+    /* ───────── Load ───────── */
+    async function loadCustomers() {
+        setListStatus("loading", "Đang tải...");
+        try {
+            const customers = await apiRequest("/customers");
+            customersCache = Array.isArray(customers) ? customers : [];
+            refreshTable();
+        } catch (error) {
+            console.error(error);
+            customersCache = [];
+            updateKpis([]);
+            document.getElementById("customerTable").innerHTML = `
+                <tr><td colspan="8">
+                    <div class="cust-empty">
+                        <i class="ph ph-warning-circle"></i>
+                        Không tải được danh sách. Thử tải lại trang.
+                    </div>
+                </td></tr>`;
+            setListStatus("error", "Lỗi tải dữ liệu");
+            showToast("Lỗi tải hội viên: " + (error.message || error), "error");
+        }
+    }
+
+    /* ───────── Register ───────── */
+    function readRegisterForm() {
+        return {
+            name: (document.getElementById("regName").value || "").trim(),
+            phone: (document.getElementById("regPhone").value || "").trim(),
+            email: (document.getElementById("regEmail").value || "").trim(),
+            gender: document.getElementById("regGender").value || "unknown",
+            date_of_birth: document.getElementById("regDob").value || "",
+            membership_tier: document.getElementById("regTier").value || "standard",
+            membership_status: document.getElementById("regStatus").value || "active",
+            address: (document.getElementById("regAddress").value || "").trim(),
+            notes: (document.getElementById("regNotes").value || "").trim(),
+            registered_by: currentUser?.id || null
+        };
+    }
+
+    function validateRegisterClient(data) {
+        clearFieldErrors();
+        let ok = true;
+        if (!data.name || data.name.length < 2) {
+            setFieldError("regName", "errName", "Họ tên tối thiểu 2 ký tự");
+            ok = false;
+        }
+        if (!data.phone) {
+            setFieldError("regPhone", "errPhone", "Nhập số điện thoại");
+            ok = false;
+        } else if (!isValidPhone(data.phone)) {
+            setFieldError("regPhone", "errPhone", "SĐT không hợp lệ (VD: 09xxxxxxxx)");
+            ok = false;
+        }
+        if (data.email && !isValidEmail(data.email)) {
+            setFieldError("regEmail", "errEmail", "Email không hợp lệ");
+            ok = false;
+        }
+        if (data.date_of_birth) {
+            const d = new Date(data.date_of_birth + "T00:00:00");
+            if (Number.isNaN(d.getTime()) || d > new Date()) {
+                setFieldError("regDob", "errDob", "Ngày sinh không hợp lệ");
+                ok = false;
+            }
+        }
+        return ok;
+    }
+
+    function resetRegisterForm() {
+        document.getElementById("registerForm").reset();
+        document.getElementById("regTier").value = "standard";
+        document.getElementById("regStatus").value = "active";
+        document.getElementById("regGender").value = "unknown";
+        clearFieldErrors();
+    }
+
+    async function registerMember(event) {
+        event.preventDefault();
+        if (isSubmitting) return;
+
+        const data = readRegisterForm();
+        if (!validateRegisterClient(data)) {
+            showToast("Kiểm tra lại thông tin đăng ký", "warning");
+            return;
+        }
+
+        const btn = document.getElementById("btnRegister");
+        isSubmitting = true;
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<i class="ph ph-circle-notch"></i> Đang đăng ký`;
+        }
+
+        try {
+            const payload = {
+                name: data.name,
+                phone: data.phone,
+                email: data.email || null,
+                gender: data.gender,
+                date_of_birth: data.date_of_birth || null,
+                membership_tier: data.membership_tier,
+                membership_status: data.membership_status,
+                address: data.address || null,
+                notes: data.notes || null,
+                registered_by: data.registered_by
+            };
+
+            const result = await apiRequest("/customers", { method: "POST", body: payload });
+            const code = result?.member_code || result?.customer?.member_code || "";
+            showToast(
+                code ? `Đã đăng ký hội viên · Mã ${code}` : "Đã đăng ký hội viên",
+                "success"
+            );
+            resetRegisterForm();
+            await loadCustomers();
+
+            if (result?.id) {
+                // Offer print card for new member
+                const printNow = await showConfirm({
+                    title: "In thẻ hội viên?",
+                    message: `Đăng ký thành công #${result.id}. In thẻ CR80 ngay?`,
+                    confirmText: "In thẻ",
+                    type: "info"
+                }).catch(() => false);
+                if (printNow) openMemberCard(result.id);
+            }
+        } catch (error) {
+            const msg = error.message || String(error);
+            if (/điện thoại/i.test(msg)) setFieldError("regPhone", "errPhone", msg);
+            showToast(msg, "error");
+        } finally {
+            isSubmitting = false;
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="ph ph-user-plus"></i> Đăng ký hội viên`;
+            }
+        }
+    }
+
+    /* ───────── Edit / status / delete ───────── */
+    async function editCustomer(id) {
+        const customer = customersCache.find((item) => Number(item.id) === Number(id));
+        if (!customer) {
+            showToast("Không tìm thấy hội viên", "warning");
+            return;
+        }
+
+        const dob = customer.date_of_birth
+            ? String(customer.date_of_birth).slice(0, 10)
+            : "";
+
+        const data = await showFormModal({
+            title: `Sửa hội viên #${customer.id}`,
+            fields: [
+                { name: "name", label: "Họ và tên", value: customer.name || "" },
+                { name: "phone", label: "Số điện thoại", value: customer.phone || "" },
+                { name: "email", label: "Email", value: customer.email || "", required: false },
+                {
+                    name: "gender",
+                    label: "Giới tính",
+                    type: "select",
+                    value: customer.gender || "unknown",
+                    options: [
+                        { value: "unknown", label: "Không xác định" },
+                        { value: "male", label: "Nam" },
+                        { value: "female", label: "Nữ" },
+                        { value: "other", label: "Khác" }
+                    ],
+                    required: false
+                },
+                { name: "date_of_birth", label: "Ngày sinh (YYYY-MM-DD)", value: dob, required: false },
+                {
+                    name: "membership_tier",
+                    label: "Hạng hội viên",
+                    type: "select",
+                    value: customer.membership_tier || "standard",
+                    options: [
+                        { value: "standard", label: "Standard" },
+                        { value: "silver", label: "Silver" },
+                        { value: "gold", label: "Gold" }
+                    ],
+                    required: false
+                },
+                {
+                    name: "membership_status",
+                    label: "Trạng thái",
+                    type: "select",
+                    value: customer.membership_status || "active",
+                    options: [
+                        { value: "active", label: "Active" },
+                        { value: "inactive", label: "Inactive" },
+                        { value: "suspended", label: "Suspended" }
+                    ],
+                    required: false
+                },
+                { name: "address", label: "Địa chỉ", value: customer.address || "", required: false },
+                { name: "notes", label: "Ghi chú", value: customer.notes || "", required: false }
+            ],
+            submitText: "Cập nhật"
+        });
+        if (!data) return;
+
+        if (!data.name?.trim() || !data.phone?.trim()) {
+            showToast("Tên và SĐT là bắt buộc", "warning");
+            return;
+        }
+        if (!isValidPhone(data.phone)) {
+            showToast("Số điện thoại không hợp lệ", "warning");
+            return;
+        }
+
+        try {
+            await apiRequest(`/customers/${id}`, {
+                method: "PUT",
+                body: {
+                    name: data.name.trim(),
+                    phone: data.phone.trim(),
+                    email: (data.email || "").trim() || null,
+                    gender: data.gender || "unknown",
+                    date_of_birth: (data.date_of_birth || "").trim() || null,
+                    membership_tier: data.membership_tier || "standard",
+                    membership_status: data.membership_status || "active",
+                    address: (data.address || "").trim() || null,
+                    notes: (data.notes || "").trim() || null
+                }
+            });
+            showToast("Đã cập nhật hội viên", "success");
+            await loadCustomers();
+        } catch (error) {
+            showToast(error.message || "Lỗi cập nhật", "error");
+        }
+    }
+
+    function applyRowStatusUi(id, status) {
+        const isActive = status === "active";
+        const tr = document.querySelector(`tr[data-customer-id="${id}"]`);
+        if (!tr) return;
+
+        tr.classList.toggle("is-inactive", !isActive);
+
+        const statusCell = tr.children[5];
+        if (statusCell) statusCell.innerHTML = statusBadge(status);
+
+        const switchEl = tr.querySelector(`.cust-status-switch[data-id="${id}"]`);
+        if (!switchEl) return;
+
+        switchEl.classList.toggle("is-on", isActive);
+        switchEl.setAttribute("aria-checked", isActive ? "true" : "false");
+        switchEl.setAttribute(
+            "aria-label",
+            isActive
+                ? "Hội viên đang active - bấm để tắt"
+                : "Hội viên đang inactive - bấm để bật"
+        );
+        switchEl.title = isActive
+            ? "Tắt trạng thái hội viên (Inactive)"
+            : "Bật trạng thái hội viên (Active)";
+    }
+
+    function waitForSwitchSettle(switchEl, ms = 380) {
+        return new Promise((resolve) => {
+            if (!switchEl) {
+                resolve();
+                return;
+            }
+            const thumb = switchEl.querySelector(".cust-status-switch__thumb");
+            let settled = false;
+            const done = () => {
+                if (settled) return;
+                settled = true;
+                thumb?.removeEventListener("transitionend", onEnd);
+                resolve();
+            };
+            const onEnd = (e) => {
+                if (e.propertyName === "transform") done();
+            };
+            thumb?.addEventListener("transitionend", onEnd);
+            setTimeout(done, ms);
+        });
+    }
+
+    async function toggleCustomerStatus(id, triggerBtn) {
+        const customer = customersCache.find((item) => Number(item.id) === Number(id));
+        if (!customer) return;
+
+        const current = customer.membership_status || "active";
+        const next = current === "active" ? "inactive" : "active";
+        const switchEl = triggerBtn?.classList?.contains("cust-status-switch")
+            ? triggerBtn
+            : document.querySelector(`.cust-status-switch[data-id="${id}"]`);
+
+        if (switchEl?.classList.contains("is-busy")) return;
+
+        if (switchEl) {
+            switchEl.classList.add("is-busy");
+            switchEl.setAttribute("aria-busy", "true");
+        }
+
+        // Optimistic flip - keep DOM so CSS spring can play fully
+        applyRowStatusUi(id, next);
+
+        try {
+            await apiRequest(`/customers/${id}/status`, {
+                method: "PATCH",
+                body: { membership_status: next }
+            });
+            customer.membership_status = next;
+            showToast(
+                next === "active" ? "Đã kích hoạt hội viên" : "Đã vô hiệu hóa hội viên",
+                "success"
+            );
+            await waitForSwitchSettle(switchEl);
+            // Soft refresh after animation so filters/KPIs stay correct
+            refreshTable();
+        } catch (error) {
+            // Fallback if PATCH route unavailable
+            try {
+                await apiRequest(`/customers/${id}`, {
+                    method: "PUT",
+                    body: {
+                        name: customer.name,
+                        phone: customer.phone,
+                        email: customer.email,
+                        gender: customer.gender || "unknown",
+                        date_of_birth: customer.date_of_birth
+                            ? String(customer.date_of_birth).slice(0, 10)
+                            : null,
+                        membership_tier: customer.membership_tier || "standard",
+                        membership_status: next,
+                        address: customer.address,
+                        notes: customer.notes
+                    }
+                });
+                customer.membership_status = next;
+                showToast("Đã cập nhật trạng thái", "success");
+                await waitForSwitchSettle(switchEl);
+                refreshTable();
+            } catch (err2) {
+                applyRowStatusUi(id, current);
+                showToast(err2.message || error.message || "Lỗi đổi trạng thái", "error");
+                await waitForSwitchSettle(switchEl, 280);
+            }
+        } finally {
+            if (switchEl) {
+                switchEl.classList.remove("is-busy");
+                switchEl.removeAttribute("aria-busy");
+            }
+        }
+    }
+
+    async function deleteCustomer(id) {
+        const customer = customersCache.find((item) => Number(item.id) === Number(id));
+        if (!customer) return;
+
+        const label = customer.name ? `"${customer.name}"` : `#${id}`;
+        const status = customer.membership_status || "active";
+        const alreadyOff = status === "inactive" || status === "suspended";
+
+        // Active members: soft-deactivate (keep order history)
+        if (!alreadyOff) {
+            const soft = await showConfirm({
+                title: "Vô hiệu hóa hội viên",
+                message: `Vô hiệu hóa ${label}? Thẻ không còn dùng thanh toán; lịch sử đơn vẫn giữ.`,
+                confirmText: "Vô hiệu hóa",
+                type: "warning"
+            });
+            if (!soft) return;
+
+            try {
+                await apiRequest(`/customers/${id}`, { method: "DELETE" });
+                showToast("Đã vô hiệu hóa hội viên", "success");
+                await loadCustomers();
+            } catch (error) {
+                showToast(error.message || "Lỗi vô hiệu hóa", "error");
+            }
+            return;
+        }
+
+        // Already inactive/suspended: only admin may hard-delete mistaken records
+        if (currentUser?.role !== "admin") {
+            showToast("Hội viên đã ngừng. Chỉ admin mới xóa vĩnh viễn.", "info");
+            return;
+        }
+
+        const hard = await showConfirm({
+            title: "Xóa vĩnh viễn?",
+            message: `Xóa vĩnh viễn ${label}? Chỉ dùng khi đăng ký nhầm. Đơn hàng sẽ mất liên kết khách.`,
+            confirmText: "Xóa vĩnh viễn",
+            type: "danger"
+        });
+        if (!hard) return;
+
+        try {
+            await apiRequest(`/customers/${id}?hard=1`, { method: "DELETE" });
+            showToast("Đã xóa vĩnh viễn", "success");
+            await loadCustomers();
+        } catch (error) {
+            showToast(error.message || "Lỗi xóa", "error");
+        }
+    }
+
+    /* ───────── Membership card ───────── */
+    function closeMemberCard() {
+        const overlay = document.getElementById("memberCardOverlay");
+        if (!overlay) return;
+        overlay.classList.remove("modal-visible");
+        overlay.addEventListener("transitionend", () => overlay.remove(), { once: true });
+        setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 400);
+    }
+
+    function buildMemberCardHtml(customer, memberCode) {
+        const name = escapeHtml(customer.name || "Hội viên");
+        const phone = escapeHtml(customer.phone || "Chưa có SĐT");
+        const tier = (customer.membership_tier || "standard").toUpperCase();
+        return `
+            <article class="pg-member-card" id="memberCardPrintArea" data-member-code="${escapeHtml(memberCode)}">
+                <div class="pg-card-body">
+                    <div class="pg-card-top">
+                        <div class="pg-brand-logo-plate">
+                            <img
+                                class="pg-brand-logo"
+                                src="/assets/images/pos-glasses-optic-bridge-logo.png"
+                                alt="POS GLASSES"
+                            >
+                        </div>
+                        <span class="pg-card-badge">Member</span>
+                    </div>
+                    <div>
+                        <p class="pg-card-member-label">Hội viên</p>
+                        <p class="pg-card-member-name">${name}</p>
+                        <p class="pg-card-member-phone">${phone}</p>
+                        <p class="pg-card-tier">${escapeHtml(tier)}</p>
+                    </div>
+                </div>
+                <div class="pg-card-scan">
+                    <svg class="pg-card-barcode" id="memberCardBarcode" role="img"
+                         aria-label="Barcode ${escapeHtml(memberCode)}"></svg>
+                    <div class="pg-card-scan-meta">
+                        <span class="pg-card-code">${escapeHtml(memberCode)}</span>
+                        <span class="pg-card-hint">Quét tại quầy</span>
+                    </div>
+                </div>
+            </article>
+        `;
+    }
+
+    function openMemberCard(id) {
+        const customer = customersCache.find((item) => Number(item.id) === Number(id));
+        if (!customer) {
+            showToast("Không tìm thấy hội viên để in thẻ", "warning");
+            return;
+        }
+
+        const memberCode = memberCodeForCustomer(customer);
+        if (!memberCode) {
+            showToast("Hội viên chưa có mã barcode", "error");
+            return;
+        }
+
+        document.getElementById("memberCardOverlay")?.remove();
+
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.id = "memberCardOverlay";
+        overlay.setAttribute("role", "dialog");
+        overlay.setAttribute("aria-modal", "true");
+
+        const staff = customer.registered_by_name
+            ? `${escapeHtml(customer.registered_by_name)}`
+            : (customer.registered_by ? `#${customer.registered_by}` : "-");
+
+        overlay.innerHTML = `
+            <div class="modal-dialog form-modal member-card-modal">
+                <div class="form-modal-header">
+                    <h3 class="form-modal-title">Thẻ hội viên CR80</h3>
+                    <button class="form-modal-close" type="button" data-action="close" aria-label="Đóng">
+                        <i class="ph ph-x"></i>
+                    </button>
+                </div>
+                <div class="form-modal-body">
+                    <div class="member-card-stage">
+                        <div class="member-card-stage-label">
+                            <span><i class="ph ph-identification-card"></i> Xem trước thẻ</span>
+                            <span>85.6 × 54 mm</span>
+                        </div>
+                        ${buildMemberCardHtml(customer, memberCode)}
+                    </div>
+
+                    <div class="member-detail-grid">
+                        <div class="member-detail-item">
+                            <div class="k">Trạng thái</div>
+                            <div class="v">${escapeHtml(STATUS_LABELS[customer.membership_status] || customer.membership_status || "active")}</div>
+                        </div>
+                        <div class="member-detail-item">
+                            <div class="k">Hạng</div>
+                            <div class="v">${escapeHtml(TIER_LABELS[customer.membership_tier] || "Standard")}</div>
+                        </div>
+                        <div class="member-detail-item">
+                            <div class="k">Ngày vào hội</div>
+                            <div class="v">${escapeHtml(formatDateShort(customer.member_since || customer.created_at))}</div>
+                        </div>
+                        <div class="member-detail-item">
+                            <div class="k">NV đăng ký</div>
+                            <div class="v">${staff}</div>
+                        </div>
+                        ${customer.notes ? `
+                        <div class="member-detail-item row-full">
+                            <div class="k">Ghi chú</div>
+                            <div class="v">${escapeHtml(customer.notes)}</div>
+                        </div>` : ""}
+                    </div>
+
+                    <p class="member-card-hint">
+                        Barcode EAN-13 nền trắng để đầu đọc POS quét chính xác. Ghi chú nội bộ không in lên thẻ.
+                    </p>
+                    <div class="member-card-actions">
+                        <button type="button" class="btn btn-primary btn-wide" id="btnPrintMemberCard">
+                            <i class="ph ph-printer"></i> In thẻ
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="btnCopyMemberCode">
+                            <i class="ph ph-copy"></i> Copy mã
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-action="close">Đóng</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+        renderBarcodeSvg(document.getElementById("memberCardBarcode"), memberCode, {
+            width: 1.8,
+            height: 44,
+            margin: 4,
+            lineColor: "#10201d",
+            background: "#ffffff"
+        });
+
+        requestAnimationFrame(() => overlay.classList.add("modal-visible"));
+
+        overlay.querySelectorAll('[data-action="close"]').forEach((btn) => {
+            btn.addEventListener("click", closeMemberCard);
+        });
+        document.getElementById("btnPrintMemberCard")?.addEventListener("click", () => {
+            printMemberCard(customer, memberCode);
+        });
+        document.getElementById("btnCopyMemberCode")?.addEventListener("click", async () => {
+            try {
+                await navigator.clipboard.writeText(memberCode);
+                showToast("Đã copy mã " + memberCode, "success");
+            } catch {
+                showToast("Không copy được mã", "warning");
+            }
+        });
+
+        if (typeof bindBackdropDismiss === "function") {
+            bindBackdropDismiss(overlay, closeMemberCard);
+        } else {
+            overlay.addEventListener("click", (e) => {
+                if (e.target === overlay) closeMemberCard();
+            });
+        }
+        overlay.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") closeMemberCard();
+        });
+        overlay.querySelector('[data-action="close"]')?.focus();
+    }
+
+    function printMemberCard(customer, memberCode) {
+        const previewSvg = document.getElementById("memberCardBarcode");
+        const hasBarcode = previewSvg && previewSvg.childNodes.length > 0;
+        if (!hasBarcode) {
+            showToast("Barcode chưa sẵn sàng. Mở lại thẻ rồi in.", "warning");
+            return;
+        }
+
+        const barcodeMarkup = previewSvg.outerHTML;
+        const name = escapeHtml(customer?.name || "Hội viên");
+        const phone = escapeHtml(customer?.phone || "");
+        const tier = escapeHtml((customer?.membership_tier || "standard").toUpperCase());
+        const code = escapeHtml(memberCode || "");
+
+        const printWindow = window.open("", "_blank", "width=520,height=420");
+        if (!printWindow) {
+            showToast("Trình duyệt đang chặn cửa sổ in", "warning");
+            return;
+        }
+
+        printWindow.document.write(`<!DOCTYPE html>
+<html lang="vi"><head><meta charset="UTF-8">
+<title>In thẻ - ${code} - ${STORE_BRAND.name}</title>
+<style>
+@page { size: 85.6mm 53.98mm; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: #fff;
+  font-family: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body { align-items: center; display: flex; justify-content: center; min-height: 100vh; padding: 8mm; }
+.pg-member-card {
+  background: linear-gradient(145deg, #0f1f1c 0%, #14352f 48%, #0f766e 140%);
+  border-radius: 3.2mm; color: #f4faf8; display: grid; grid-template-rows: 1fr auto;
+  height: 53.98mm; overflow: hidden; position: relative; width: 85.6mm;
+}
+.pg-member-card::before {
+  background: radial-gradient(circle at 92% 12%, rgba(255,255,255,.12), transparent 28%),
+              radial-gradient(circle at 8% 90%, rgba(20,184,166,.18), transparent 36%);
+  content: ""; inset: 0; position: absolute;
+}
+.pg-card-body { display: grid; gap: 2mm; padding: 3.2mm 3.6mm 1.5mm; position: relative; z-index: 1; }
+.pg-card-top { align-items: center; display: flex; justify-content: space-between; gap: 2mm; }
+.pg-brand-logo-plate {
+  align-items: center; background: #f4faf8; border: .2mm solid rgba(255,255,255,.45); border-radius: 1.6mm;
+  display: flex; height: 10mm; justify-content: center; overflow: hidden; width: 36mm;
+}
+.pg-brand-logo { display: block; height: 9mm; object-fit: cover; object-position: center; width: 34mm; }
+.pg-card-badge {
+  background: rgba(255,255,255,.1); border: .2mm solid rgba(255,255,255,.16); border-radius: 10mm;
+  color: #ecfdf5; font-size: 2.1mm; font-weight: 800; letter-spacing: .1em; padding: .8mm 2mm; text-transform: uppercase;
+}
+.pg-card-member-label { color: rgba(244,250,248,.55); font-size: 2mm; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.pg-card-member-name { font-size: 4mm; font-weight: 800; margin-top: .5mm; max-width: 72mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-card-member-phone { color: rgba(244,250,248,.78); font-family: Consolas, monospace; font-size: 2.6mm; margin-top: .5mm; }
+.pg-card-tier { color: rgba(244,250,248,.7); font-size: 2.2mm; font-weight: 700; letter-spacing: .06em; margin-top: .5mm; text-transform: uppercase; }
+.pg-card-scan { background: #fff; border-radius: 0 0 3mm 3mm; padding: 1.6mm 2.8mm 2mm; position: relative; z-index: 1; }
+.pg-card-barcode { display: block; height: 11mm; margin: 0 auto; max-width: 100%; width: 68mm; }
+.pg-card-scan-meta { align-items: center; color: #14201f; display: flex; font-size: 2.2mm; font-weight: 700; justify-content: space-between; margin-top: .6mm; }
+.pg-card-code { font-family: Consolas, monospace; font-size: 2.4mm; font-weight: 900; letter-spacing: .08em; }
+.pg-card-hint { color: #5a6e6b; font-size: 2mm; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+@media print { body { min-height: auto; padding: 0; } .pg-member-card { border-radius: 0; height: 53.98mm; width: 85.6mm; } }
+</style></head><body>
+<article class="pg-member-card">
+  <div class="pg-card-body">
+    <div class="pg-card-top">
+      <div class="pg-brand-logo-plate">
+        <img
+          class="pg-brand-logo"
+          src="/assets/images/pos-glasses-optic-bridge-logo.png"
+          alt="POS GLASSES"
+        >
+      </div>
+      <span class="pg-card-badge">Member</span>
+    </div>
+    <div>
+      <div class="pg-card-member-label">Hội viên</div>
+      <div class="pg-card-member-name">${name}</div>
+      <div class="pg-card-member-phone">${phone}</div>
+      <div class="pg-card-tier">${tier}</div>
+    </div>
+  </div>
+  <div class="pg-card-scan">
+    ${barcodeMarkup}
+    <div class="pg-card-scan-meta">
+      <span class="pg-card-code">${code}</span>
+      <span class="pg-card-hint">Quét tại quầy</span>
+    </div>
+  </div>
+</article>
+<script>window.onload=function(){setTimeout(function(){window.focus();window.print();},120);};<\/script>
+</body></html>`);
+        printWindow.document.close();
+    }
+
+    /* ───────── Events ───────── */
+    function onTableClick(event) {
+        const btn = event.target.closest("[data-action]");
+        if (!btn) return;
+        const id = Number(btn.dataset.id);
+        if (!id) return;
+        const action = btn.dataset.action;
+        if (action === "card") openMemberCard(id);
+        else if (action === "edit") editCustomer(id);
+        else if (action === "toggle") toggleCustomerStatus(id, btn);
+        else if (action === "delete") deleteCustomer(id);
+    }
+
+    function initCustomersPage() {
+        document.getElementById("registerForm")?.addEventListener("submit", registerMember);
+        document.getElementById("btnResetForm")?.addEventListener("click", resetRegisterForm);
+        document.getElementById("customerTable")?.addEventListener("click", onTableClick);
+
+        document.querySelectorAll(".cust-chip[data-filter]").forEach((chip) => {
+            chip.addEventListener("click", () => {
+                document.querySelectorAll(".cust-chip").forEach((c) => c.classList.remove("is-active"));
+                chip.classList.add("is-active");
+                statusFilter = chip.dataset.filter || "all";
+                refreshTable();
+            });
+        });
+
+        const search = document.getElementById("customerSearch");
+        search?.addEventListener("input", () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                searchQuery = search.value || "";
+                refreshTable();
+            }, 160);
+        });
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "/" && document.activeElement?.tagName === "BODY") {
+                e.preventDefault();
+                search?.focus();
+                search?.select();
+            }
+        });
+
+        // Cap DOB max = today
+        const dob = document.getElementById("regDob");
+        if (dob) dob.max = new Date().toISOString().slice(0, 10);
+
+        loadCustomers();
+    }
+
+    initCustomersPage();
+</script>
+</body>
+</html>

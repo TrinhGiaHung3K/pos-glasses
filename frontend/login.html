@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - Đăng nhập</title>
+<link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <style>
+        html, body { height: 100%; margin: 0; overflow: hidden; }
+
+        .auth-page {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* ── Left: Form Panel ── */
+        .auth-form-panel {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            background-color: var(--bg-primary);
+            position: relative;
+        }
+
+        .auth-form-wrapper {
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .logo {
+            margin-bottom: 36px;
+        }
+
+        .auth-logo-image {
+            display: block;
+            width: 216px;
+            height: 64px;
+            object-fit: cover;
+            object-position: center;
+            margin-bottom: 20px;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+            margin-bottom: 6px;
+        }
+
+        .logo p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Input Groups */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 7px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 18px;
+            pointer-events: none;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            transition: all var(--transition-fast);
+            background-color: var(--bg-surface);
+            color: var(--text-primary);
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* Submit Button */
+        .auth-btn {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            color: white;
+            font-size: 14.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
+            margin-top: 8px;
+        }
+
+        .auth-btn:hover {
+            box-shadow: 0 6px 20px rgba(15, 118, 110, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .auth-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .auth-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Result Message */
+        .result-msg {
+            margin-top: 16px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 13px;
+            min-height: 20px;
+        }
+
+        .result-msg.error { color: var(--danger-color); }
+        .result-msg.success { color: var(--success-color); }
+
+        /* Footer switch link */
+        .auth-switch {
+            text-align: center;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+            font-size: 13.5px;
+            color: var(--text-muted);
+        }
+
+        .auth-switch a {
+            color: var(--accent-color);
+            font-weight: 600;
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+
+        .auth-switch a:hover {
+            color: var(--accent-hover);
+            text-decoration: underline;
+        }
+
+        /* ── Right: Brand Panel ── */
+        .auth-brand-panel {
+            flex: 1;
+            background: linear-gradient(135deg, #10201d 0%, #173a35 50%, #102a26 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-content {
+            text-align: center;
+            z-index: 2;
+            padding: 40px;
+        }
+
+        .auth-brand-logo {
+            display: block;
+            width: 240px;
+            height: 72px;
+            margin: 0 auto 28px;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .brand-content h2 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+        }
+
+        .brand-content p {
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 15px;
+            line-height: 1.6;
+            max-width: 320px;
+        }
+
+        /* Brand panel decorative grid */
+        .brand-grid {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(15, 118, 110, 0.06) 1px, transparent 1px);
+            background-size: 32px 32px;
+            z-index: 1;
+        }
+
+        .brand-glow {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: 1;
+        }
+
+        .brand-glow-1 {
+            top: -100px;
+            right: -100px;
+            background: radial-gradient(circle, rgba(15, 118, 110, 0.12) 0%, transparent 70%);
+        }
+
+        .brand-glow-2 {
+            bottom: -100px;
+            left: -100px;
+            background: radial-gradient(circle, rgba(20, 184, 166, 0.08) 0%, transparent 70%);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .auth-brand-panel { display: none; }
+            .auth-form-panel { padding: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="auth-page">
+    <!-- ── Left: Login Form ── -->
+    <div class="auth-form-panel">
+        <div class="auth-form-wrapper">
+            <div class="logo">
+                <img
+                    class="auth-logo-image"
+                    src="/assets/images/pos-glasses-optic-bridge-logo.png"
+                    alt="POS GLASSES"
+                >
+                <h1>Chào mừng trở lại</h1>
+                <p>Đăng nhập vào hệ thống quản lý POS Glasses</p>
+            </div>
+
+            <div class="input-group">
+                <label for="loginUsername">Tài khoản</label>
+                <div class="input-wrapper">
+                    <i class="ph ph-user input-icon"></i>
+                    <input type="text" id="loginUsername" placeholder="Nhập tên đăng nhập" autocomplete="username">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="loginPassword">Mật khẩu</label>
+                <div class="input-wrapper">
+                    <i class="ph ph-lock input-icon"></i>
+                    <input type="password" id="loginPassword" placeholder="Nhập mật khẩu" autocomplete="current-password">
+                </div>
+            </div>
+
+            <button class="auth-btn" id="loginBtn" onclick="handleLogin()">
+                <span>Đăng nhập</span>
+                <i class="ph ph-arrow-right"></i>
+            </button>
+
+            <p id="loginResult" class="result-msg"></p>
+
+            <div class="auth-switch">
+                Chưa có tài khoản? <a href="register.html">Tạo tài khoản mới</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Right: Brand Visual ── -->
+    <div class="auth-brand-panel">
+        <div class="brand-grid"></div>
+        <div class="brand-glow brand-glow-1"></div>
+        <div class="brand-glow brand-glow-2"></div>
+        <div class="brand-content">
+            <img
+                class="auth-brand-logo"
+                src="/assets/images/pos-glasses-optic-bridge-logo.png"
+                alt="POS GLASSES"
+            >
+            <h2>POS Glasses</h2>
+            <p>Hệ thống quản lý bán hàng mắt kính hiện đại, dễ sử dụng và bảo mật cao</p>
+        </div>
+    </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script>
+    async function handleLogin() {
+        const username = document.getElementById("loginUsername").value.trim();
+        const password = document.getElementById("loginPassword").value;
+        const resultEl = document.getElementById("loginResult");
+        const btn = document.getElementById("loginBtn");
+
+        resultEl.innerHTML = "";
+        resultEl.className = "result-msg";
+
+        if (!username || !password) {
+            resultEl.innerHTML = "Vui lòng nhập đầy đủ thông tin";
+            resultEl.className = "result-msg error";
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ph ph-spinner"></i> Đang xử lý...';
+
+        try {
+            const data = await apiRequest("/login", {
+                method: "POST",
+                body: { username, password }
+            });
+
+            if (data.token) {
+                saveAuth(data);
+                resultEl.innerHTML = "Đăng nhập thành công!";
+                resultEl.className = "result-msg success";
+                setTimeout(() => redirectAfterLogin(data.user), 500);
+            }
+        } catch (error) {
+            resultEl.innerHTML = error.message;
+            resultEl.className = "result-msg error";
+            btn.disabled = false;
+            btn.innerHTML = '<span>Đăng nhập</span> <i class="ph ph-arrow-right"></i>';
+        }
+    }
+
+    document.addEventListener("keypress", function(e) {
+        if (e.key === "Enter") handleLogin();
+    });
+
+    // If already logged in, redirect
+    if (getCurrentUser() && getAuthToken()) {
+        redirectAfterLogin(getCurrentUser());
+    }
+</script>
+
+</body>
+</html>

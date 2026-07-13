@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - Bảo hành</title>
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <style>
+        /* ─────────────────────────────────────────
+           Warranty desk - counter lookup + register
+           Tokens from base.css; density aligned with
+           inventory / customers / promotions.
+           ───────────────────────────────────────── */
+
+        .wr-shell {
+            display: grid;
+            gap: 16px;
+        }
+
+        .wr-toolbar {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .wr-live {
+            align-items: center;
+            background: var(--accent-subtle);
+            border: 1px solid rgba(15, 118, 110, 0.14);
+            border-radius: var(--radius-pill);
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 700;
+            gap: 7px;
+            min-height: 34px;
+            padding: 7px 12px;
+            white-space: nowrap;
+        }
+
+        .wr-live.is-error {
+            background: var(--danger-light);
+            border-color: rgba(220, 38, 38, 0.18);
+            color: var(--danger-color);
+        }
+
+        .wr-kpi-grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        @media (max-width: 1100px) {
+            .wr-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 560px) {
+            .wr-kpi-grid { grid-template-columns: 1fr; }
+        }
+
+        .wr-kpi {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            cursor: pointer;
+            display: grid;
+            gap: 8px;
+            min-height: 100px;
+            padding: 14px 16px;
+            text-align: left;
+            transition:
+                border-color var(--transition-fast),
+                box-shadow var(--transition-fast),
+                transform var(--transition-fast);
+            width: 100%;
+        }
+
+        .wr-kpi:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-1px);
+        }
+
+        .wr-kpi:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        .wr-kpi.is-active {
+            border-color: rgba(15, 118, 110, 0.35);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .wr-kpi-top {
+            align-items: flex-start;
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        .wr-kpi-label {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .wr-kpi-value {
+            color: var(--text-primary);
+            font-size: clamp(22px, 2vw, 28px);
+            font-variant-numeric: tabular-nums;
+            font-weight: 850;
+            letter-spacing: -0.03em;
+            line-height: 1.05;
+            margin: 2px 0 0;
+        }
+
+        .wr-kpi-note {
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .wr-kpi-icon {
+            align-items: center;
+            background: var(--accent-light);
+            border-radius: var(--radius-sm);
+            color: var(--accent-color);
+            display: inline-flex;
+            flex-shrink: 0;
+            font-size: 18px;
+            height: 36px;
+            justify-content: center;
+            width: 36px;
+        }
+
+        .wr-kpi-icon.is-ok { background: var(--success-light); color: var(--success-color); }
+        .wr-kpi-icon.is-warn { background: var(--warning-light); color: var(--warning-color); }
+        .wr-kpi-icon.is-bad { background: var(--danger-light); color: var(--danger-color); }
+        .wr-kpi-icon.is-muted { background: var(--bg-muted); color: var(--text-muted); }
+
+        .wr-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+        }
+
+        @media (max-width: 1000px) {
+            .wr-grid { grid-template-columns: 1fr; }
+        }
+
+        .wr-stack {
+            display: grid;
+            gap: 14px;
+            align-content: start;
+        }
+
+        .wr-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            padding: 16px 18px;
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        .wr-panel:focus-within {
+            border-color: rgba(15, 118, 110, 0.16);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .wr-panel-head {
+            align-items: center;
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .wr-panel-title {
+            align-items: center;
+            color: var(--text-primary);
+            display: flex;
+            font-size: 14px;
+            font-weight: 800;
+            gap: 8px;
+            letter-spacing: -0.01em;
+            margin: 0;
+        }
+
+        .wr-panel-title i {
+            color: var(--accent-color);
+            font-size: 17px;
+        }
+
+        .wr-panel-desc {
+            color: var(--text-secondary);
+            font-size: 12.5px;
+            line-height: 1.45;
+            margin: -4px 0 14px;
+        }
+
+        .wr-field {
+            display: grid;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .wr-field label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .wr-field .hint {
+            color: var(--text-muted);
+            font-size: 11.5px;
+            margin: 0;
+        }
+
+        .wr-field-error {
+            color: var(--danger-color);
+            font-size: 11.5px;
+            font-weight: 600;
+            min-height: 15px;
+        }
+
+        .wr-field .form-control.is-invalid,
+        .wr-field .form-select.is-invalid {
+            border-color: var(--danger-color) !important;
+        }
+
+        .wr-lookup-row {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: minmax(0, 1fr) auto;
+        }
+
+        .wr-result {
+            background: var(--bg-muted);
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            display: grid;
+            gap: 10px;
+            margin-top: 12px;
+            padding: 12px 14px;
+        }
+
+        .wr-result.is-ok {
+            background: var(--success-light);
+            border-color: rgba(22, 163, 74, 0.16);
+        }
+
+        .wr-result.is-warn {
+            background: var(--warning-light);
+            border-color: rgba(217, 119, 6, 0.16);
+        }
+
+        .wr-result.is-bad {
+            background: var(--danger-light);
+            border-color: rgba(220, 38, 38, 0.14);
+        }
+
+        .wr-result.is-empty {
+            color: var(--text-secondary);
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .wr-result-top {
+            align-items: flex-start;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: space-between;
+        }
+
+        .wr-serial {
+            color: var(--text-primary);
+            font-family: "Roboto Mono", Consolas, monospace;
+            font-size: 14px;
+            font-weight: 750;
+            letter-spacing: 0.03em;
+        }
+
+        .wr-result-meta {
+            color: var(--text-secondary);
+            display: grid;
+            font-size: 12.5px;
+            gap: 4px;
+            line-height: 1.45;
+        }
+
+        .wr-result-meta strong {
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .wr-result-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 2px;
+        }
+
+        .wr-form-grid {
+            display: grid;
+            gap: 0;
+        }
+
+        .wr-form-2 {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        @media (max-width: 420px) {
+            .wr-form-2 { grid-template-columns: 1fr; }
+        }
+
+        .wr-form-actions {
+            display: grid;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .wr-list-panel {
+            display: flex;
+            flex-direction: column;
+            min-height: 420px;
+        }
+
+        .wr-list-toolbar {
+            align-items: end;
+            display: grid;
+            gap: 10px;
+            grid-template-columns: minmax(0, 1fr) minmax(140px, 160px) auto;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 720px) {
+            .wr-list-toolbar {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .wr-search-wrap {
+            position: relative;
+        }
+
+        .wr-search-wrap > i {
+            color: var(--text-muted);
+            font-size: 17px;
+            left: 12px;
+            pointer-events: none;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .wr-search-wrap .form-control {
+            padding-left: 38px !important;
+        }
+
+        .wr-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .wr-chip {
+            align-items: center;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-pill);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 700;
+            gap: 5px;
+            min-height: 30px;
+            padding: 4px 11px;
+            transition:
+                background-color var(--transition-fast),
+                border-color var(--transition-fast),
+                color var(--transition-fast);
+        }
+
+        .wr-chip:hover {
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+
+        .wr-chip.is-active {
+            background: var(--accent-light);
+            border-color: rgba(15, 118, 110, 0.28);
+            color: var(--accent-color);
+        }
+
+        .wr-chip:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        .wr-table-wrap {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            flex: 1;
+            overflow: auto;
+        }
+
+        .wr-table {
+            margin: 0;
+            min-width: 720px;
+        }
+
+        .wr-table thead th {
+            background: var(--bg-muted);
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 11.5px;
+            font-weight: 750;
+            letter-spacing: 0.02em;
+            padding: 10px 12px;
+            white-space: nowrap;
+        }
+
+        .wr-table tbody td {
+            border-color: rgba(20, 32, 31, 0.06);
+            font-size: 13px;
+            padding: 11px 12px;
+            vertical-align: middle;
+        }
+
+        .wr-table tbody tr {
+            transition: background-color var(--transition-fast);
+        }
+
+        .wr-table tbody tr:hover {
+            background: rgba(15, 118, 110, 0.03);
+        }
+
+        .wr-code {
+            background: var(--bg-muted);
+            border-radius: 5px;
+            color: var(--text-primary);
+            font-family: "Roboto Mono", Consolas, monospace;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            padding: 3px 7px;
+            white-space: nowrap;
+        }
+
+        .wr-cell-sub {
+            color: var(--text-muted);
+            font-size: 11.5px;
+            margin-top: 2px;
+        }
+
+        .wr-badge {
+            align-items: center;
+            border-radius: var(--radius-pill);
+            display: inline-flex;
+            font-size: 11px;
+            font-weight: 750;
+            gap: 4px;
+            min-height: 24px;
+            padding: 2px 9px;
+            white-space: nowrap;
+        }
+
+        .wr-badge.is-active { background: var(--success-light); color: var(--success-color); }
+        .wr-badge.is-claimed { background: var(--info-light); color: var(--info-color); }
+        .wr-badge.is-expired { background: var(--warning-light); color: #b45309; }
+        .wr-badge.is-void { background: var(--bg-muted); color: var(--text-muted); }
+        .wr-badge.is-unknown { background: var(--bg-muted); color: var(--text-secondary); }
+
+        .wr-actions {
+            display: inline-flex;
+            gap: 4px;
+            justify-content: flex-end;
+        }
+
+        .wr-action-btn {
+            align-items: center;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            height: 30px;
+            justify-content: center;
+            transition:
+                background-color var(--transition-fast),
+                border-color var(--transition-fast),
+                color var(--transition-fast);
+            width: 30px;
+        }
+
+        .wr-action-btn:hover {
+            background: var(--accent-light);
+            border-color: rgba(15, 118, 110, 0.16);
+            color: var(--accent-color);
+        }
+
+        .wr-action-btn:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 1px;
+        }
+
+        .wr-action-btn:active {
+            transform: scale(0.96);
+        }
+
+        .wr-action-btn.is-danger:hover {
+            background: var(--danger-light);
+            border-color: rgba(220, 38, 38, 0.16);
+            color: var(--danger-color);
+        }
+
+        .wr-empty,
+        .wr-loading,
+        .wr-error {
+            color: var(--text-secondary);
+            font-size: 13px;
+            padding: 36px 16px;
+            text-align: center;
+        }
+
+        .wr-empty i,
+        .wr-loading i {
+            color: var(--accent-color);
+            display: block;
+            font-size: 28px;
+            margin: 0 auto 8px;
+        }
+
+        .wr-error {
+            color: var(--danger-color);
+        }
+
+        .wr-skeleton-row td {
+            padding: 14px 12px;
+        }
+
+        .wr-skel {
+            animation: wr-shimmer 1.2s ease-in-out infinite;
+            background: linear-gradient(
+                90deg,
+                var(--bg-muted) 0%,
+                rgba(255, 255, 255, 0.7) 50%,
+                var(--bg-muted) 100%
+            );
+            background-size: 200% 100%;
+            border-radius: 4px;
+            display: block;
+            height: 12px;
+        }
+
+        @keyframes wr-shimmer {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .wr-kpi,
+            .wr-action-btn,
+            .wr-chip,
+            .wr-table tbody tr {
+                transition: none;
+            }
+
+            .wr-kpi:hover {
+                transform: none;
+            }
+
+            .wr-skel {
+                animation: none;
+            }
+        }
+
+        .wr-footer-meta {
+            align-items: center;
+            color: var(--text-muted);
+            display: flex;
+            flex-wrap: wrap;
+            font-size: 12px;
+            gap: 8px;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .wr-footer-meta strong {
+            color: var(--text-secondary);
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+<div class="pos-container">
+    <aside data-menu-component data-active-menu="warranties"></aside>
+    <main class="pos-main">
+        <header class="pos-topbar">
+            <div>
+                <h2 class="pos-topbar-title">Bảo hành</h2>
+            </div>
+            <div class="pos-topbar-actions wr-toolbar">
+                <span class="wr-live" id="liveStatus" aria-live="polite">
+                    <i class="ph ph-shield-check" aria-hidden="true"></i>
+                    <span>Sẵn sàng</span>
+                </span>
+                <button class="btn btn-secondary" type="button" id="btnRefresh">
+                    <i class="ph ph-arrow-clockwise" aria-hidden="true"></i> Làm mới
+                </button>
+            </div>
+        </header>
+
+        <div class="pos-content">
+            <section class="pos-page-intro">
+                <div>
+                    <h2>Tra cứu & đăng ký bảo hành</h2>
+                    <p>Quét serial khi khách mang kính đến. Kiểm tra hạn, đăng ký mới hoặc cập nhật trạng thái claim.</p>
+                </div>
+            </section>
+
+            <div class="wr-shell">
+                <div class="wr-kpi-grid" role="group" aria-label="Bộ lọc theo trạng thái">
+                    <button type="button" class="wr-kpi is-active" data-status-filter="" id="kpiAll">
+                        <div class="wr-kpi-top">
+                            <div>
+                                <div class="wr-kpi-label">Tổng hồ sơ</div>
+                                <p class="wr-kpi-value" id="kpiTotal">-</p>
+                            </div>
+                            <span class="wr-kpi-icon" aria-hidden="true"><i class="ph ph-stack"></i></span>
+                        </div>
+                        <p class="wr-kpi-note">Toàn bộ serial đã đăng ký</p>
+                    </button>
+                    <button type="button" class="wr-kpi" data-status-filter="active" id="kpiActive">
+                        <div class="wr-kpi-top">
+                            <div>
+                                <div class="wr-kpi-label">Còn hiệu lực</div>
+                                <p class="wr-kpi-value" id="kpiActiveVal">-</p>
+                            </div>
+                            <span class="wr-kpi-icon is-ok" aria-hidden="true"><i class="ph ph-shield-check"></i></span>
+                        </div>
+                        <p class="wr-kpi-note">Đang trong thời hạn BH</p>
+                    </button>
+                    <button type="button" class="wr-kpi" data-status-filter="expired" id="kpiExpired">
+                        <div class="wr-kpi-top">
+                            <div>
+                                <div class="wr-kpi-label">Hết hạn</div>
+                                <p class="wr-kpi-value" id="kpiExpiredVal">-</p>
+                            </div>
+                            <span class="wr-kpi-icon is-warn" aria-hidden="true"><i class="ph ph-clock-countdown"></i></span>
+                        </div>
+                        <p class="wr-kpi-note">Cần tư vấn gia hạn / mới</p>
+                    </button>
+                    <button type="button" class="wr-kpi" data-status-filter="claimed" id="kpiClaimed">
+                        <div class="wr-kpi-top">
+                            <div>
+                                <div class="wr-kpi-label">Đã claim</div>
+                                <p class="wr-kpi-value" id="kpiClaimedVal">-</p>
+                            </div>
+                            <span class="wr-kpi-icon is-muted" aria-hidden="true"><i class="ph ph-wrench"></i></span>
+                        </div>
+                        <p class="wr-kpi-note">Đã xử lý bảo hành</p>
+                    </button>
+                </div>
+
+                <div class="wr-grid">
+                    <div class="wr-stack">
+                        <!-- Lookup -->
+                        <section class="wr-panel" aria-labelledby="lookupTitle">
+                            <div class="wr-panel-head">
+                                <h3 class="wr-panel-title" id="lookupTitle">
+                                    <i class="ph ph-barcode" aria-hidden="true"></i>
+                                    Tra cứu serial
+                                </h3>
+                            </div>
+                            <p class="wr-panel-desc">Nhập hoặc quét serial trên gọng / tem bảo hành.</p>
+
+                            <div class="wr-field" style="margin-bottom: 0;">
+                                <label for="lookupSerial">Số serial</label>
+                                <div class="wr-lookup-row">
+                                    <input
+                                        class="form-control"
+                                        id="lookupSerial"
+                                        type="text"
+                                        maxlength="80"
+                                        placeholder="VD: RB-3136-A1B2"
+                                        autocomplete="off"
+                                        spellcheck="false"
+                                    >
+                                    <button class="btn btn-primary" type="button" id="btnLookup">
+                                        <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+                                        <span>Tra</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="lookupResult" class="wr-result is-empty" aria-live="polite">
+                                Kết quả tra cứu hiện tại đây.
+                            </div>
+                        </section>
+
+                        <!-- Register -->
+                        <section class="wr-panel" aria-labelledby="regTitle">
+                            <div class="wr-panel-head">
+                                <h3 class="wr-panel-title" id="regTitle">
+                                    <i class="ph ph-plus-circle" aria-hidden="true"></i>
+                                    Đăng ký mới
+                                </h3>
+                            </div>
+                            <p class="wr-panel-desc">Tạo hồ sơ BH cho serial chưa có trên hệ thống.</p>
+
+                            <form id="regForm" class="wr-form-grid" novalidate>
+                                <div class="wr-field">
+                                    <label for="regSerial">Serial <span class="text-danger">*</span></label>
+                                    <input class="form-control" id="regSerial" name="serial" type="text" maxlength="80" required autocomplete="off" spellcheck="false">
+                                    <div class="wr-field-error" id="errSerial"></div>
+                                </div>
+
+                                <div class="wr-form-2">
+                                    <div class="wr-field">
+                                        <label for="regMonths">Số tháng BH</label>
+                                        <input class="form-control" id="regMonths" name="months" type="number" min="1" max="120" value="12">
+                                        <p class="hint">1-120 tháng</p>
+                                    </div>
+                                    <div class="wr-field">
+                                        <label for="regOrderId">Mã đơn</label>
+                                        <input class="form-control" id="regOrderId" name="order_id" type="number" min="1" placeholder="Tùy chọn">
+                                    </div>
+                                </div>
+
+                                <div class="wr-form-2">
+                                    <div class="wr-field">
+                                        <label for="regProductId">Mã sản phẩm</label>
+                                        <input class="form-control" id="regProductId" name="product_id" type="number" min="1" placeholder="Tùy chọn">
+                                    </div>
+                                    <div class="wr-field">
+                                        <label for="regCustomerId">Mã khách hàng</label>
+                                        <input class="form-control" id="regCustomerId" name="customer_id" type="number" min="1" placeholder="Tùy chọn">
+                                    </div>
+                                </div>
+
+                                <div class="wr-field">
+                                    <label for="regNote">Ghi chú</label>
+                                    <input class="form-control" id="regNote" name="note" type="text" maxlength="500" placeholder="VD: BH tròng 12 tháng">
+                                </div>
+
+                                <div class="wr-form-actions">
+                                    <button class="btn btn-primary w-100" type="submit" id="btnRegister">
+                                        <i class="ph ph-shield-check" aria-hidden="true"></i>
+                                        Đăng ký bảo hành
+                                    </button>
+                                    <button class="btn btn-secondary w-100" type="button" id="btnResetReg">
+                                        Xóa form
+                                    </button>
+                                </div>
+                            </form>
+                        </section>
+                    </div>
+
+                    <!-- List -->
+                    <section class="wr-panel wr-list-panel" aria-labelledby="listTitle">
+                        <div class="wr-panel-head">
+                            <h3 class="wr-panel-title" id="listTitle">
+                                <i class="ph ph-list-dashes" aria-hidden="true"></i>
+                                Danh sách bảo hành
+                            </h3>
+                        </div>
+
+                        <div class="wr-list-toolbar">
+                            <div class="wr-field" style="margin: 0;">
+                                <label for="searchQ">Tìm kiếm</label>
+                                <div class="wr-search-wrap">
+                                    <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+                                    <input
+                                        class="form-control"
+                                        id="searchQ"
+                                        type="search"
+                                        placeholder="Serial, tên KH, SĐT"
+                                        autocomplete="off"
+                                    >
+                                </div>
+                            </div>
+                            <div class="wr-field" style="margin: 0;">
+                                <label for="statusFilter">Trạng thái</label>
+                                <select class="form-select" id="statusFilter">
+                                    <option value="">Tất cả</option>
+                                    <option value="active">Còn hiệu lực</option>
+                                    <option value="claimed">Đã claim</option>
+                                    <option value="expired">Hết hạn</option>
+                                    <option value="void">Hủy</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-secondary" type="button" id="btnSearch">
+                                <i class="ph ph-funnel" aria-hidden="true"></i> Lọc
+                            </button>
+                        </div>
+
+                        <div class="wr-chips" role="group" aria-label="Lọc nhanh">
+                            <button type="button" class="wr-chip is-active" data-chip="">Tất cả</button>
+                            <button type="button" class="wr-chip" data-chip="active">Còn hạn</button>
+                            <button type="button" class="wr-chip" data-chip="claimed">Claim</button>
+                            <button type="button" class="wr-chip" data-chip="expired">Hết hạn</button>
+                            <button type="button" class="wr-chip" data-chip="void">Hủy</button>
+                        </div>
+
+                        <div class="wr-table-wrap">
+                            <table class="table wr-table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Serial</th>
+                                        <th>Khách hàng</th>
+                                        <th>Sản phẩm</th>
+                                        <th>Bắt đầu</th>
+                                        <th>Hết hạn</th>
+                                        <th>Trạng thái</th>
+                                        <th class="text-end">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="listBody"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="wr-footer-meta">
+                            <span id="listMeta">Đang tải danh sách…</span>
+                            <span id="listHint">Enter để tìm nhanh</span>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/format.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/components.js"></script>
+<script>
+    requireRole(["admin", "staff"]);
+
+    const STATUS_LABELS = {
+        active: "Còn hiệu lực",
+        claimed: "Đã claim",
+        expired: "Hết hạn",
+        void: "Đã hủy"
+    };
+
+    const STATUS_NEXT = {
+        active: [
+            { status: "claimed", label: "Đánh claim", icon: "ph-wrench" },
+            { status: "void", label: "Hủy hồ sơ", icon: "ph-x-circle", danger: true }
+        ],
+        claimed: [
+            { status: "active", label: "Mở lại", icon: "ph-arrow-counter-clockwise" },
+            { status: "void", label: "Hủy hồ sơ", icon: "ph-x-circle", danger: true }
+        ],
+        expired: [
+            { status: "void", label: "Hủy hồ sơ", icon: "ph-x-circle", danger: true }
+        ],
+        void: [
+            { status: "active", label: "Kích hoạt lại", icon: "ph-arrow-counter-clockwise" }
+        ]
+    };
+
+    let currentStatus = "";
+    let searchTimer = null;
+    let listRequestId = 0;
+    let busyLookup = false;
+    let busyRegister = false;
+
+    function $(id) {
+        return document.getElementById(id);
+    }
+
+    function setLive(message, isError) {
+        const el = $("liveStatus");
+        if (!el) return;
+        el.classList.toggle("is-error", Boolean(isError));
+        el.innerHTML = `<i class="ph ${isError ? "ph-warning-circle" : "ph-shield-check"}" aria-hidden="true"></i><span>${escapeHtml(message)}</span>`;
+    }
+
+    function formatDateOnly(value) {
+        if (!value) return "-";
+        const raw = String(value).slice(0, 10);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+            const [y, m, d] = raw.split("-");
+            return `${d}/${m}/${y}`;
+        }
+        if (typeof formatDate === "function") {
+            try {
+                return formatDate(value).split(",")[0] || formatDate(value);
+            } catch (_) {
+                /* fall through */
+            }
+        }
+        return raw || "-";
+    }
+
+    function normalizeSerial(value) {
+        return String(value || "").trim().toUpperCase().slice(0, 80);
+    }
+
+    function statusBadge(status) {
+        const key = String(status || "").toLowerCase();
+        const label = STATUS_LABELS[key] || status || "Khác";
+        const cls = STATUS_LABELS[key] ? key : "unknown";
+        return `<span class="wr-badge is-${escapeHtml(cls)}">${escapeHtml(label)}</span>`;
+    }
+
+    function setButtonBusy(btn, busy, idleHtml) {
+        if (!btn) return;
+        if (busy) {
+            if (!btn.dataset.idleHtml) {
+                btn.dataset.idleHtml = btn.innerHTML;
+            }
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
+            return;
+        }
+        btn.disabled = false;
+        btn.innerHTML = idleHtml || btn.dataset.idleHtml || btn.innerHTML;
+        delete btn.dataset.idleHtml;
+    }
+
+    function clearFieldError(id) {
+        const err = $(id);
+        if (err) err.textContent = "";
+        const input = $("regSerial");
+        if (input) input.classList.remove("is-invalid");
+    }
+
+    function setFieldError(inputId, errId, message) {
+        const input = $(inputId);
+        const err = $(errId);
+        if (input) input.classList.add("is-invalid");
+        if (err) err.textContent = message || "";
+    }
+
+    function syncFilterUi() {
+        document.querySelectorAll(".wr-kpi[data-status-filter]").forEach((el) => {
+            el.classList.toggle("is-active", (el.dataset.statusFilter || "") === currentStatus);
+        });
+        document.querySelectorAll(".wr-chip[data-chip]").forEach((el) => {
+            el.classList.toggle("is-active", (el.dataset.chip || "") === currentStatus);
+        });
+        const sel = $("statusFilter");
+        if (sel && sel.value !== currentStatus) {
+            sel.value = currentStatus;
+        }
+    }
+
+    function setStatusFilter(status) {
+        currentStatus = status || "";
+        syncFilterUi();
+        loadList();
+    }
+
+    function skeletonRows(count) {
+        return Array.from({ length: count }, () => `
+            <tr class="wr-skeleton-row">
+                <td><span class="wr-skel" style="width:88px"></span></td>
+                <td><span class="wr-skel" style="width:110px"></span></td>
+                <td><span class="wr-skel" style="width:120px"></span></td>
+                <td><span class="wr-skel" style="width:72px"></span></td>
+                <td><span class="wr-skel" style="width:72px"></span></td>
+                <td><span class="wr-skel" style="width:80px"></span></td>
+                <td><span class="wr-skel" style="width:48px;margin-left:auto"></span></td>
+            </tr>
+        `).join("");
+    }
+
+    function renderEmpty(message) {
+        return `
+            <tr>
+                <td colspan="7">
+                    <div class="wr-empty">
+                        <i class="ph ph-shield" aria-hidden="true"></i>
+                        ${escapeHtml(message)}
+                    </div>
+                </td>
+            </tr>`;
+    }
+
+    function renderError(message) {
+        return `
+            <tr>
+                <td colspan="7">
+                    <div class="wr-error">${escapeHtml(message)}</div>
+                </td>
+            </tr>`;
+    }
+
+    function actionButtons(item) {
+        const status = String(item.status || "").toLowerCase();
+        const actions = STATUS_NEXT[status] || [];
+        if (!actions.length) {
+            return `<span class="text-muted">-</span>`;
+        }
+        return `
+            <div class="wr-actions">
+                ${actions.map((a) => `
+                    <button
+                        type="button"
+                        class="wr-action-btn${a.danger ? " is-danger" : ""}"
+                        title="${escapeHtml(a.label)}"
+                        aria-label="${escapeHtml(a.label)}"
+                        data-action-status="${escapeHtml(a.status)}"
+                        data-id="${Number(item.id)}"
+                    >
+                        <i class="ph ${a.icon}" aria-hidden="true"></i>
+                    </button>
+                `).join("")}
+            </div>`;
+    }
+
+    function renderRows(items) {
+        return items.map((w) => {
+            const phone = w.customer_phone ? String(w.customer_phone) : "";
+            return `
+                <tr data-id="${Number(w.id)}">
+                    <td><span class="wr-code">${escapeHtml(w.serial_number || "")}</span></td>
+                    <td>
+                        <div>${escapeHtml(w.customer_name || "-")}</div>
+                        ${phone ? `<div class="wr-cell-sub">${escapeHtml(phone)}</div>` : ""}
+                    </td>
+                    <td>${escapeHtml(w.product_name || "-")}</td>
+                    <td>${escapeHtml(formatDateOnly(w.start_date))}</td>
+                    <td>${escapeHtml(formatDateOnly(w.end_date))}</td>
+                    <td>${statusBadge(w.status)}</td>
+                    <td class="text-end">${actionButtons(w)}</td>
+                </tr>`;
+        }).join("");
+    }
+
+    async function loadKpis() {
+        try {
+            const [all, active, expired, claimed] = await Promise.all([
+                apiRequest("/api/staff/warranties?limit=1"),
+                apiRequest("/api/staff/warranties?limit=1&status=active"),
+                apiRequest("/api/staff/warranties?limit=1&status=expired"),
+                apiRequest("/api/staff/warranties?limit=1&status=claimed")
+            ]);
+            $("kpiTotal").textContent = Number(all.total || 0).toLocaleString("vi-VN");
+            $("kpiActiveVal").textContent = Number(active.total || 0).toLocaleString("vi-VN");
+            $("kpiExpiredVal").textContent = Number(expired.total || 0).toLocaleString("vi-VN");
+            $("kpiClaimedVal").textContent = Number(claimed.total || 0).toLocaleString("vi-VN");
+        } catch (error) {
+            $("kpiTotal").textContent = "-";
+            $("kpiActiveVal").textContent = "-";
+            $("kpiExpiredVal").textContent = "-";
+            $("kpiClaimedVal").textContent = "-";
+            setLive(error.message || "Không tải được thống kê", true);
+        }
+    }
+
+    async function loadList() {
+        const requestId = ++listRequestId;
+        const q = ($("searchQ").value || "").trim();
+        const qs = new URLSearchParams({ limit: "50", page: "1" });
+        if (q) qs.set("q", q);
+        if (currentStatus) qs.set("status", currentStatus);
+
+        const tbody = $("listBody");
+        tbody.innerHTML = skeletonRows(6);
+        $("listMeta").textContent = "Đang tải…";
+
+        try {
+            const data = await apiRequest(`/api/staff/warranties?${qs}`);
+            if (requestId !== listRequestId) return;
+
+            const items = Array.isArray(data) ? data : (data.items || []);
+            const total = Number(data.total != null ? data.total : items.length);
+
+            if (!items.length) {
+                tbody.innerHTML = renderEmpty(
+                    q || currentStatus
+                        ? "Không có hồ sơ khớp bộ lọc."
+                        : "Chưa có bảo hành nào. Đăng ký serial ở panel bên trái."
+                );
+                $("listMeta").innerHTML = `<strong>0</strong> hồ sơ`;
+                setLive("Danh sách trống");
+                return;
+            }
+
+            tbody.innerHTML = renderRows(items);
+            $("listMeta").innerHTML = `Hiển thị <strong>${items.length}</strong> / <strong>${total.toLocaleString("vi-VN")}</strong> hồ sơ`;
+            setLive(`${total.toLocaleString("vi-VN")} hồ sơ`);
+        } catch (error) {
+            if (requestId !== listRequestId) return;
+            tbody.innerHTML = renderError(error.message || "Không tải được danh sách");
+            $("listMeta").textContent = "Lỗi tải danh sách";
+            setLive(error.message || "Lỗi tải danh sách", true);
+        }
+    }
+
+    function renderLookupCard(w) {
+        const bad = Boolean(w.is_expired) || w.status !== "active";
+        const warn = !bad && w.days_left != null && Number(w.days_left) <= 30;
+        const tone = bad ? "is-bad" : warn ? "is-warn" : "is-ok";
+        const daysText = w.days_left != null
+            ? (Number(w.days_left) <= 0 ? "Đã hết hạn" : `Còn ${Number(w.days_left)} ngày`)
+            : "";
+
+        return `
+            <div class="wr-result ${tone}">
+                <div class="wr-result-top">
+                    <span class="wr-serial">${escapeHtml(w.serial_number || "")}</span>
+                    ${statusBadge(w.status)}
+                </div>
+                <div class="wr-result-meta">
+                    <div><strong>Khách:</strong> ${escapeHtml(w.customer_name || "-")}${w.customer_phone ? ` · ${escapeHtml(w.customer_phone)}` : ""}</div>
+                    <div><strong>Sản phẩm:</strong> ${escapeHtml(w.product_name || "-")}${w.product_sku ? ` (${escapeHtml(w.product_sku)})` : ""}</div>
+                    <div><strong>Thời hạn:</strong> ${escapeHtml(formatDateOnly(w.start_date))} → ${escapeHtml(formatDateOnly(w.end_date))}${daysText ? ` · ${escapeHtml(daysText)}` : ""}</div>
+                    ${w.note ? `<div><strong>Ghi chú:</strong> ${escapeHtml(w.note)}</div>` : ""}
+                </div>
+                <div class="wr-result-actions">
+                    ${w.status === "active" ? `
+                        <button type="button" class="btn btn-secondary btn-sm" data-lookup-claim="${Number(w.id)}">
+                            <i class="ph ph-wrench" aria-hidden="true"></i> Đánh claim
+                        </button>` : ""}
+                    <button type="button" class="btn btn-secondary btn-sm" data-fill-serial="${escapeHtml(w.serial_number || "")}">
+                        <i class="ph ph-copy" aria-hidden="true"></i> Điền form
+                    </button>
+                </div>
+            </div>`;
+    }
+
+    function renderLookupMiss(serial, message) {
+        return `
+            <div class="wr-result is-bad">
+                <div class="wr-result-top">
+                    <span class="wr-serial">${escapeHtml(serial || "")}</span>
+                    <span class="wr-badge is-void">Chưa có</span>
+                </div>
+                <div class="wr-result-meta">
+                    <div>${escapeHtml(message || "Không tìm thấy bảo hành với serial này")}</div>
+                </div>
+                <div class="wr-result-actions">
+                    <button type="button" class="btn btn-primary btn-sm" data-fill-serial="${escapeHtml(serial || "")}">
+                        <i class="ph ph-plus" aria-hidden="true"></i> Đăng ký serial này
+                    </button>
+                </div>
+            </div>`;
+    }
+
+    async function lookup() {
+        if (busyLookup) return;
+        const input = $("lookupSerial");
+        const serial = normalizeSerial(input.value);
+        input.value = serial;
+        const box = $("lookupResult");
+
+        if (!serial) {
+            showToast("Nhập serial để tra cứu", "warning");
+            input.focus();
+            return;
+        }
+
+        busyLookup = true;
+        setButtonBusy($("btnLookup"), true);
+        box.className = "wr-result is-empty";
+        box.innerHTML = "Đang tra cứu…";
+
+        try {
+            const w = await apiRequest(`/api/staff/warranties/lookup/${encodeURIComponent(serial)}`);
+            box.outerHTML = `<div id="lookupResult" aria-live="polite">${renderLookupCard(w)}</div>`;
+            setLive(`Tìm thấy ${serial}`);
+        } catch (error) {
+            const notFound = error.status === 404 || /không tìm thấy/i.test(error.message || "");
+            if (notFound) {
+                box.outerHTML = `<div id="lookupResult" aria-live="polite">${renderLookupMiss(serial, error.message)}</div>`;
+                setLive("Serial chưa đăng ký", true);
+            } else {
+                box.outerHTML = `<div id="lookupResult" aria-live="polite"><div class="wr-result is-bad">${escapeHtml(error.message || "Lỗi tra cứu")}</div></div>`;
+                setLive(error.message || "Lỗi tra cứu", true);
+            }
+        } finally {
+            busyLookup = false;
+            setButtonBusy($("btnLookup"), false, `<i class="ph ph-magnifying-glass" aria-hidden="true"></i> <span>Tra</span>`);
+        }
+    }
+
+    function fillRegisterFromSerial(serial) {
+        const code = normalizeSerial(serial);
+        $("regSerial").value = code;
+        $("regSerial").focus();
+        clearFieldError("errSerial");
+        $("regSerial").scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function resetRegisterForm() {
+        $("regForm").reset();
+        $("regMonths").value = "12";
+        clearFieldError("errSerial");
+    }
+
+    function readOptionalId(inputId) {
+        const raw = ($(inputId).value || "").trim();
+        if (!raw) return null;
+        const n = Number(raw);
+        return Number.isFinite(n) && n > 0 ? n : null;
+    }
+
+    async function register(event) {
+        if (event) event.preventDefault();
+        if (busyRegister) return;
+
+        clearFieldError("errSerial");
+        const serial_number = normalizeSerial($("regSerial").value);
+        $("regSerial").value = serial_number;
+
+        if (!serial_number) {
+            setFieldError("regSerial", "errSerial", "Serial bắt buộc");
+            showToast("Nhập serial để đăng ký", "warning");
+            $("regSerial").focus();
+            return;
+        }
+
+        let months = Number($("regMonths").value);
+        if (!Number.isFinite(months) || months < 1) months = 12;
+        if (months > 120) months = 120;
+        $("regMonths").value = String(months);
+
+        const order_id = readOptionalId("regOrderId");
+        const product_id = readOptionalId("regProductId");
+        const customer_id = readOptionalId("regCustomerId");
+        const note = ($("regNote").value || "").trim().slice(0, 500);
+
+        if ($("regOrderId").value && order_id == null) {
+            showToast("Mã đơn không hợp lệ", "warning");
+            $("regOrderId").focus();
+            return;
+        }
+        if ($("regProductId").value && product_id == null) {
+            showToast("Mã sản phẩm không hợp lệ", "warning");
+            $("regProductId").focus();
+            return;
+        }
+        if ($("regCustomerId").value && customer_id == null) {
+            showToast("Mã khách hàng không hợp lệ", "warning");
+            $("regCustomerId").focus();
+            return;
+        }
+
+        busyRegister = true;
+        setButtonBusy($("btnRegister"), true);
+
+        try {
+            await apiRequest("/api/staff/warranties", {
+                method: "POST",
+                body: {
+                    serial_number,
+                    months,
+                    order_id,
+                    product_id,
+                    customer_id,
+                    note: note || null
+                }
+            });
+            showToast("Đã đăng ký bảo hành", "success");
+            setLive(`Đã tạo BH ${serial_number}`);
+            resetRegisterForm();
+            $("lookupSerial").value = serial_number;
+            await Promise.all([loadList(), loadKpis()]);
+            // Refresh lookup card for the new serial
+            await lookup();
+        } catch (error) {
+            const msg = error.message || "Lỗi đăng ký";
+            if (/serial/i.test(msg)) {
+                setFieldError("regSerial", "errSerial", msg);
+            }
+            showToast(msg, "error");
+            setLive(msg, true);
+        } finally {
+            busyRegister = false;
+            setButtonBusy(
+                $("btnRegister"),
+                false,
+                `<i class="ph ph-shield-check" aria-hidden="true"></i> Đăng ký bảo hành`
+            );
+        }
+    }
+
+    async function changeStatus(id, status) {
+        if (!id || !status) return;
+
+        const titles = {
+            active: "Kích hoạt lại bảo hành?",
+            claimed: "Đánh dấu đã claim?",
+            expired: "Đánh dấu hết hạn?",
+            void: "Hủy hồ sơ bảo hành?"
+        };
+        const messages = {
+            active: `Hồ sơ #${id} sẽ chuyển về trạng thái còn hiệu lực.`,
+            claimed: `Hồ sơ #${id} sẽ được đánh dấu đã claim / đã xử lý.`,
+            expired: `Hồ sơ #${id} sẽ chuyển sang hết hạn.`,
+            void: `Hồ sơ #${id} sẽ bị hủy. Thao tác này nên dùng khi serial đăng ký nhầm.`
+        };
+        const confirmType = status === "void" ? "danger" : status === "claimed" ? "warning" : "info";
+
+        const ok = await showConfirm({
+            title: titles[status] || "Cập nhật trạng thái?",
+            message: messages[status] || `Cập nhật bảo hành #${id}?`,
+            confirmText: STATUS_LABELS[status] || "Xác nhận",
+            cancelText: "Đóng",
+            type: confirmType
+        });
+        if (!ok) return;
+
+        try {
+            await apiRequest(`/api/staff/warranties/${id}/status`, {
+                method: "PATCH",
+                body: { status }
+            });
+            showToast("Đã cập nhật trạng thái", "success");
+            setLive(`BH #${id}: ${STATUS_LABELS[status] || status}`);
+            await Promise.all([loadList(), loadKpis()]);
+            const serial = normalizeSerial($("lookupSerial").value);
+            if (serial) {
+                try {
+                    const w = await apiRequest(`/api/staff/warranties/lookup/${encodeURIComponent(serial)}`);
+                    const box = $("lookupResult");
+                    if (box) box.outerHTML = `<div id="lookupResult" aria-live="polite">${renderLookupCard(w)}</div>`;
+                } catch (_) {
+                    /* ignore lookup refresh errors */
+                }
+            }
+        } catch (error) {
+            showToast(error.message || "Không cập nhật được", "error");
+            setLive(error.message || "Lỗi cập nhật", true);
+        }
+    }
+
+    async function refreshAll() {
+        setLive("Đang làm mới…");
+        await Promise.all([loadKpis(), loadList()]);
+    }
+
+    // ── Events ──────────────────────────────────────────────────
+
+    $("btnLookup").addEventListener("click", lookup);
+    $("lookupSerial").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            lookup();
+        }
+    });
+    $("lookupSerial").addEventListener("blur", () => {
+        $("lookupSerial").value = normalizeSerial($("lookupSerial").value);
+    });
+
+    $("regForm").addEventListener("submit", register);
+    $("btnResetReg").addEventListener("click", resetRegisterForm);
+    $("regSerial").addEventListener("blur", () => {
+        $("regSerial").value = normalizeSerial($("regSerial").value);
+    });
+
+    $("btnSearch").addEventListener("click", loadList);
+    $("btnRefresh").addEventListener("click", refreshAll);
+    $("searchQ").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            loadList();
+        }
+    });
+    $("searchQ").addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(loadList, 320);
+    });
+    $("statusFilter").addEventListener("change", () => {
+        setStatusFilter($("statusFilter").value);
+    });
+
+    document.querySelectorAll(".wr-kpi[data-status-filter]").forEach((el) => {
+        el.addEventListener("click", () => setStatusFilter(el.dataset.statusFilter || ""));
+    });
+    document.querySelectorAll(".wr-chip[data-chip]").forEach((el) => {
+        el.addEventListener("click", () => setStatusFilter(el.dataset.chip || ""));
+    });
+
+    document.addEventListener("click", (event) => {
+        const fillBtn = event.target.closest("[data-fill-serial]");
+        if (fillBtn) {
+            fillRegisterFromSerial(fillBtn.getAttribute("data-fill-serial"));
+            return;
+        }
+
+        const claimBtn = event.target.closest("[data-lookup-claim]");
+        if (claimBtn) {
+            changeStatus(Number(claimBtn.getAttribute("data-lookup-claim")), "claimed");
+            return;
+        }
+
+        const actionBtn = event.target.closest("[data-action-status]");
+        if (actionBtn) {
+            changeStatus(
+                Number(actionBtn.getAttribute("data-id")),
+                actionBtn.getAttribute("data-action-status")
+            );
+        }
+    });
+
+    // Initial load
+    $("listBody").innerHTML = skeletonRows(6);
+    refreshAll();
+</script>
+</body>
+</html>

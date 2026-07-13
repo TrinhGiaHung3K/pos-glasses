@@ -1,0 +1,2293 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - Bán hàng</title>
+
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+
+    <style>
+        /* ---- Minimal POS Sidebar Overrides ---- */
+
+        /* Compact customer bar */
+        .pos-customer-bar {
+            display: grid;
+            gap: 6px;
+            padding: 8px 10px;
+            background: var(--bg-muted);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+        }
+
+        .pos-customer-bar.is-scanning {
+            background: #ecfdf5;
+            border-color: rgba(15, 118, 110, 0.38);
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+        }
+
+        .pos-customer-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pos-customer-bar-row .form-control {
+            min-height: 32px !important;
+            padding: 5px 10px !important;
+            font-family: "Roboto Mono", "Consolas", monospace;
+            font-weight: 700;
+            font-size: 13px !important;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .pos-customer-bar-row .btn {
+            min-height: 32px;
+            padding: 5px 8px;
+            font-size: 13px;
+        }
+
+        .pos-customer-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: var(--radius-xs);
+            font-size: 12.5px;
+            font-weight: 600;
+            background: var(--bg-surface);
+            border: 1px dashed var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .pos-customer-status i {
+            font-size: 16px;
+            color: var(--text-muted);
+        }
+
+        .pos-customer-status.is-member {
+            background: var(--success-light);
+            border-color: rgba(16, 185, 129, 0.2);
+            border-style: solid;
+            color: var(--success-color);
+        }
+
+        .pos-customer-status.is-member i {
+            color: var(--success-color);
+        }
+
+        .pos-customer-status.is-error {
+            background: var(--danger-light);
+            border-color: rgba(244, 63, 94, 0.2);
+            border-style: solid;
+            color: var(--danger-color);
+        }
+
+        .pos-customer-status.is-error i {
+            color: var(--danger-color);
+        }
+
+        .pos-phone-scan-guide {
+            display: none;
+            gap: 8px;
+            padding: 8px 10px;
+            border: 1px dashed rgba(15, 118, 110, 0.32);
+            border-radius: var(--radius-xs);
+            background: rgba(240, 253, 250, 0.72);
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .pos-phone-scan-guide.is-open {
+            display: grid;
+        }
+
+        .pos-phone-scan-guide strong {
+            color: var(--text-primary);
+        }
+
+        .pos-phone-scan-guide i {
+            color: var(--accent-color);
+            font-size: 16px;
+        }
+
+        .pos-pair-overlay {
+            align-items: center;
+            background: rgba(15, 23, 42, 0.62);
+            cursor: default;
+            display: none;
+            inset: 0;
+            justify-content: center;
+            padding: 18px;
+            position: fixed;
+            z-index: 2000;
+        }
+
+        .pos-pair-overlay.is-open {
+            display: flex;
+        }
+
+        .pos-pair-overlay button,
+        .pos-pair-overlay .btn,
+        .pos-pair-overlay .btn *,
+        .pos-pair-overlay .pos-icon-button,
+        .pos-pair-overlay .pos-icon-button * {
+            cursor: pointer !important;
+        }
+
+        .pos-pair-dialog {
+            background: var(--bg-surface);
+            border-radius: var(--radius-default);
+            box-shadow: var(--shadow-xl);
+            cursor: default;
+            display: grid;
+            gap: 14px;
+            pointer-events: auto;
+            max-width: 540px;
+            padding: 18px;
+            width: min(100%, 540px);
+        }
+
+        .pos-pair-note {
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.45;
+            margin: 0;
+        }
+
+        .pos-pair-steps {
+            display: grid;
+            gap: 8px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .pos-pair-steps li {
+            align-items: start;
+            background: var(--bg-muted);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xs);
+            color: var(--text-secondary);
+            display: grid;
+            font-size: 13px;
+            gap: 8px;
+            grid-template-columns: 24px 1fr;
+            line-height: 1.4;
+            padding: 8px;
+        }
+
+        .pos-pair-steps strong {
+            color: var(--text-primary);
+        }
+
+        .pos-pair-step-index {
+            align-items: center;
+            background: var(--accent-light);
+            border-radius: 999px;
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            height: 24px;
+            justify-content: center;
+            width: 24px;
+        }
+
+        .pos-pair-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        /* Collapsible discount toggle */
+        .pos-discount-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 6px 0;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border: none;
+            background: none;
+            transition: color var(--transition-fast);
+        }
+
+        .pos-discount-toggle:hover {
+            color: var(--accent-color);
+        }
+
+        .pos-discount-toggle i {
+            font-size: 14px;
+            transition: transform var(--transition-fast);
+        }
+
+        .pos-discount-toggle.is-open i {
+            transform: rotate(180deg);
+        }
+
+        .pos-discount-body {
+            display: none;
+            padding-top: 8px;
+        }
+
+        .pos-discount-body.is-open {
+            display: block;
+        }
+
+        /* Compact payment method pills */
+        .pos-pay-methods {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .pos-pay-pill {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 7px 6px;
+            font-size: 12.5px;
+            font-weight: 700;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            background: var(--bg-surface);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .pos-pay-pill:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-muted);
+        }
+
+        .pos-pay-pill.is-active {
+            border-color: var(--accent-color);
+            background: var(--accent-light);
+            color: var(--accent-color);
+        }
+
+        .pos-pay-pill i {
+            font-size: 15px;
+        }
+
+        /* Large checkout button — POS terminal style */
+        .pos-checkout-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            min-height: 46px;
+            padding: 9px 16px;
+            margin-top: 6px;
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: -0.01em;
+            color: #ffffff;
+            background: linear-gradient(135deg, #0f766e, #0d9488);
+            border: none;
+            border-radius: var(--radius-sm);
+            box-shadow: 0 4px 14px -2px rgba(15, 118, 110, 0.35);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            flex-shrink: 0;
+        }
+
+        .pos-checkout-btn:hover {
+            background: linear-gradient(135deg, #0b5f59, #0f766e);
+            box-shadow: 0 6px 20px -3px rgba(15, 118, 110, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .pos-checkout-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .pos-checkout-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .pos-checkout-btn i {
+            font-size: 22px;
+        }
+
+        /* Money input in sidebar */
+        .pos-money-input {
+            color: var(--accent-color) !important;
+            font-size: 17px !important;
+            font-weight: 900;
+            letter-spacing: 0;
+        }
+
+        .pos-checkout-rail-footer .form-control,
+        .pos-checkout-rail-footer .form-select {
+            min-height: 40px;
+            padding: 8px 12px !important;
+        }
+
+        .pos-checkout-rail-footer .btn {
+            min-height: 38px;
+        }
+
+        /* Hide staff rank on POS page — loaded via JS still for discount cap logic */
+        #staffPerformanceCard { display: none; }
+
+        /* Bank transfer confirmation */
+        .payment-wait-dialog {
+            background: var(--bg-surface);
+            border: 1px solid rgba(20, 32, 31, 0.12);
+            border-radius: var(--radius-xl);
+            box-shadow: 0 28px 70px -18px rgba(16, 32, 29, 0.34);
+            color: var(--text-primary);
+            margin: 0;
+            max-width: 520px;
+            overflow: hidden;
+            padding: 0;
+            pointer-events: auto;
+            text-align: left;
+            width: min(100%, 520px);
+        }
+
+        .payment-wait-header {
+            align-items: flex-start;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            gap: 16px;
+            justify-content: space-between;
+            padding: 20px 22px 17px;
+        }
+
+        .payment-wait-heading {
+            display: grid;
+            gap: 5px;
+        }
+
+        .payment-wait-status {
+            align-items: center;
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            gap: 7px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .payment-wait-status-dot {
+            animation: paymentPulse 1.6s ease-in-out infinite;
+            background: var(--accent-color);
+            border-radius: 50%;
+            box-shadow: 0 0 0 4px var(--accent-subtle);
+            height: 8px;
+            width: 8px;
+        }
+
+        .payment-wait-title {
+            font-size: 20px;
+            font-weight: 850;
+            letter-spacing: -0.025em;
+            line-height: 1.25;
+            margin: 0;
+        }
+
+        .payment-wait-close {
+            align-items: center;
+            background: var(--bg-muted);
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            display: inline-flex;
+            flex: 0 0 auto;
+            font-size: 18px;
+            height: 36px;
+            justify-content: center;
+            transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+            width: 36px;
+        }
+
+        .payment-wait-close:hover {
+            background: var(--bg-surface);
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+
+        .payment-wait-body {
+            display: grid;
+            gap: 16px;
+            padding: 20px 22px 22px;
+        }
+
+        .payment-wait-main {
+            align-items: center;
+            display: grid;
+            gap: 18px;
+            grid-template-columns: 176px minmax(0, 1fr);
+        }
+
+        .payment-wait-visual {
+            align-items: center;
+            aspect-ratio: 1;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        .payment-wait-visual img {
+            display: block;
+            height: 100%;
+            object-fit: contain;
+            width: 100%;
+        }
+
+        .payment-wait-test-visual {
+            align-content: center;
+            background: var(--accent-light);
+            color: var(--accent-color);
+            display: grid;
+            gap: 8px;
+            justify-items: center;
+            text-align: center;
+        }
+
+        .payment-wait-test-visual i {
+            font-size: 42px;
+        }
+
+        .payment-wait-test-visual strong {
+            font-size: 13px;
+        }
+
+        .payment-wait-summary {
+            display: grid;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .payment-wait-label {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 700;
+            margin: 0 0 2px;
+        }
+
+        .payment-wait-amount {
+            color: var(--text-primary);
+            font-size: clamp(28px, 6vw, 36px);
+            font-weight: 900;
+            letter-spacing: -0.045em;
+            line-height: 1.1;
+        }
+
+        .payment-wait-code-box {
+            align-items: center;
+            background: var(--bg-muted);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-default);
+            display: grid;
+            gap: 8px;
+            grid-template-columns: minmax(0, 1fr) auto;
+            padding: 10px 10px 10px 12px;
+        }
+
+        .payment-wait-code {
+            font-size: 15px;
+            font-weight: 850;
+            letter-spacing: 0.06em;
+            overflow-wrap: anywhere;
+        }
+
+        .payment-copy-button {
+            align-items: center;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            display: inline-flex;
+            font-size: 16px;
+            height: 34px;
+            justify-content: center;
+            transition: border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+            width: 34px;
+        }
+
+        .payment-copy-button:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .payment-copy-button:active {
+            transform: scale(0.96);
+        }
+
+        .payment-wait-meta {
+            color: var(--text-secondary);
+            display: flex;
+            flex-wrap: wrap;
+            font-size: 12.5px;
+            gap: 8px 14px;
+        }
+
+        .payment-wait-meta span {
+            align-items: center;
+            display: inline-flex;
+            gap: 6px;
+        }
+
+        .payment-wait-note {
+            align-items: flex-start;
+            background: var(--accent-light);
+            border: 1px solid rgba(15, 118, 110, 0.14);
+            border-radius: var(--radius-default);
+            color: var(--text-secondary);
+            display: grid;
+            font-size: 12.5px;
+            gap: 9px;
+            grid-template-columns: 18px 1fr;
+            line-height: 1.5;
+            padding: 11px 12px;
+        }
+
+        .payment-wait-note i {
+            color: var(--accent-color);
+            font-size: 17px;
+            margin-top: 1px;
+        }
+
+        .payment-wait-actions {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .payment-wait-actions .btn {
+            align-items: center;
+            display: inline-flex;
+            justify-content: center;
+            min-height: 42px;
+        }
+
+        .payment-wait-actions.is-single {
+            grid-template-columns: 1fr;
+        }
+
+        @keyframes paymentPulse {
+            0%, 100% { opacity: 0.55; transform: scale(0.88); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .payment-wait-status-dot { animation: none; }
+        }
+
+        @media (max-width: 680px) {
+            .pos-pay-methods {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .pos-checkout-btn {
+                min-height: 52px;
+                font-size: 16px;
+            }
+
+            .payment-wait-header,
+            .payment-wait-body {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            .payment-wait-main {
+                grid-template-columns: 1fr;
+            }
+
+            .payment-wait-visual {
+                justify-self: center;
+                max-width: 190px;
+                width: 100%;
+            }
+
+            .payment-wait-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="pos-container">
+    <aside data-menu-component data-active-menu="orders"></aside>
+
+    <main class="pos-main">
+        <header class="pos-topbar">
+            <div>
+                <div class="pos-title-row">
+                    <h1 class="pos-topbar-title">Bán hàng tại quầy</h1>
+                    <button class="btn btn-secondary btn-sm pos-title-pair-button" id="memberPhonePairButton" type="button" onclick="openPhonePairGuide()" title="Kết nối điện thoại với Barcode to PC">
+                        <i class="ph ph-qr-code"></i> Kết nối điện thoại
+                    </button>
+                </div>
+            </div>
+            <div class="pos-topbar-actions">
+                <button class="btn btn-secondary" type="button" onclick="holdCurrentCart()" title="F8 — Giữ giỏ">
+                    <i class="ph ph-pause"></i> Giữ giỏ
+                </button>
+                <button class="btn btn-secondary" type="button" onclick="restoreHeldCart()" title="Khôi phục giỏ đã giữ">
+                    <i class="ph ph-play"></i> Lấy giỏ
+                </button>
+                <button class="btn btn-secondary" onclick="reloadPosData()">
+                    <i class="ph ph-arrow-clockwise"></i> Làm mới
+                </button>
+                <button class="btn btn-primary" onclick="focusSearch()">
+                    <i class="ph ph-magnifying-glass"></i> Tìm sản phẩm
+                </button>
+            </div>
+        </header>
+
+        <section class="pos-content pos-terminal-content">
+            <div class="pos-session-strip">
+                <div>
+                    <p class="pos-session-title">
+                        <i class="ph ph-cash-register"></i>
+                        Quầy bán hàng đang hoạt động
+                    </p>
+                    <p class="pos-session-sub">Quét SKU, chạm chọn sản phẩm, xác thực hội viên và thanh toán tại quầy.</p>
+                </div>
+                <div class="pos-session-badges">
+                    <a class="pos-session-badge" id="shiftStatusBadge" href="/shifts.html" title="Quản lý ca làm việc" style="text-decoration:none;">
+                        <i class="ph ph-clock-countdown"></i>
+                        <span id="shiftStatusText">Ca: …</span>
+                    </a>
+                    <span class="pos-session-badge"><i class="ph ph-barcode"></i> Scan sẵn sàng</span>
+                    <span class="pos-session-badge"><i class="ph ph-wifi-high"></i> Online</span>
+                    <span class="pos-session-badge"><i class="ph ph-receipt"></i> In hóa đơn</span>
+                </div>
+            </div>
+
+            <div class="pos-terminal-grid">
+                <section class="pos-sell-zone">
+                    <div class="pos-scanbar">
+                        <div>
+                            <label class="form-label" for="productSearch">Quét hoặc tìm sản phẩm</label>
+                            <div class="pos-scan-input-wrap">
+                                <i class="ph ph-barcode"></i>
+                                <input
+                                    class="form-control pos-scan-input pos-code"
+                                    id="productSearch"
+                                    type="search"
+                                    placeholder="Quét SKU, barcode hoặc tìm tên kính"
+                                    autocomplete="off"
+                                    oninput="renderProducts()"
+                                    onkeydown="handleProductSearchKey(event)">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label" for="stockFilter">Lọc tồn kho</label>
+                            <select class="form-select" id="stockFilter" onchange="renderProducts()">
+                                <option value="all">Tất cả</option>
+                                <option value="available">Còn hàng</option>
+                                <option value="empty">Hết hàng</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pos-product-grid" id="productGrid"></div>
+                </section>
+
+                <aside class="pos-checkout-rail">
+                    <div class="pos-checkout-rail-top">
+                        <div class="pos-rail-header">
+                            <h2 class="pos-rail-title">
+                                <i class="ph ph-shopping-cart-simple"></i>
+                                Giỏ hàng
+                                <span class="pos-cart-count" id="cartCountBadge" hidden>0</span>
+                            </h2>
+                            <button class="btn btn-secondary btn-sm" type="button" onclick="state.cart.clear(); renderCart();">
+                                <i class="ph ph-trash"></i> Xóa
+                            </button>
+                        </div>
+
+                        <div class="pos-customer-bar" id="memberScanCard">
+                            <div class="pos-customer-bar-row">
+                                <input
+                                    class="form-control"
+                                    id="memberBarcode"
+                                    type="text"
+                                    autocomplete="off"
+                                    inputmode="numeric"
+                                    placeholder="Quét mã khách hàng"
+                                    oninput="handleMemberBarcodeInput(event)"
+                                    onkeydown="handleMemberBarcodeKey(event)"
+                                    style="flex:1">
+                                <button class="btn btn-secondary btn-sm" id="memberScanButton" type="button" onclick="startMemberBarcodeScan()" title="Quét bằng đầu đọc">
+                                    <i class="ph ph-barcode"></i>
+                                </button>
+                                <button class="btn btn-secondary btn-sm" id="memberPhoneScanButton" type="button" onclick="startPhoneBarcodeScan()" title="Quét bằng điện thoại">
+                                    <i class="ph ph-device-mobile-camera"></i>
+                                </button>
+                                <button class="btn btn-primary btn-sm" type="button" onclick="verifyMemberBarcode()" title="Xác nhận">
+                                    <i class="ph ph-scan"></i>
+                                </button>
+                                <button class="btn btn-secondary btn-sm" type="button" onclick="createQuickCustomer()" title="Tạo khách nhanh">
+                                    <i class="ph ph-user-plus"></i>
+                                </button>
+                            </div>
+                            <div class="pos-customer-status" id="memberStatus">
+                                <i class="ph ph-user-circle"></i>
+                                <span>Khách lẻ</span>
+                            </div>
+                            <div class="pos-phone-scan-guide" id="phoneScannerGuide">
+                                <div><i class="ph ph-device-mobile-camera"></i> <strong>Barcode to PC</strong> đang chờ mã từ điện thoại.</div>
+                                <div>Mở ứng dụng trên điện thoại, kết nối với máy POS, rồi quét barcode khách hàng.</div>
+                            </div>
+                            <input id="customerSelect" type="hidden" value="">
+                        </div>
+
+                        <div class="staff-rank-card" id="staffPerformanceCard" style="display:none"></div>
+                    </div>
+
+                    <div class="pos-checkout-rail-body">
+                        <div class="pos-cart-lines" id="cartLines"></div>
+                    </div>
+
+                    <div class="pos-checkout-rail-footer">
+                        <div class="pos-checkout-section pos-checkout-section--discount">
+                            <button class="pos-discount-toggle" type="button" onclick="toggleDiscount()">
+                                <span><i class="ph ph-tag"></i> Giảm giá</span>
+                                <i class="ph ph-caret-down"></i>
+                            </button>
+                            <div class="pos-discount-body" id="discountBody">
+                                <div style="margin-bottom:8px">
+                                    <div class="d-flex gap-2">
+                                        <input class="form-control" id="couponCode" placeholder="Mã coupon" oninput="renderCart()" style="flex:1">
+                                        <button class="btn btn-secondary" type="button" onclick="checkCoupon()">
+                                            <i class="ph ph-check"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <select class="form-select" id="manualDiscountType" onchange="syncManualDiscountMoneyMode(); renderCart()" style="width:90px;flex:none">
+                                        <option value="">Không</option>
+                                        <option value="percent">%</option>
+                                        <option value="amount">VNĐ</option>
+                                    </select>
+                                    <input class="form-control" id="manualDiscountValue" type="text" inputmode="numeric" value="0" placeholder="Giá trị" oninput="handleManualDiscountInput(this)" style="flex:1" autocomplete="off">
+                                </div>
+                                <div class="d-flex gap-2 mt-2 align-items-center" id="loyaltyRedeemRow" style="display:none !important">
+                                    <input class="form-control" id="redeemPoints" type="number" min="0" step="1" value="0" placeholder="Đổi điểm" oninput="renderCart()" style="flex:1">
+                                    <button class="btn btn-secondary btn-sm" type="button" onclick="applyMaxRedeemPoints()" title="Đổi tối đa">Max</button>
+                                </div>
+                                <p class="pos-panel-sub" id="loyaltyHint" style="margin:6px 0 0;font-size:12px;color:var(--text-muted);"></p>
+                            </div>
+                        </div>
+
+                        <div class="pos-checkout-section pos-checkout-section--payment">
+                            <div class="pos-pay-methods" role="group" aria-label="Phương thức thanh toán">
+                                <button class="pos-pay-pill is-active" type="button" data-method="cash" onclick="selectPayMethod('cash')">
+                                    <i class="ph ph-money"></i> Tiền mặt
+                                </button>
+                                <button class="pos-pay-pill" type="button" data-method="bank_transfer" onclick="selectPayMethod('bank_transfer')">
+                                    <i class="ph ph-bank"></i> CK
+                                </button>
+                                <button class="pos-pay-pill" type="button" data-method="card" onclick="selectPayMethod('card')">
+                                    <i class="ph ph-credit-card"></i> Thẻ
+                                </button>
+                            </div>
+
+                            <div class="pos-amount-paid-block">
+                                <label class="form-label" for="amountPaid">Tiền nhận</label>
+                                <input
+                                    class="form-control pos-money-input"
+                                    id="amountPaid"
+                                    name="amount_paid"
+                                    type="text"
+                                    inputmode="numeric"
+                                    autocomplete="off"
+                                    data-money="vnd"
+                                    placeholder="0đ"
+                                    oninput="handleAmountPaidInput(this)">
+                                <div class="pos-quick-cash-row">
+                                    <button class="btn btn-secondary" type="button" onclick="setCashReceived(provisionalTotals().total)">Đủ</button>
+                                    <button class="btn btn-secondary" type="button" onclick="setCashReceived(500000)">500K</button>
+                                    <button class="btn btn-secondary" type="button" onclick="setCashReceived(1000000)">1M</button>
+                                    <button class="btn btn-secondary" type="button" onclick="setCashReceived(2000000)">2M</button>
+                                </div>
+                            </div>
+
+                            <div id="summaryBox"></div>
+                        </div>
+                    </div>
+
+                    <div class="pos-checkout-rail-action">
+                        <button class="pos-checkout-btn" id="checkoutButton" onclick="checkout()">
+                            <i class="ph ph-check-circle"></i> Thanh toán
+                        </button>
+                    </div>
+                </aside>
+            </div>
+        </section>
+    </main>
+</div>
+
+<div class="pos-pair-overlay" id="phonePairModal" aria-hidden="true">
+    <div class="pos-pair-dialog" data-modal-panel role="dialog" aria-modal="true" aria-labelledby="phonePairTitle">
+        <div class="pos-rail-header">
+            <h2 class="pos-rail-title" id="phonePairTitle"><i class="ph ph-qr-code"></i> Pair điện thoại với POS</h2>
+            <button class="pos-icon-button" type="button" onclick="closePhonePairGuide()" title="Đóng">
+                <i class="ph ph-x"></i>
+            </button>
+        </div>
+        <p class="pos-pair-note">Web POS không tự sinh QR pair cho Barcode to PC. Mã QR cần quét nằm trong Barcode to PC Server trên máy POS.</p>
+        <ol class="pos-pair-steps">
+            <li>
+                <span class="pos-pair-step-index">1</span>
+                <span>Mở <strong>Barcode to PC Server</strong> trên máy POS.</span>
+            </li>
+            <li>
+                <span class="pos-pair-step-index">2</span>
+                <span>Chọn <strong>Info</strong> để hiển thị QR Code kết nối trên máy POS.</span>
+            </li>
+            <li>
+                <span class="pos-pair-step-index">3</span>
+                <span>Trên điện thoại, mở Barcode to PC, vào <strong>Select server</strong>, bấm biểu tượng quét QR rồi quét QR đang hiển thị trên máy POS.</span>
+            </li>
+            <li>
+                <span class="pos-pair-step-index">4</span>
+                <span>Khi điện thoại báo đã kết nối, quay lại web POS và chuyển sang chế độ chờ quét khách.</span>
+            </li>
+        </ol>
+        <div class="pos-pair-actions">
+            <button class="btn btn-secondary" type="button" onclick="closePhonePairGuide()">Đóng</button>
+            <button class="btn btn-primary" type="button" onclick="closePhonePairGuide(); startPhoneBarcodeScan();">
+                <i class="ph ph-device-mobile-camera"></i> Sẵn sàng quét khách
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/format.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/components.js"></script>
+<script>
+    const currentUser = requireRole(["admin", "staff"]);
+    const state = {
+        products: [],
+        customers: [],
+        cart: new Map(),
+        couponPreview: null,
+        selectedCustomer: null,
+        staffPerformance: null,
+        currentShiftId: null,
+        paymentMethod: "cash",
+        submitting: false
+    };
+    const MEMBER_BARCODE_LENGTH = 13;
+    const HOLD_CART_KEY = "pos_glasses_hold_cart_v1";
+    let memberBarcodeScanTimer = null;
+
+    function createIdempotencyKey() {
+        if (window.crypto?.randomUUID) {
+            return window.crypto.randomUUID();
+        }
+        return `pos-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    }
+
+    function snapshotCartState() {
+        return {
+            cart: [...state.cart.entries()],
+            customer_id: state.selectedCustomer?.id || null,
+            customer: state.selectedCustomer,
+            coupon_code: document.getElementById("couponCode")?.value || "",
+            manual_discount_type: document.getElementById("manualDiscountType")?.value || "",
+            manual_discount_value: document.getElementById("manualDiscountValue")?.value || "0",
+            payment_method: state.paymentMethod || "cash",
+            amount_paid: document.getElementById("amountPaid")?.value || "",
+            saved_at: new Date().toISOString()
+        };
+    }
+
+    function holdCurrentCart() {
+        if (!state.cart.size) {
+            showToast("Giỏ hàng trống — không có gì để giữ", "warning");
+            return;
+        }
+        localStorage.setItem(HOLD_CART_KEY, JSON.stringify(snapshotCartState()));
+        state.cart.clear();
+        state.couponPreview = null;
+        document.getElementById("couponCode").value = "";
+        document.getElementById("manualDiscountType").value = "";
+        document.getElementById("manualDiscountValue").value = "0";
+        document.getElementById("amountPaid").value = "";
+        setSelectedCustomer(null);
+        renderCart();
+        showToast("Đã giữ giỏ hàng (local)", "success");
+        focusSearch();
+    }
+
+    function restoreHeldCart() {
+        const raw = localStorage.getItem(HOLD_CART_KEY);
+        if (!raw) {
+            showToast("Không có giỏ đang giữ", "info");
+            return;
+        }
+        try {
+            const held = JSON.parse(raw);
+            state.cart = new Map((held.cart || []).map(([id, qty]) => [Number(id), Number(qty)]));
+            if (held.customer) {
+                setSelectedCustomer(held.customer);
+            } else {
+                setSelectedCustomer(null);
+            }
+            document.getElementById("couponCode").value = held.coupon_code || "";
+            document.getElementById("manualDiscountType").value = held.manual_discount_type || "";
+            document.getElementById("manualDiscountValue").value = held.manual_discount_value || "0";
+            document.getElementById("amountPaid").value = held.amount_paid || "";
+            selectPayMethod(held.payment_method || "cash");
+            renderCart();
+            showToast("Đã khôi phục giỏ đã giữ", "success");
+        } catch {
+            showToast("Giỏ đã giữ bị hỏng dữ liệu", "error");
+        }
+    }
+
+    function clearCartFully() {
+        state.cart.clear();
+        state.couponPreview = null;
+        document.getElementById("couponCode").value = "";
+        document.getElementById("manualDiscountType").value = "";
+        document.getElementById("manualDiscountValue").value = "0";
+        document.getElementById("amountPaid").value = "";
+        setSelectedCustomer(null);
+        renderCart();
+    }
+
+    function adjustFocusedCartLine(delta) {
+        if (!state.cart.size) return;
+        const lastId = [...state.cart.keys()].at(-1);
+        const current = state.cart.get(lastId) || 0;
+        setCartQuantity(lastId, current + delta);
+    }
+
+    function handlePosHotkeys(event) {
+        const tag = String(event.target?.tagName || "").toLowerCase();
+        const typing = tag === "input" || tag === "textarea" || tag === "select" || event.target?.isContentEditable;
+
+        if (event.key === "F2") {
+            event.preventDefault();
+            focusSearch();
+            return;
+        }
+        if (event.key === "F4") {
+            event.preventDefault();
+            checkout();
+            return;
+        }
+        if (event.key === "F8") {
+            event.preventDefault();
+            holdCurrentCart();
+            return;
+        }
+        if (event.key === "Escape" && !typing) {
+            event.preventDefault();
+            clearCartFully();
+            return;
+        }
+        if (!typing && (event.key === "+" || event.key === "=")) {
+            event.preventDefault();
+            adjustFocusedCartLine(1);
+            return;
+        }
+        if (!typing && (event.key === "-" || event.key === "_")) {
+            event.preventDefault();
+            adjustFocusedCartLine(-1);
+        }
+    }
+
+    document.addEventListener("keydown", handlePosHotkeys);
+
+    function productImage(product) {
+        const src = product.image ? String(product.image) : "";
+        if (!src) {
+            return `<i class="ph ph-eyeglasses"></i>`;
+        }
+        // object-fit contain + studio tile backdrop supports transparent PNGs from BG strip
+        return `<img src="${escapeHtml(src)}" alt="${escapeHtml(product.name)}" loading="lazy">`;
+    }
+
+    function focusSearch() {
+        document.getElementById("productSearch").focus();
+    }
+
+    function normalizeSaleSearch(value) {
+        return String(value || "").trim().toLowerCase();
+    }
+
+    function handleProductSearchKey(event) {
+        if (event.key !== "Enter") {
+            return;
+        }
+
+        event.preventDefault();
+        addFirstMatchedProduct();
+    }
+
+    function parseProductQrCode(value) {
+        try {
+            const parsed = new URL(String(value || ""), window.location.origin);
+            if (parsed.origin !== window.location.origin || parsed.pathname !== "/qr/product.html") return null;
+            const code = parsed.searchParams.get("code") || "";
+            return /^[A-Za-z0-9_-]{32,64}$/.test(code) ? code : null;
+        } catch {
+            return null;
+        }
+    }
+
+    async function addFirstMatchedProduct() {
+        const input = document.getElementById("productSearch");
+        const keyword = normalizeSaleSearch(input.value);
+
+        if (!keyword) {
+            showToast("Quét SKU hoặc nhập tên kính để thêm nhanh", "info");
+            return;
+        }
+
+        const qrCode = parseProductQrCode(input.value);
+        if (qrCode) {
+            try {
+                const product = await apiRequest(`/api/staff/products/by-qr/${encodeURIComponent(qrCode)}`);
+                if (Number(product.quantity || 0) <= 0) {
+                    showToast("Sản phẩm trong mã QR đang hết hàng", "warning");
+                    return;
+                }
+                addToCart(Number(product.id));
+                input.select();
+            } catch (error) {
+                showToast(error.message || "Mã QR sản phẩm không hợp lệ", "warning");
+            }
+            return;
+        }
+
+        const exactMatches = state.products.filter((product) => {
+            const sku = normalizeSaleSearch(product.sku);
+            const name = normalizeSaleSearch(product.name);
+            return sku === keyword || name === keyword;
+        });
+        const matches = exactMatches.length ? exactMatches : filteredProducts();
+        const availableMatches = matches.filter((product) => Number(product.quantity || 0) > 0);
+
+        if (availableMatches.length === 1) {
+            addToCart(Number(availableMatches[0].id));
+            input.select();
+            return;
+        }
+
+        if (!availableMatches.length) {
+            showToast("Không tìm thấy sản phẩm còn hàng phù hợp", "warning");
+            return;
+        }
+
+        showToast("Có nhiều sản phẩm phù hợp, hãy chạm vào đúng mẫu kính", "info");
+    }
+
+    function paymentLabel(method) {
+        return {
+            cash: "Tiền mặt",
+            bank_transfer: "Chuyển khoản",
+            card: "Thẻ"
+        }[method] || "Tiền mặt";
+    }
+
+    function customerBarcode(customer) {
+        return customer?.member_code || (customer?.id ? generateMemberCode(customer.id) : "");
+    }
+
+    function calculateEan13CheckDigit(body) {
+        if (!/^\d{12}$/.test(String(body || ""))) {
+            return "";
+        }
+
+        const total = String(body).split("").reduce((sum, digit, index) => {
+            const value = Number(digit);
+            return sum + (index % 2 === 0 ? value : value * 3);
+        }, 0);
+
+        return String((10 - (total % 10)) % 10);
+    }
+
+    function generateMemberCode(customerId) {
+        const numericId = Number(customerId);
+        if (!Number.isSafeInteger(numericId) || numericId < 0) {
+            return "";
+        }
+
+        const paddedId = String(numericId).padStart(10, "0");
+        if (paddedId.length > 10) {
+            return "";
+        }
+
+        const body = `29${paddedId}`;
+        return `${body}${calculateEan13CheckDigit(body)}`;
+    }
+
+    function normalizeMemberBarcodeInput(value) {
+        return String(value || "")
+            .replace(/[０-９]/g, (digit) => String(digit.charCodeAt(0) - 0xff10))
+            .replace(/\D+/g, "");
+    }
+
+    function clearMemberBarcodeScanTimer() {
+        if (!memberBarcodeScanTimer) {
+            return;
+        }
+
+        clearTimeout(memberBarcodeScanTimer);
+        memberBarcodeScanTimer = null;
+    }
+
+    function queueMemberBarcodeVerification() {
+        clearMemberBarcodeScanTimer();
+        memberBarcodeScanTimer = setTimeout(() => verifyMemberBarcode(), 120);
+    }
+
+    function handleMemberBarcodeInput(event) {
+        const input = event?.target || document.getElementById("memberBarcode");
+        const normalized = normalizeMemberBarcodeInput(input.value);
+
+        if (input.value !== normalized) {
+            input.value = normalized;
+        }
+
+        if (normalized.length === MEMBER_BARCODE_LENGTH) {
+            queueMemberBarcodeVerification();
+            return;
+        }
+
+        clearMemberBarcodeScanTimer();
+    }
+
+    function startMemberBarcodeScan() {
+        const card = document.getElementById("memberScanCard");
+        const input = document.getElementById("memberBarcode");
+        card.classList.add("is-scanning");
+        renderPhoneScannerGuide(false);
+        input.focus();
+        input.select();
+    }
+
+    function stopMemberBarcodeScan() {
+        const card = document.getElementById("memberScanCard");
+        clearMemberBarcodeScanTimer();
+        card.classList.remove("is-scanning");
+        renderPhoneScannerGuide(false);
+    }
+
+    function renderPhoneScannerGuide(isOpen) {
+        const guide = document.getElementById("phoneScannerGuide");
+        guide.classList.toggle("is-open", Boolean(isOpen));
+    }
+
+    function startPhoneBarcodeScan() {
+        startMemberBarcodeScan();
+        renderPhoneScannerGuide(true);
+        showToast("Đang chờ mã từ Barcode to PC", "info");
+    }
+
+    function openPhonePairGuide() {
+        const modal = document.getElementById("phonePairModal");
+        modal.classList.add("is-open");
+        modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closePhonePairGuide() {
+        const modal = document.getElementById("phonePairModal");
+        modal.classList.remove("is-open");
+        modal.setAttribute("aria-hidden", "true");
+    }
+
+    // Backdrop dismiss: only close when press+release both happen on dimmed area
+    // (drag-select from dialog out onto overlay must NOT close).
+    if (typeof bindBackdropDismiss === "function") {
+        bindBackdropDismiss(document.getElementById("phonePairModal"), closePhonePairGuide);
+    }
+
+    function getPaymentMethod() {
+        const method = String(state.paymentMethod || "cash");
+        if (method === "card" || method === "bank_transfer" || method === "cash") {
+            return method;
+        }
+        return "cash";
+    }
+
+    function selectPayMethod(method) {
+        const next = method === "card" || method === "bank_transfer" ? method : "cash";
+        state.paymentMethod = next;
+        document.querySelectorAll(".pos-pay-pill").forEach((pill) => {
+            pill.classList.toggle("is-active", pill.dataset.method === next);
+        });
+        handlePaymentMethodChange();
+    }
+
+    function toggleDiscount() {
+        const toggle = document.querySelector(".pos-discount-toggle");
+        const body = document.getElementById("discountBody");
+        toggle.classList.toggle("is-open");
+        body.classList.toggle("is-open");
+    }
+
+    function renderMemberStatus(type = "guest", customer = null, message = "") {
+        const status = document.getElementById("memberStatus");
+        const className = {
+            guest: "pos-customer-status",
+            member: "pos-customer-status is-member",
+            error: "pos-customer-status is-error"
+        }[type] || "pos-customer-status";
+        const icon = type === "member"
+            ? "ph-identification-card"
+            : type === "error"
+                ? "ph-warning-circle"
+                : "ph-user-circle";
+
+        status.className = className;
+
+        if (type === "member" && customer) {
+            status.innerHTML = `
+                <i class="ph ${icon}"></i>
+                <span>${escapeHtml(customer.name || "Hội viên")} · ${escapeHtml(customerBarcode(customer))}${customer.phone ? ` · ${escapeHtml(customer.phone)}` : ""}</span>
+            `;
+            return;
+        }
+
+        status.innerHTML = `
+            <i class="ph ${icon}"></i>
+            <span>${type === "error" ? escapeHtml(message || "Không xác nhận") : "Khách lẻ"}</span>
+        `;
+    }
+
+    function setSelectedCustomer(customer) {
+        const customerInput = document.getElementById("customerSelect");
+        const barcodeInput = document.getElementById("memberBarcode");
+
+        state.selectedCustomer = customer || null;
+        customerInput.value = customer?.id || "";
+        barcodeInput.value = customer ? customerBarcode(customer) : "";
+        updateLoyaltyUi(customer);
+        renderMemberStatus(customer ? "member" : "guest", customer);
+        stopMemberBarcodeScan();
+    }
+
+    function updateLoyaltyUi(customer) {
+        const row = document.getElementById("loyaltyRedeemRow");
+        const hint = document.getElementById("loyaltyHint");
+        if (!row || !hint) return;
+        const points = Number(customer?.points_balance || customer?.loyalty?.points_balance || 0);
+        if (customer) {
+            row.style.setProperty("display", "flex", "important");
+            const tier = customer.membership_tier || "standard";
+            hint.textContent = `Hạng ${tier} · ${points.toLocaleString("vi-VN")} điểm · 1 điểm = 1.000đ (tối đa 20% đơn)`;
+        } else {
+            row.style.setProperty("display", "none", "important");
+            hint.textContent = "";
+            const redeem = document.getElementById("redeemPoints");
+            if (redeem) redeem.value = "0";
+        }
+    }
+
+    function applyMaxRedeemPoints() {
+        const customer = state.selectedCustomer;
+        if (!customer) return;
+        const balance = Number(customer.points_balance || 0);
+        const subtotal = typeof cartSubtotal === "function" ? cartSubtotal() : 0;
+        const maxBySub = Math.floor((subtotal * 0.2) / 1000);
+        const maxPts = Math.max(0, Math.min(balance, maxBySub));
+        document.getElementById("redeemPoints").value = String(maxPts);
+        renderCart();
+    }
+
+    function clearSelectedCustomer(message = "") {
+        state.selectedCustomer = null;
+        document.getElementById("customerSelect").value = "";
+        updateLoyaltyUi(null);
+        renderMemberStatus(message ? "error" : "guest", null, message);
+        stopMemberBarcodeScan();
+    }
+
+    function handleMemberBarcodeKey(event) {
+        if (event.key === "Enter" || event.key === "Tab") {
+            event.preventDefault();
+            clearMemberBarcodeScanTimer();
+            verifyMemberBarcode();
+        }
+    }
+
+    async function lookupMemberByBarcode(code) {
+        try {
+            return await apiRequest(`/api/staff/customers/member/${encodeURIComponent(code)}`);
+        } catch (error) {
+            if (error.status === 403) {
+                return apiRequest(`/customers/member/${encodeURIComponent(code)}`);
+            }
+
+            throw error;
+        }
+    }
+
+    async function verifyMemberBarcode() {
+        clearMemberBarcodeScanTimer();
+        const input = document.getElementById("memberBarcode");
+        const code = normalizeMemberBarcodeInput(input.value);
+        input.value = code;
+
+        if (!code) {
+            clearSelectedCustomer();
+            showToast("Vui lòng quét mã khách hàng", "warning");
+            return;
+        }
+
+        try {
+            const customer = await lookupMemberByBarcode(code);
+            setSelectedCustomer(customer);
+            showToast(`Đã xác nhận hội viên ${customer.name}`, "success");
+        } catch (error) {
+            document.getElementById("customerSelect").value = "";
+            state.selectedCustomer = null;
+            renderMemberStatus("error", null, error.message);
+            stopMemberBarcodeScan();
+            showToast(error.message, "error");
+        }
+    }
+
+    function applyPendingCartFromCatalog() {
+        let raw = null;
+        try {
+            raw = sessionStorage.getItem("pos_pending_cart");
+            if (!raw) return;
+            sessionStorage.removeItem("pos_pending_cart");
+        } catch (error) {
+            console.error(error);
+            return;
+        }
+
+        let items = [];
+        try {
+            items = JSON.parse(raw);
+        } catch (error) {
+            console.error(error);
+            return;
+        }
+
+        if (!Array.isArray(items) || !items.length) return;
+
+        let added = 0;
+        items.forEach((item) => {
+            const productId = Number(item.product_id || item.id);
+            const quantity = Math.max(1, Number(item.quantity || 1));
+            const product = state.products.find((row) => Number(row.id) === productId);
+
+            if (!product || Number(product.quantity) <= 0) {
+                return;
+            }
+
+            const nextQty = Math.min(quantity, Number(product.quantity));
+            state.cart.set(productId, nextQty);
+            added += 1;
+        });
+
+        if (added > 0) {
+            renderCart();
+            showToast(
+                added === 1
+                    ? "Đã thêm sản phẩm từ catalog vào quầy POS"
+                    : `Đã thêm ${added} sản phẩm từ catalog vào quầy POS`,
+                "success"
+            );
+            focusSearch();
+        }
+    }
+
+    async function refreshShiftBadge() {
+        const text = document.getElementById("shiftStatusText");
+        const badge = document.getElementById("shiftStatusBadge");
+        if (!text) return;
+        try {
+            const data = await apiRequest("/api/staff/shifts/current");
+            const shift = data.shift || null;
+            state.currentShiftId = shift?.id || null;
+            if (shift) {
+                text.textContent = `Ca #${shift.id} · ${Number(shift.order_count || 0)} đơn`;
+                if (badge) {
+                    badge.style.background = "var(--success-light)";
+                    badge.style.color = "var(--success-color)";
+                    badge.style.borderColor = "rgba(22, 163, 74, 0.25)";
+                }
+            } else {
+                text.textContent = "Chưa mở ca";
+                if (badge) {
+                    badge.style.background = "var(--warning-light)";
+                    badge.style.color = "var(--warning-color)";
+                    badge.style.borderColor = "rgba(217, 119, 6, 0.25)";
+                }
+            }
+        } catch {
+            text.textContent = "Ca: —";
+            state.currentShiftId = null;
+        }
+    }
+
+    async function reloadPosData() {
+        try {
+            const [products, customers] = await Promise.all([
+                apiRequest("/products"),
+                apiRequest("/customers")
+            ]);
+            state.products = products;
+            state.customers = customers;
+            renderCustomers();
+            renderProducts();
+            applyPendingCartFromCatalog();
+            renderCart();
+            refreshShiftBadge();
+        } catch (error) {
+            showToast(error.message, "error");
+        }
+    }
+
+    function formatCompactNumber(value) {
+        return Number(value || 0).toLocaleString("vi-VN");
+    }
+
+    function staffDiscountCapPercent() {
+        return Number(state.staffPerformance?.level?.discount_percent || 0);
+    }
+
+    function manualDiscountCapAmount(subtotal) {
+        if (!state.staffPerformance) {
+            return Number.POSITIVE_INFINITY;
+        }
+
+        return Math.round(Number(subtotal || 0) * staffDiscountCapPercent() / 100);
+    }
+
+    function renderStaffPerformanceCard() {
+        const card = document.getElementById("staffPerformanceCard");
+        const performance = state.staffPerformance;
+
+        if (!performance) {
+            card.innerHTML = `
+                <div class="staff-rank-head">
+                    <strong>Đang tải hạng</strong>
+                    <span class="staff-rank-level">NULL</span>
+                </div>
+                <div class="staff-rank-progress">
+                    <div class="staff-rank-progress-bar" style="width:0%"></div>
+                </div>
+                <div class="staff-rank-meta"><span>Đang tính chỉ tiêu hóa đơn gắn barcode hội viên.</span></div>
+            `;
+            return;
+        }
+
+        const level = performance.level || { code: "NULL", discount_percent: 0 };
+        const progress = performance.progress || { percent: 0, remaining_member_orders: 0, remaining_revenue: 0 };
+        const next = performance.next_level;
+        const targetText = next
+            ? `Còn ${formatCompactNumber(progress.remaining_member_orders)} hóa đơn gắn barcode hoặc ${formatCurrency(progress.remaining_revenue)} để lên ${escapeHtml(next.code)}.`
+            : "Đã đạt cấp cao nhất.";
+
+        card.innerHTML = `
+            <div class="staff-rank-head">
+                <strong>${escapeHtml(currentUser?.username || "Nhân viên")}</strong>
+                <span class="staff-rank-level">${escapeHtml(level.code)}</span>
+            </div>
+            <div class="staff-rank-progress">
+                <div class="staff-rank-progress-bar" style="width:${Number(progress.percent || 0)}%"></div>
+            </div>
+            <div class="staff-rank-meta">
+                <span>Quyền giảm thủ công: ${Number(level.discount_percent || 0)}%</span>
+                <span>Hóa đơn barcode: ${formatCompactNumber(performance.member_order_count)} · Doanh thu POS: ${formatCurrency(performance.total_revenue)}</span>
+                <span>${targetText}</span>
+            </div>
+        `;
+    }
+
+    async function loadStaffPerformance() {
+        try {
+            state.staffPerformance = await apiRequest("/api/staff/performance/me");
+            renderStaffPerformanceCard();
+            renderCart();
+        } catch (error) {
+            renderStaffPerformanceCard();
+        }
+    }
+
+    function renderCustomers() {
+        const selectedId = Number(document.getElementById("customerSelect").value || 0);
+
+        if (!selectedId) {
+            setSelectedCustomer(null);
+            return;
+        }
+
+        const selectedCustomer = state.customers.find((customer) => Number(customer.id) === selectedId);
+        setSelectedCustomer(selectedCustomer || null);
+    }
+
+    function filteredProducts() {
+        const keyword = normalizeSaleSearch(document.getElementById("productSearch").value);
+        const stockFilter = document.getElementById("stockFilter").value;
+        return state.products.filter((product) => {
+            const searchable = normalizeSaleSearch(`${product.name || ""} ${product.sku || ""}`);
+            const quantity = Number(product.quantity || 0);
+            const matchesKeyword = !keyword || searchable.includes(keyword);
+            const matchesStock =
+                stockFilter === "all" ||
+                (stockFilter === "available" && quantity > 0) ||
+                (stockFilter === "empty" && quantity <= 0);
+            return matchesKeyword && matchesStock;
+        });
+    }
+
+    function renderProducts() {
+        const grid = document.getElementById("productGrid");
+        const products = filteredProducts();
+
+        if (!products.length) {
+            grid.innerHTML = `
+                <div class="pos-empty-state">
+                    <div>
+                        <i class="ph ph-magnifying-glass"></i>
+                        <p class="mt-2 mb-0">Không tìm thấy sản phẩm phù hợp.</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = products.map((product) => {
+            const quantity = Number(product.quantity || 0);
+            const disabled = quantity <= 0;
+            return `
+                <article class="pos-product-tile ${disabled ? "is-disabled" : ""}">
+                    <div class="pos-product-image">${productImage(product)}</div>
+                    <div class="pos-product-body">
+                        <div class="pos-product-name" title="${escapeHtml(product.name)}">${escapeHtml(product.name)}</div>
+                        <div class="pos-product-meta">
+                            <span class="pos-code">${escapeHtml(product.sku || "No SKU")}</span>
+                            <span>Kho: ${quantity}</span>
+                        </div>
+                        <div class="pos-product-price pos-money">${formatCurrency(product.price)}</div>
+                        <button class="btn ${disabled ? "btn-secondary" : "btn-primary"} w-100" ${disabled ? "disabled" : ""} onclick="addToCart(${Number(product.id)})">
+                            <i class="ph ${disabled ? "ph-x-circle" : "ph-plus-circle"}"></i>
+                            ${disabled ? "Hết hàng" : "Thêm"}
+                        </button>
+                    </div>
+                </article>
+            `;
+        }).join("");
+    }
+
+    function addToCart(productId) {
+        const product = state.products.find((item) => Number(item.id) === Number(productId));
+        if (!product) {
+            showToast("Không tìm thấy sản phẩm", "warning");
+            return;
+        }
+
+        if (Number(product.quantity) <= 0) {
+            showToast("Sản phẩm này đang hết hàng", "warning");
+            return;
+        }
+
+        const current = state.cart.get(Number(productId)) || 0;
+        if (current >= Number(product.quantity)) {
+            showToast("Số lượng vượt quá tồn kho hiện tại", "warning");
+            return;
+        }
+
+        state.cart.set(Number(productId), current + 1);
+        renderCart();
+    }
+
+    function setCartQuantity(productId, quantity) {
+        const product = state.products.find((item) => Number(item.id) === Number(productId));
+        const nextQuantity = Math.max(0, Number(quantity) || 0);
+
+        if (nextQuantity === 0) {
+            state.cart.delete(Number(productId));
+        } else if (product && nextQuantity <= Number(product.quantity)) {
+            state.cart.set(Number(productId), nextQuantity);
+        } else {
+            showToast("Số lượng vượt quá tồn kho hiện tại", "warning");
+        }
+
+        renderCart();
+    }
+
+    function removeFromCart(productId) {
+        state.cart.delete(Number(productId));
+        renderCart();
+    }
+
+    function readMoneyInput(id) {
+        if (typeof getMoneyInputValue === "function") {
+            return getMoneyInputValue(id);
+        }
+        const input = document.getElementById(id);
+        if (typeof parseCurrencyInputValue === "function") {
+            return parseCurrencyInputValue(input?.value);
+        }
+        return Number(String(input?.value || "").replace(/[^\d]/g, "")) || 0;
+    }
+
+    function writeMoneyInput(id, value) {
+        if (typeof setMoneyInputValue === "function") {
+            setMoneyInputValue(id, value);
+            return;
+        }
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.value = typeof formatCurrencyInputValue === "function"
+            ? formatCurrencyInputValue(value)
+            : String(Number(value || 0));
+    }
+
+    function handleAmountPaidInput(input) {
+        // format.js capture handler already groups thousands; just refresh totals
+        if (input && typeof formatCurrencyInputEdit === "function" && input.getAttribute("data-money-bound") !== "1") {
+            const next = formatCurrencyInputEdit(input.value, input.selectionStart ?? input.value.length);
+            input.value = next.value;
+            if (typeof input.setSelectionRange === "function") {
+                input.setSelectionRange(next.selectionStart, next.selectionEnd);
+            }
+        }
+        renderCart();
+    }
+
+    function handleManualDiscountInput(input) {
+        const type = document.getElementById("manualDiscountType")?.value;
+        if (type === "amount") {
+            input.dataset.money = "vnd";
+            input.classList.add("pos-money-input");
+            if (typeof attachMoneyInput === "function") {
+                // re-bind if needed
+                if (input.getAttribute("data-money-bound") !== "1") {
+                    attachMoneyInput(input);
+                } else if (typeof formatCurrencyInputEdit === "function") {
+                    const next = formatCurrencyInputEdit(input.value, input.selectionStart ?? input.value.length);
+                    input.value = next.value;
+                    try { input.setSelectionRange(next.selectionStart, next.selectionEnd); } catch (_) {}
+                }
+            }
+        }
+        renderCart();
+    }
+
+    function syncManualDiscountMoneyMode() {
+        const type = document.getElementById("manualDiscountType")?.value;
+        const input = document.getElementById("manualDiscountValue");
+        if (!input) return;
+        if (type === "amount") {
+            input.dataset.money = "vnd";
+            input.classList.add("pos-money-input");
+            input.placeholder = "0đ";
+            if (typeof attachMoneyInput === "function") {
+                attachMoneyInput(input);
+            }
+            if (input.value && typeof formatCurrencyInputValue === "function") {
+                input.value = formatCurrencyInputValue(input.value);
+            }
+        } else {
+            // percent / none — plain number (money binder ignores data-money=false)
+            input.dataset.money = "false";
+            input.classList.remove("pos-money-input");
+            input.placeholder = type === "percent" ? "0–100" : "Giá trị";
+            const n = typeof parseCurrencyInputValue === "function"
+                ? parseCurrencyInputValue(input.value)
+                : Number(String(input.value || "").replace(/[^\d]/g, "")) || 0;
+            input.value = type === "percent" ? String(Math.min(100, n)) : (n ? String(n) : "0");
+        }
+    }
+
+    function setCashReceived(amount) {
+        if (getPaymentMethod() !== "cash") {
+            return;
+        }
+
+        writeMoneyInput("amountPaid", amount);
+        renderCart();
+    }
+
+    function cartSubtotal() {
+        return [...state.cart.entries()].reduce((sum, [productId, quantity]) => {
+            const product = state.products.find((item) => Number(item.id) === Number(productId));
+            return sum + (product ? Number(product.price) * quantity : 0);
+        }, 0);
+    }
+
+    /**
+     * Apply coupon preview from API (percent or amount) against subtotal.
+     */
+    function couponDiscountAmount(preview, subtotal) {
+        if (!preview) {
+            return 0;
+        }
+        if (preview.estimated_discount != null && Number(preview.estimated_discount) >= 0
+            && (preview.discount_type === "amount" || preview.discount_type === "percent")) {
+            // Prefer server-estimated amount when present and finite
+            const estimated = Math.round(Number(preview.estimated_discount) || 0);
+            if (estimated > 0 || preview.discount_type === "amount") {
+                return Math.min(subtotal, Math.max(0, estimated));
+            }
+        }
+        if (String(preview.discount_type || "percent") === "amount") {
+            return Math.min(subtotal, Math.max(0, Math.round(Number(preview.discount_value || 0))));
+        }
+        const percent = Number(preview.discount_percent != null
+            ? preview.discount_percent
+            : preview.discount_value) || 0;
+        return Math.round(subtotal * percent / 100);
+    }
+
+    function pointsDiscountAmount(subtotal) {
+        const redeemInput = document.getElementById("redeemPoints");
+        let redeemPts = Math.max(0, Math.round(Number(redeemInput?.value || 0) || 0));
+        if (!redeemPts || !state.selectedCustomer) {
+            return { redeemPts: 0, pointsDiscount: 0 };
+        }
+        const balance = Math.max(
+            0,
+            Math.round(Number(
+                state.selectedCustomer.points_balance
+                || state.selectedCustomer.loyalty?.points_balance
+                || 0
+            ) || 0)
+        );
+        // Policy: 1 điểm = 1.000đ, tối đa 20% tạm tính + không vượt số dư
+        const maxBySubtotal = Math.floor((Math.max(0, subtotal) * 0.2) / 1000);
+        const maxPts = Math.max(0, Math.min(balance, maxBySubtotal));
+        redeemPts = Math.min(redeemPts, maxPts);
+        return {
+            redeemPts,
+            pointsDiscount: redeemPts * 1000
+        };
+    }
+
+    function provisionalTotals() {
+        const subtotal = cartSubtotal();
+        const couponDiscount = couponDiscountAmount(state.couponPreview, subtotal);
+        const manualType = document.getElementById("manualDiscountType").value;
+        const manualRaw = document.getElementById("manualDiscountValue")?.value;
+        const manualValue = manualType === "amount"
+            ? (typeof parseCurrencyInputValue === "function"
+                ? parseCurrencyInputValue(manualRaw)
+                : Number(String(manualRaw || "").replace(/[^\d]/g, "")) || 0)
+            : Number(String(manualRaw || "").replace(/[^\d.]/g, "")) || 0;
+        const manualDiscount = manualType === "percent"
+            ? Math.round(subtotal * manualValue / 100)
+            : Math.round(manualValue);
+        const { redeemPts, pointsDiscount } = pointsDiscountAmount(subtotal);
+        const discount = couponDiscount + manualDiscount + pointsDiscount;
+        const staffManualDiscountCap = manualDiscountCapAmount(subtotal);
+        const total = Math.max(0, subtotal - discount);
+        const amountPaid = readMoneyInput("amountPaid");
+        const paymentMethod = getPaymentMethod();
+
+        return {
+            subtotal,
+            couponDiscount,
+            manualDiscount,
+            pointsDiscount,
+            redeemPts,
+            discount,
+            total,
+            amountPaid,
+            change: paymentMethod === "cash" ? Math.max(0, amountPaid - total) : 0,
+            invalidDiscount: discount > subtotal,
+            staffManualDiscountCap,
+            staffDiscountCapExceeded: manualDiscount > staffManualDiscountCap
+        };
+    }
+
+    function renderCartLines() {
+        const container = document.getElementById("cartLines");
+
+        if (state.cart.size === 0) {
+            container.innerHTML = `
+                <div class="pos-empty-state">
+                    <div>
+                        <i class="ph ph-shopping-cart-simple"></i>
+                        <p class="mt-2 mb-0">Chọn sản phẩm để bắt đầu bán hàng.</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = [...state.cart.entries()].map(([productId, quantity]) => {
+            const product = state.products.find((item) => Number(item.id) === Number(productId));
+            if (!product) return "";
+            return `
+                <div class="pos-cart-line">
+                    <div class="pos-cart-line-info">
+                        <div class="pos-cart-line-name" title="${escapeHtml(product.name)}">${escapeHtml(product.name)}</div>
+                        <div class="pos-cart-line-sub"><span class="pos-money">${formatCurrency(product.price)}</span> · Kho ${Number(product.quantity || 0)}</div>
+                    </div>
+                    <div class="pos-cart-line-controls">
+                        <div class="pos-qty-control pos-qty-control--compact">
+                            <button onclick="setCartQuantity(${productId}, ${quantity - 1})" title="Giảm">
+                                <i class="ph ph-minus"></i>
+                            </button>
+                            <input class="form-control" type="number" min="1" max="${Number(product.quantity || 0)}" value="${quantity}" onchange="setCartQuantity(${productId}, this.value)">
+                            <button onclick="setCartQuantity(${productId}, ${quantity + 1})" title="Tăng">
+                                <i class="ph ph-plus"></i>
+                            </button>
+                        </div>
+                        <strong class="pos-cart-line-total pos-money">${formatCurrency(Number(product.price) * quantity)}</strong>
+                        <button class="pos-icon-button pos-icon-button--compact" onclick="removeFromCart(${productId})" title="Xóa">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join("");
+    }
+
+    function renderCartCount() {
+        const badge = document.getElementById("cartCountBadge");
+        if (!badge) return;
+
+        const itemCount = [...state.cart.values()].reduce((sum, quantity) => sum + Number(quantity || 0), 0);
+        badge.textContent = String(itemCount);
+        badge.hidden = itemCount === 0;
+    }
+
+    function renderSummary() {
+        const summary = document.getElementById("summaryBox");
+        const totals = provisionalTotals();
+        const warning = totals.invalidDiscount
+            ? `<div class="status-message error" style="display:block;">Giảm giá đang lớn hơn tổng hàng.</div>`
+            : "";
+        const staffWarning = totals.staffDiscountCapExceeded
+            ? `<div class="status-message error" style="display:block;">Hạng nhân viên ${escapeHtml(state.staffPerformance?.level?.code || "NULL")} chỉ được giảm tối đa ${staffDiscountCapPercent()}%.</div>`
+            : "";
+        summary.innerHTML = `
+            <div class="pos-money-panel">
+                <div class="pos-summary-row">
+                    <span>Tạm tính</span>
+                    <strong class="pos-money">${formatCurrency(totals.subtotal)}</strong>
+                </div>
+                <div class="pos-summary-row">
+                    <span>Giảm coupon</span>
+                    <strong class="pos-money">${formatCurrency(totals.couponDiscount)}</strong>
+                </div>
+                <div class="pos-summary-row">
+                    <span>Giảm thủ công</span>
+                    <strong class="pos-money">${formatCurrency(totals.manualDiscount)}</strong>
+                </div>
+                <div class="pos-summary-row">
+                    <span>Giảm điểm${totals.redeemPts ? ` (${totals.redeemPts}đ)` : ""}</span>
+                    <strong class="pos-money">${formatCurrency(totals.pointsDiscount || 0)}</strong>
+                </div>
+                <div class="pos-summary-row pos-summary-total">
+                    <strong>Phải thu</strong>
+                    <span class="pos-money">${formatCurrency(totals.total)}</span>
+                </div>
+                <div class="pos-summary-row">
+                    <span>${paymentLabel(getPaymentMethod())}</span>
+                    <strong class="pos-money">${formatCurrency(totals.amountPaid)}</strong>
+                </div>
+                <div class="pos-summary-row">
+                    <span>Tiền thối</span>
+                    <strong class="pos-money">${formatCurrency(totals.change)}</strong>
+                </div>
+            </div>
+            ${warning}
+            ${staffWarning}
+        `;
+    }
+
+    function renderCart() {
+        syncNonCashAmount();
+        renderCartLines();
+        renderCartCount();
+        renderSummary();
+    }
+
+    function syncNonCashAmount() {
+        const method = getPaymentMethod();
+        const amountInput = document.getElementById("amountPaid");
+        if (method === "cash") {
+            amountInput.disabled = false;
+            return;
+        }
+
+        const totals = provisionalTotals();
+        writeMoneyInput("amountPaid", Math.max(0, totals.total));
+        amountInput.disabled = true;
+    }
+
+    function handlePaymentMethodChange() {
+        syncNonCashAmount();
+        renderCart();
+    }
+
+    async function checkCoupon() {
+        const code = document.getElementById("couponCode").value.trim();
+        state.couponPreview = null;
+
+        if (!code) {
+            renderCart();
+            showToast("Coupon đã được bỏ trống", "info");
+            return;
+        }
+
+        try {
+            const subtotal = cartSubtotal();
+            const result = await apiRequest(
+                `/promotions/${encodeURIComponent(code)}?subtotal=${encodeURIComponent(subtotal)}`
+            );
+            if (!Array.isArray(result) || result.length === 0) {
+                showToast("Mã giảm giá không tồn tại hoặc đã hết hạn", "error");
+                renderCart();
+                return;
+            }
+
+            state.couponPreview = result[0];
+            const discount = couponDiscountAmount(result[0], subtotal);
+            const type = String(result[0].discount_type || "percent");
+            const label = type === "amount"
+                ? formatCurrency(discount)
+                : `${Number(result[0].discount_percent || result[0].discount_value || 0)}%`;
+            showToast(`Coupon hợp lệ: giảm ${label}`, "success");
+            renderCart();
+            syncNonCashAmount();
+        } catch (error) {
+            state.couponPreview = null;
+            showToast(error.message, "error");
+            renderCart();
+        }
+    }
+
+    async function createQuickCustomer() {
+        const data = await showFormModal({
+            title: "Tạo khách nhanh",
+            submitText: "Tạo khách",
+            fields: [
+                { name: "name", label: "Tên khách", placeholder: "Nguyễn Văn A" },
+                { name: "phone", label: "Số điện thoại", placeholder: "090..." },
+                { name: "address", label: "Địa chỉ", placeholder: "Tùy chọn", required: false }
+            ]
+        });
+
+        if (!data) return;
+
+        try {
+            const result = await apiRequest("/customers", {
+                method: "POST",
+                body: {
+                    name: data.name,
+                    phone: data.phone,
+                    address: data.address || ""
+                }
+            });
+            showToast("Đã tạo khách hàng", "success");
+            const createdCustomer = {
+                id: result.id,
+                member_code: result.member_code,
+                name: data.name,
+                phone: data.phone,
+                address: data.address || ""
+            };
+            await reloadPosData();
+            const refreshedCustomer = state.customers.find((customer) => Number(customer.id) === Number(result.id));
+            setSelectedCustomer(refreshedCustomer || createdCustomer);
+        } catch (error) {
+            showToast(error.message, "error");
+        }
+    }
+
+    function closePaymentWaiting() {
+        document.getElementById("paymentWaitingOverlay")?.remove();
+        if (state.paymentCountdownTimer) {
+            clearInterval(state.paymentCountdownTimer);
+            state.paymentCountdownTimer = null;
+        }
+        if (state.paymentEventSource) {
+            state.paymentEventSource.close();
+            state.paymentEventSource = null;
+        }
+    }
+
+    function hidePaymentWaiting() {
+        document.getElementById("paymentWaitingOverlay")?.remove();
+        if (state.paymentCountdownTimer) {
+            clearInterval(state.paymentCountdownTimer);
+            state.paymentCountdownTimer = null;
+        }
+    }
+
+    async function copyPaymentContent(value, button) {
+        try {
+            await navigator.clipboard.writeText(String(value || ""));
+            button.innerHTML = '<i class="ph ph-check"></i>';
+            button.setAttribute("aria-label", "Đã sao chép");
+            showToast("Đã sao chép nội dung chuyển khoản", "success");
+            setTimeout(() => {
+                if (!button.isConnected) return;
+                button.innerHTML = '<i class="ph ph-copy"></i>';
+                button.setAttribute("aria-label", "Sao chép nội dung chuyển khoản");
+            }, 1600);
+        } catch {
+            showToast("Không thể sao chép tự động", "warning");
+        }
+    }
+
+    function startPaymentCountdown(expiresAt) {
+        const target = new Date(expiresAt).getTime();
+        const render = () => {
+            const node = document.getElementById("paymentWaitingCountdown");
+            if (!node) return;
+            const seconds = Math.max(0, Math.ceil((target - Date.now()) / 1000));
+            const minutes = Math.floor(seconds / 60);
+            node.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+        };
+        render();
+        state.paymentCountdownTimer = setInterval(render, 1000);
+    }
+
+    function completeConfirmedBankPayment(orderId) {
+        if (state.completedPaymentOrderId === Number(orderId)) return;
+        state.completedPaymentOrderId = Number(orderId);
+        closePaymentWaiting();
+        localStorage.removeItem(HOLD_CART_KEY);
+        showToast(`Đã xác nhận chuyển khoản hóa đơn #${orderId}`, "success");
+        clearCartFully();
+        reloadPosData().then(() => {
+            focusSearch();
+            window.location.href = `/invoice_detail.html?id=${orderId}`;
+        });
+    }
+
+    function openPaymentWaiting(intent) {
+        closePaymentWaiting();
+        state.completedPaymentOrderId = null;
+        const overlay = document.createElement("div");
+        overlay.id = "paymentWaitingOverlay";
+        overlay.className = "modal-overlay";
+        const qr = String(intent.qr_payload || "");
+        const isFake = intent.provider === "fake" || qr.startsWith("FAKE|");
+        const visual = qr.startsWith("http")
+            ? `<div class="payment-wait-visual"><img src="${escapeHtml(qr)}" alt="Mã VietQR thanh toán"></div>`
+            : `<div class="payment-wait-visual payment-wait-test-visual"><i class="ph ph-flask"></i><strong>Chế độ giả lập</strong></div>`;
+        overlay.innerHTML = `
+            <div class="modal-dialog payment-wait-dialog" data-modal-panel role="dialog" aria-modal="true" aria-labelledby="paymentWaitingTitle">
+                <header class="payment-wait-header">
+                    <div class="payment-wait-heading">
+                        <span class="payment-wait-status"><span class="payment-wait-status-dot"></span> Đang chờ thanh toán</span>
+                        <h2 class="payment-wait-title" id="paymentWaitingTitle">Xác nhận chuyển khoản</h2>
+                    </div>
+                    <button class="payment-wait-close" id="paymentWaitingClose" type="button" aria-label="Ẩn cửa sổ">
+                        <i class="ph ph-x"></i>
+                    </button>
+                </header>
+                <div class="payment-wait-body">
+                    <div class="payment-wait-main">
+                        ${visual}
+                        <div class="payment-wait-summary">
+                            <div>
+                                <p class="payment-wait-label">Số tiền cần nhận</p>
+                                <div class="payment-wait-amount pos-money">${formatCurrency(intent.expected_amount)}</div>
+                            </div>
+                            <div>
+                                <p class="payment-wait-label">Nội dung chuyển khoản</p>
+                                <div class="payment-wait-code-box">
+                                    <strong class="payment-wait-code pos-code">${escapeHtml(intent.transfer_content)}</strong>
+                                    <button class="payment-copy-button" id="paymentCopyButton" type="button" aria-label="Sao chép nội dung chuyển khoản">
+                                        <i class="ph ph-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="payment-wait-meta">
+                                ${intent.account_number_masked ? `<span><i class="ph ph-bank"></i> TK ${escapeHtml(intent.account_number_masked)}</span>` : ""}
+                                <span><i class="ph ph-timer"></i> Hết hạn sau <strong id="paymentWaitingCountdown">--:--</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="payment-wait-note">
+                        <i class="ph ph-info"></i>
+                        <span id="paymentWaitingStatus">${isFake
+                            ? "Đây là môi trường giả lập. Nhấn nút mô phỏng để kiểm tra toàn bộ luồng xác nhận mà không chuyển tiền thật."
+                            : "Giữ nguyên số tiền và nội dung trên QR. Hệ thống sẽ tự hoàn tất hóa đơn khi ngân hàng xác nhận."}</span>
+                    </div>
+                    <div class="payment-wait-actions ${isFake ? "" : "is-single"}">
+                        ${isFake ? `<button class="btn btn-primary" id="paymentSimulateButton" type="button"><i class="ph ph-check-circle"></i> Mô phỏng đã chuyển khoản</button>` : ""}
+                        <button class="btn btn-secondary" id="paymentWaitingHide" type="button"><i class="ph ph-eye-slash"></i> Ẩn và tiếp tục chờ</button>
+                    </div>
+                </div>
+            </div>`;
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add("modal-visible"));
+        document.getElementById("paymentWaitingClose").addEventListener("click", hidePaymentWaiting);
+        document.getElementById("paymentWaitingHide").addEventListener("click", hidePaymentWaiting);
+        document.getElementById("paymentCopyButton").addEventListener("click", (event) => {
+            copyPaymentContent(intent.transfer_content, event.currentTarget);
+        });
+        if (isFake) {
+            document.getElementById("paymentSimulateButton").addEventListener("click", async (event) => {
+                const button = event.currentTarget;
+                button.disabled = true;
+                button.innerHTML = '<i class="ph ph-circle-notch ph-spin"></i> Đang mô phỏng';
+                try {
+                    const result = await apiRequest(`/api/staff/payment-intents/${encodeURIComponent(intent.public_id)}/simulate`, {
+                        method: "POST",
+                        body: {}
+                    });
+                    if (result.status === "paid") {
+                        completeConfirmedBankPayment(result.order_id || intent.order_id);
+                    }
+                } catch (error) {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="ph ph-check-circle"></i> Thử lại mô phỏng';
+                    showToast(error.message || "Không thể mô phỏng thanh toán", "error");
+                }
+            });
+        }
+        startPaymentCountdown(intent.expires_at);
+        const token = getAuthToken();
+        const url = `/api/staff/payment-intents/${encodeURIComponent(intent.public_id)}/stream?token=${encodeURIComponent(token)}`;
+        state.paymentEventSource = new EventSource(url);
+        state.paymentEventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data || "{}");
+            if (data.type === "payment.paid") completeConfirmedBankPayment(data.order_id || intent.order_id);
+            if (data.type === "payment.expired") {
+                const status = document.getElementById("paymentWaitingStatus");
+                if (status) status.textContent = "QR đã hết hạn. Tồn kho đã được hoàn giữ chỗ.";
+                const simulateButton = document.getElementById("paymentSimulateButton");
+                if (simulateButton) simulateButton.disabled = true;
+                state.paymentEventSource?.close();
+            }
+        };
+    }
+
+    async function checkout() {
+        if (state.submitting) return;
+
+        const items = [...state.cart.entries()].map(([product_id, quantity]) => ({
+            product_id,
+            quantity
+        }));
+
+        if (!items.length) {
+            showToast("Vui lòng chọn ít nhất một sản phẩm", "warning");
+            return;
+        }
+
+        state.submitting = true;
+        document.getElementById("checkoutButton").disabled = true;
+
+        try {
+            const customerValue = document.getElementById("customerSelect").value;
+            const isBankTransfer = getPaymentMethod() === "bank_transfer";
+            const result = await apiRequest(isBankTransfer
+                ? "/api/staff/pos/payment-intents"
+                : "/api/staff/pos/checkout", {
+                method: "POST",
+                headers: {
+                    "Idempotency-Key": createIdempotencyKey()
+                },
+                body: {
+                    customer_id: customerValue ? Number(customerValue) : null,
+                    items,
+                    coupon_code: document.getElementById("couponCode").value.trim() || null,
+                    redeem_points: Number(document.getElementById("redeemPoints")?.value || 0) || 0,
+                    manual_discount: {
+                        type: document.getElementById("manualDiscountType").value || null,
+                        value: (() => {
+                            const t = document.getElementById("manualDiscountType").value;
+                            const raw = document.getElementById("manualDiscountValue")?.value;
+                            if (t === "amount" && typeof parseCurrencyInputValue === "function") {
+                                return parseCurrencyInputValue(raw);
+                            }
+                            return Number(String(raw || "").replace(/[^\d.]/g, "")) || 0;
+                        })()
+                    },
+                    payment: {
+                        method: getPaymentMethod(),
+                        amount_paid: readMoneyInput("amountPaid")
+                    }
+                }
+            });
+
+            if (isBankTransfer && result.payment_status !== "paid") {
+                openPaymentWaiting(result);
+                showToast("Đã tạo QR, đang chờ xác nhận từ ngân hàng", "info");
+                return;
+            }
+
+            localStorage.removeItem(HOLD_CART_KEY);
+            showToast(`Đã thanh toán hóa đơn #${result.order_id}`, "success");
+            if (result.bank_transfer_content) {
+                showToast(`Nội dung CK: ${result.bank_transfer_content}`, "info");
+            }
+            try {
+                const beep = new AudioContext();
+                const osc = beep.createOscillator();
+                const gain = beep.createGain();
+                osc.connect(gain);
+                gain.connect(beep.destination);
+                osc.frequency.value = 880;
+                gain.gain.value = 0.04;
+                osc.start();
+                osc.stop(beep.currentTime + 0.08);
+            } catch {
+                // audio optional
+            }
+            clearCartFully();
+            await reloadPosData();
+            focusSearch();
+            window.location.href = `/invoice_detail.html?id=${result.order_id}`;
+        } catch (error) {
+            showToast(error.message, "error");
+        } finally {
+            state.submitting = false;
+            document.getElementById("checkoutButton").disabled = false;
+        }
+    }
+
+    if (currentUser) {
+        document.getElementById("welcomeUser").textContent = currentUser.username;
+        document.getElementById("roleLabel").textContent = currentUser.role === "admin" ? "Quản trị" : "Nhân viên";
+        reloadPosData().then(() => {
+            const productQr = new URLSearchParams(window.location.search).get("productQr");
+            if (productQr) {
+                const input = document.getElementById("productSearch");
+                input.value = `${window.location.origin}/qr/product.html?code=${productQr}`;
+                addFirstMatchedProduct();
+                history.replaceState({}, "", "/orders.html");
+            }
+        });
+        loadStaffPerformance();
+    }
+</script>
+<script src="assets/js/aiAssistant.js"></script>
+</body>
+</html>

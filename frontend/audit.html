@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - Nhật ký</title>
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+<div class="pos-container">
+    <aside data-menu-component data-active-menu="audit"></aside>
+    <main class="pos-main">
+        <header class="pos-topbar">
+            <div><h2 class="pos-topbar-title">Nhật ký hệ thống</h2></div>
+            <div class="pos-topbar-actions">
+                <button class="btn btn-secondary" type="button" id="refreshAudit"><i class="ph ph-arrow-clockwise"></i> Làm mới</button>
+            </div>
+        </header>
+        <div class="pos-content">
+            <section class="pos-page-intro">
+                <div>
+                    <h2>Audit log</h2>
+                    <p>Theo dõi đăng nhập, checkout, void/refund, thay đổi sản phẩm (Phase 0).</p>
+                </div>
+                <div class="d-flex gap-2 align-items-end flex-wrap">
+                    <div>
+                        <label class="form-label" for="entityFilter">Loại</label>
+                        <select class="form-select" id="entityFilter">
+                            <option value="">Tất cả</option>
+                            <option value="user">user</option>
+                            <option value="order">order</option>
+                            <option value="product">product</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" type="button" id="applyFilter">Lọc</button>
+                </div>
+            </section>
+            <div class="table-responsive" style="background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-sm);">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Thời gian</th>
+                            <th>Actor</th>
+                            <th>Action</th>
+                            <th>Entity</th>
+                            <th>IP</th>
+                            <th>Payload</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditBody"><tr><td colspan="7">Đang tải…</td></tr></tbody>
+                </table>
+            </div>
+            <p class="text-muted mt-2" id="auditMeta"></p>
+        </div>
+    </main>
+</div>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/format.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/components.js"></script>
+<script>
+    const user = requireRole(["admin"]);
+    let page = 1;
+
+    async function loadAudit() {
+        const body = document.getElementById("auditBody");
+        const entity = document.getElementById("entityFilter")?.value || "";
+        const qs = new URLSearchParams({ page: String(page), limit: "50" });
+        if (entity) qs.set("entity_type", entity);
+        try {
+            const data = await apiRequest(`/api/admin/audit-logs?${qs}`);
+            const items = data.items || data || [];
+            document.getElementById("auditMeta").textContent =
+                `Trang ${data.page || page} · ${data.total != null ? data.total : items.length} bản ghi`;
+            if (!items.length) {
+                body.innerHTML = `<tr><td colspan="7">Chưa có nhật ký.</td></tr>`;
+                return;
+            }
+            body.innerHTML = items.map((row) => {
+                let payload = row.payload_json;
+                if (payload && typeof payload === "object") {
+                    payload = JSON.stringify(payload);
+                }
+                return `<tr>
+                    <td>${row.id}</td>
+                    <td>${row.created_at ? formatDate(row.created_at) : "—"}</td>
+                    <td>${row.actor_id ?? "—"}</td>
+                    <td><code>${escapeHtml(row.action || "")}</code></td>
+                    <td>${escapeHtml(row.entity_type || "")} #${row.entity_id ?? "—"}</td>
+                    <td>${escapeHtml(row.ip || "—")}</td>
+                    <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(payload || "")}">${escapeHtml(payload || "—")}</td>
+                </tr>`;
+            }).join("");
+        } catch (error) {
+            body.innerHTML = `<tr><td colspan="7">${escapeHtml(error.message)}</td></tr>`;
+        }
+    }
+
+    document.getElementById("refreshAudit")?.addEventListener("click", loadAudit);
+    document.getElementById("applyFilter")?.addEventListener("click", () => { page = 1; loadAudit(); });
+    if (user) loadAudit();
+</script>
+</body>
+</html>

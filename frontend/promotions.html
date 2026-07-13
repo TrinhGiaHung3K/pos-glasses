@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - Khuyến mãi</title>
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <style>
+        /* Promotions ops cockpit — tokens from base.css, density aligned with inventory */
+
+        .promo-shell {
+            display: grid;
+            gap: 18px;
+        }
+
+        .promo-toolbar {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .promo-status {
+            align-items: center;
+            background: var(--accent-subtle);
+            border: 1px solid rgba(15, 118, 110, 0.14);
+            border-radius: var(--radius-pill);
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            gap: 7px;
+            min-height: 34px;
+            padding: 7px 12px;
+            white-space: nowrap;
+        }
+
+        .promo-status.is-error {
+            background: var(--danger-light);
+            border-color: rgba(220, 38, 38, 0.18);
+            color: var(--danger-color);
+        }
+
+        .promo-kpi-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+
+        .promo-kpi-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            cursor: pointer;
+            display: grid;
+            gap: 10px;
+            min-height: 112px;
+            padding: 16px;
+            transition:
+                border-color var(--transition-fast),
+                box-shadow var(--transition-fast),
+                transform var(--transition-fast);
+        }
+
+        .promo-kpi-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-1px);
+        }
+
+        .promo-kpi-card.is-active {
+            border-color: rgba(15, 118, 110, 0.35);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .promo-kpi-card:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        .promo-kpi-top {
+            align-items: flex-start;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .promo-kpi-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+        }
+
+        .promo-kpi-value {
+            color: var(--text-primary);
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+            margin: 4px 0 0;
+        }
+
+        .promo-kpi-icon {
+            align-items: center;
+            background: var(--accent-light);
+            border-radius: var(--radius-sm);
+            color: var(--accent-color);
+            display: inline-flex;
+            flex-shrink: 0;
+            font-size: 18px;
+            height: 40px;
+            justify-content: center;
+            width: 40px;
+        }
+
+        .promo-kpi-icon.success { background: var(--success-light); color: var(--success-color); }
+        .promo-kpi-icon.warning { background: var(--warning-light); color: #b45309; }
+        .promo-kpi-icon.muted { background: var(--bg-muted); color: var(--text-muted); }
+        .promo-kpi-icon.danger { background: var(--danger-light); color: var(--danger-color); }
+
+        .promo-kpi-note {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .promo-filters {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            display: grid;
+            gap: 14px;
+            padding: 16px 18px;
+        }
+
+        .promo-filter-row {
+            align-items: end;
+            display: grid;
+            gap: 12px;
+            grid-template-columns: minmax(180px, 1.4fr) minmax(140px, 0.7fr) minmax(140px, 0.7fr) auto;
+        }
+
+        .promo-filter-field label {
+            color: var(--text-secondary);
+            display: block;
+            font-size: 12px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .promo-search-wrap {
+            position: relative;
+        }
+
+        .promo-search-wrap i {
+            color: var(--text-muted);
+            font-size: 18px;
+            left: 14px;
+            pointer-events: none;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .promo-search-wrap .form-control {
+            padding-left: 42px !important;
+        }
+
+        .promo-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .promo-chip {
+            align-items: center;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-pill);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            font-size: 13px;
+            font-weight: 700;
+            gap: 6px;
+            min-height: 36px;
+            padding: 7px 14px;
+            transition: all var(--transition-fast);
+        }
+
+        .promo-chip:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .promo-chip.active {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            box-shadow: var(--shadow-accent);
+            color: #fff;
+        }
+
+        .promo-chip .chip-count {
+            background: rgba(20, 32, 31, 0.08);
+            border-radius: var(--radius-pill);
+            font-size: 11.5px;
+            font-weight: 850;
+            min-width: 22px;
+            padding: 3px 7px;
+            text-align: center;
+        }
+
+        .promo-chip.active .chip-count {
+            background: rgba(255, 255, 255, 0.22);
+            color: #fff;
+        }
+
+        /* Template picker — card grid, full description (no truncated chip-count) */
+        .promo-templates-wrap {
+            /* Top padding keeps cards clear of panel-header border / hr */
+            padding: 14px 18px 16px;
+            border-top: 0;
+        }
+
+        .promo-templates-grid {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+        }
+
+        .promo-template-card {
+            align-items: flex-start;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: grid;
+            gap: 6px;
+            min-height: 88px;
+            padding: 12px 14px;
+            text-align: left;
+            transition:
+                border-color var(--transition-fast),
+                box-shadow var(--transition-fast),
+                transform var(--transition-fast);
+        }
+
+        .promo-template-card:hover {
+            border-color: rgba(15, 118, 110, 0.4);
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-1px);
+        }
+
+        .promo-template-card:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        .promo-template-card:active {
+            transform: translateY(0) scale(0.99);
+        }
+
+        .promo-template-top {
+            align-items: center;
+            display: flex;
+            gap: 8px;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .promo-template-top i {
+            color: var(--accent-color);
+            flex-shrink: 0;
+            font-size: 16px;
+        }
+
+        .promo-template-code {
+            background: var(--bg-muted);
+            border-radius: 6px;
+            font-family: "Roboto Mono", Consolas, monospace;
+            font-size: 12.5px;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            padding: 3px 8px;
+        }
+
+        .promo-template-desc {
+            color: var(--text-secondary);
+            display: -webkit-box;
+            font-size: 12.5px;
+            font-weight: 600;
+            line-height: 1.4;
+            overflow: hidden;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            width: 100%;
+        }
+
+        .promo-main-grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+            align-items: start;
+        }
+
+        .promo-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .promo-panel-header {
+            align-items: flex-start;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: space-between;
+            padding: 16px 18px;
+        }
+
+        .promo-panel-title {
+            align-items: center;
+            color: var(--text-primary);
+            display: flex;
+            font-size: 15px;
+            font-weight: 850;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .promo-panel-title i { color: var(--accent-color); font-size: 18px; }
+
+        .promo-panel-sub {
+            color: var(--text-secondary);
+            font-size: 12.5px;
+            margin: 4px 0 0;
+        }
+
+        .promo-table-wrap {
+            max-height: min(68vh, 740px);
+            overflow: auto;
+            scrollbar-gutter: stable;
+        }
+
+        .promo-table {
+            margin: 0;
+            width: 100%;
+        }
+
+        .promo-table thead th {
+            background: #f7faf9;
+            border-bottom: 1px solid var(--border-color) !important;
+            color: var(--text-muted);
+            font-size: 11.5px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            padding: 12px 14px !important;
+            position: sticky;
+            text-transform: uppercase;
+            top: 0;
+            white-space: nowrap;
+            z-index: 1;
+        }
+
+        .promo-table tbody td {
+            padding: 12px 14px !important;
+            vertical-align: middle;
+        }
+
+        .promo-table tbody tr {
+            transition: background-color var(--transition-fast);
+        }
+
+        .promo-table tbody tr:hover {
+            background: rgba(15, 118, 110, 0.03);
+        }
+
+        .promo-code-cell {
+            align-items: center;
+            display: flex;
+            gap: 8px;
+        }
+
+        .promo-code {
+            background: var(--bg-muted);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: "Roboto Mono", Consolas, monospace;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            padding: 4px 8px;
+        }
+
+        .promo-copy-btn {
+            align-items: center;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: inline-flex;
+            height: 28px;
+            justify-content: center;
+            width: 28px;
+        }
+
+        .promo-copy-btn:hover {
+            background: var(--accent-light);
+            border-color: rgba(15, 118, 110, 0.2);
+            color: var(--accent-color);
+        }
+
+        .promo-desc {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-top: 4px;
+            max-width: 220px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .promo-badge {
+            align-items: center;
+            border: 1px solid transparent;
+            border-radius: var(--radius-pill);
+            display: inline-flex;
+            font-size: 11.5px;
+            font-weight: 800;
+            gap: 5px;
+            padding: 5px 10px;
+            white-space: nowrap;
+        }
+
+        .promo-badge.live {
+            background: var(--success-light);
+            border-color: rgba(16, 185, 129, 0.16);
+            color: var(--success-color);
+        }
+
+        .promo-badge.scheduled {
+            background: var(--info-light);
+            border-color: rgba(2, 132, 199, 0.16);
+            color: var(--info-color);
+        }
+
+        .promo-badge.expired,
+        .promo-badge.exhausted {
+            background: var(--warning-light);
+            border-color: rgba(217, 119, 6, 0.16);
+            color: #b45309;
+        }
+
+        .promo-badge.disabled {
+            background: var(--bg-muted);
+            color: var(--text-muted);
+        }
+
+        .promo-type-pill {
+            background: var(--accent-subtle);
+            border-radius: var(--radius-pill);
+            color: var(--accent-color);
+            font-size: 11.5px;
+            font-weight: 800;
+            padding: 4px 9px;
+        }
+
+        .promo-usage {
+            display: grid;
+            gap: 6px;
+            min-width: 110px;
+        }
+
+        .promo-usage-meta {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .promo-usage-bar {
+            background: var(--bg-muted);
+            border-radius: var(--radius-pill);
+            height: 6px;
+            overflow: hidden;
+        }
+
+        .promo-usage-fill {
+            background: var(--accent-color);
+            border-radius: inherit;
+            height: 100%;
+            max-width: 100%;
+            transition: width var(--transition-normal);
+        }
+
+        .promo-usage-fill.is-high {
+            background: var(--warning-color);
+        }
+
+        .promo-usage-fill.is-full {
+            background: var(--danger-color);
+        }
+
+        .promo-row-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+
+        .promo-row-actions .btn {
+            min-height: 34px;
+            padding: 6px 10px;
+        }
+
+        .promo-side-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            display: grid;
+            gap: 14px;
+            padding: 16px;
+        }
+
+        .promo-side-title {
+            align-items: center;
+            color: var(--text-primary);
+            display: flex;
+            font-size: 14px;
+            font-weight: 850;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .promo-side-title i { color: var(--accent-color); }
+
+        .promo-calc-result {
+            background: var(--bg-muted);
+            border-radius: var(--radius-sm);
+            display: grid;
+            gap: 8px;
+            padding: 14px;
+        }
+
+        .promo-calc-row {
+            align-items: center;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .promo-calc-row strong {
+            font-weight: 800;
+        }
+
+        .promo-calc-row.is-total {
+            border-top: 1px dashed var(--border-color);
+            font-size: 15px;
+            padding-top: 8px;
+        }
+
+        .promo-calc-row.is-total strong {
+            color: var(--accent-color);
+        }
+
+        .promo-rules {
+            color: var(--text-secondary);
+            display: grid;
+            gap: 8px;
+            font-size: 12.5px;
+            line-height: 1.5;
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .promo-rules li::marker {
+            color: var(--accent-color);
+        }
+
+        .promo-state {
+            align-items: center;
+            display: grid;
+            gap: 10px;
+            justify-items: center;
+            min-height: 220px;
+            padding: 36px 24px;
+            text-align: center;
+        }
+
+        .promo-state-icon {
+            align-items: center;
+            background: var(--accent-light);
+            border-radius: var(--radius-default);
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 24px;
+            height: 52px;
+            justify-content: center;
+            width: 52px;
+        }
+
+        .promo-state-icon.error {
+            background: var(--danger-light);
+            color: var(--danger-color);
+        }
+
+        .promo-state h3 {
+            font-size: 17px;
+            font-weight: 800;
+            margin: 0;
+        }
+
+        .promo-state p {
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            margin: 0;
+            max-width: 360px;
+        }
+
+        .promo-skeleton {
+            display: grid;
+            gap: 0;
+        }
+
+        .promo-skeleton-row {
+            border-bottom: 1px solid var(--border-color);
+            display: grid;
+            gap: 12px;
+            grid-template-columns: 1.2fr 0.6fr 0.7fr 0.8fr 0.9fr 0.7fr 1fr;
+            padding: 14px 16px;
+        }
+
+        .promo-skel {
+            background: #eef1f7;
+            border-radius: var(--radius-pill);
+            height: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .promo-skel::after {
+                animation: promoShimmer 1.2s infinite;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent);
+                content: "";
+                inset: 0;
+                position: absolute;
+                transform: translateX(-100%);
+            }
+        }
+
+        @keyframes promoShimmer {
+            100% { transform: translateX(100%); }
+        }
+
+        .promo-admin-only[hidden] {
+            display: none !important;
+        }
+
+        @media (max-width: 1200px) {
+            .promo-kpi-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .promo-main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .promo-kpi-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .promo-filter-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="pos-container">
+    <aside data-menu-component data-active-menu="promotions"></aside>
+
+    <main class="pos-main">
+        <header class="pos-topbar">
+            <div>
+                <h2 class="pos-topbar-title">Khuyến mãi</h2>
+            </div>
+            <div class="pos-topbar-actions">
+                <button class="btn btn-secondary" type="button" id="refreshPromos">
+                    <i class="ph ph-arrow-clockwise"></i> Làm mới
+                </button>
+                <button class="btn btn-primary promo-admin-only" type="button" id="createPromoBtn">
+                    <i class="ph ph-plus-circle"></i> Tạo mã giảm giá
+                </button>
+            </div>
+        </header>
+
+        <div class="pos-content">
+            <div class="promo-shell">
+                <section class="pos-page-intro">
+                    <div>
+                        <h2>Điều phối mã giảm giá</h2>
+                        <p>Coupon bám ngữ cảnh POS Glasses: giá kính triệu đồng, quét barcode quầy, margin an toàn — không tạo mã lung tung.</p>
+                    </div>
+                    <div class="promo-toolbar">
+                        <span class="promo-status" id="promoStatus" role="status" aria-live="polite">
+                            <i class="ph ph-circle-notch"></i> Đang tải
+                        </span>
+                        <button class="btn btn-primary promo-admin-only" type="button" id="createPromoBtnSecondary">
+                            <i class="ph ph-ticket"></i> Tạo mã giảm giá
+                        </button>
+                    </div>
+                </section>
+
+                <section class="promo-panel promo-admin-only" id="createTemplatesPanel" aria-label="Mẫu tạo nhanh">
+                    <div class="promo-panel-header">
+                        <div>
+                            <h3 class="promo-panel-title"><i class="ph ph-lightning"></i> Tạo mã giảm giá</h3>
+                            <p class="promo-panel-sub">Chọn mẫu chuẩn cửa hàng kính hoặc tạo tùy chỉnh — server chặn mã vượt policy POS.</p>
+                        </div>
+                        <button class="btn btn-primary" type="button" id="createCustomPromoBtn">
+                            <i class="ph ph-plus"></i> Tùy chỉnh
+                        </button>
+                    </div>
+                    <div class="promo-templates-wrap">
+                        <div id="promoTemplates" class="promo-templates-grid" role="list"></div>
+                    </div>
+                </section>
+
+                <section class="promo-kpi-grid" aria-label="Chỉ số khuyến mãi">
+                    <article class="promo-kpi-card is-active" data-lifecycle="all" role="button" tabindex="0" aria-pressed="true">
+                        <div class="promo-kpi-top">
+                            <div>
+                                <div class="promo-kpi-label">Tổng mã</div>
+                                <h3 class="promo-kpi-value pos-numeric" id="kpiTotal">0</h3>
+                            </div>
+                            <span class="promo-kpi-icon"><i class="ph ph-ticket"></i></span>
+                        </div>
+                        <p class="promo-kpi-note" id="kpiUsesNote">0 lượt đã dùng</p>
+                    </article>
+                    <article class="promo-kpi-card" data-lifecycle="live" role="button" tabindex="0" aria-pressed="false">
+                        <div class="promo-kpi-top">
+                            <div>
+                                <div class="promo-kpi-label">Đang chạy</div>
+                                <h3 class="promo-kpi-value pos-numeric" id="kpiLive">0</h3>
+                            </div>
+                            <span class="promo-kpi-icon success"><i class="ph ph-check-circle"></i></span>
+                        </div>
+                        <p class="promo-kpi-note">Áp dụng được tại quầy ngay</p>
+                    </article>
+                    <article class="promo-kpi-card" data-lifecycle="scheduled" role="button" tabindex="0" aria-pressed="false">
+                        <div class="promo-kpi-top">
+                            <div>
+                                <div class="promo-kpi-label">Sắp tới</div>
+                                <h3 class="promo-kpi-value pos-numeric" id="kpiScheduled">0</h3>
+                            </div>
+                            <span class="promo-kpi-icon"><i class="ph ph-calendar-blank"></i></span>
+                        </div>
+                        <p class="promo-kpi-note">Chưa tới ngày bắt đầu</p>
+                    </article>
+                    <article class="promo-kpi-card" data-lifecycle="expired" role="button" tabindex="0" aria-pressed="false">
+                        <div class="promo-kpi-top">
+                            <div>
+                                <div class="promo-kpi-label">Hết hạn / lượt</div>
+                                <h3 class="promo-kpi-value pos-numeric" id="kpiEnded">0</h3>
+                            </div>
+                            <span class="promo-kpi-icon warning"><i class="ph ph-hourglass"></i></span>
+                        </div>
+                        <p class="promo-kpi-note">Hết hạn hoặc hết lượt dùng</p>
+                    </article>
+                    <article class="promo-kpi-card" data-lifecycle="disabled" role="button" tabindex="0" aria-pressed="false">
+                        <div class="promo-kpi-top">
+                            <div>
+                                <div class="promo-kpi-label">Đang tắt</div>
+                                <h3 class="promo-kpi-value pos-numeric" id="kpiDisabled">0</h3>
+                            </div>
+                            <span class="promo-kpi-icon muted"><i class="ph ph-pause-circle"></i></span>
+                        </div>
+                        <p class="promo-kpi-note">Admin đã tắt thủ công</p>
+                    </article>
+                </section>
+
+                <section class="promo-filters" aria-label="Bộ lọc">
+                    <div class="promo-chips" id="lifecycleChips">
+                        <button type="button" class="promo-chip active" data-lifecycle="all">Tất cả <span class="chip-count" id="chipAll">0</span></button>
+                        <button type="button" class="promo-chip" data-lifecycle="live">Đang chạy <span class="chip-count" id="chipLive">0</span></button>
+                        <button type="button" class="promo-chip" data-lifecycle="scheduled">Sắp tới <span class="chip-count" id="chipScheduled">0</span></button>
+                        <button type="button" class="promo-chip" data-lifecycle="expired">Hết hạn <span class="chip-count" id="chipExpired">0</span></button>
+                        <button type="button" class="promo-chip" data-lifecycle="exhausted">Hết lượt <span class="chip-count" id="chipExhausted">0</span></button>
+                        <button type="button" class="promo-chip" data-lifecycle="disabled">Tắt <span class="chip-count" id="chipDisabled">0</span></button>
+                    </div>
+                    <div class="promo-filter-row">
+                        <div class="promo-filter-field">
+                            <label for="promoSearch">Tìm mã / mô tả</label>
+                            <div class="promo-search-wrap">
+                                <i class="ph ph-magnifying-glass"></i>
+                                <input class="form-control" id="promoSearch" type="search" placeholder="VD: SALE10, VIP..." autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="promo-filter-field">
+                            <label for="promoType">Loại giảm</label>
+                            <select class="form-select" id="promoType">
+                                <option value="all">Tất cả</option>
+                                <option value="percent">Phần trăm</option>
+                                <option value="amount">Số tiền</option>
+                            </select>
+                        </div>
+                        <div class="promo-filter-field">
+                            <label for="promoSort">Sắp xếp</label>
+                            <select class="form-select" id="promoSort">
+                                <option value="newest">Mới nhất</option>
+                                <option value="code">Mã A-Z</option>
+                                <option value="uses">Nhiều lượt nhất</option>
+                                <option value="ending">Sắp hết hạn</option>
+                            </select>
+                        </div>
+                        <div class="promo-filter-field">
+                            <label>&nbsp;</label>
+                            <button class="btn btn-secondary" type="button" id="resetFilters">
+                                <i class="ph ph-arrow-counter-clockwise"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="promo-main-grid">
+                    <div class="promo-panel">
+                        <div class="promo-panel-header">
+                            <div>
+                                <h3 class="promo-panel-title"><i class="ph ph-list-bullets"></i> Danh sách mã</h3>
+                                <p class="promo-panel-sub" id="visibleCount">0 mã</p>
+                            </div>
+                        </div>
+                        <div id="promoBody">
+                            <div class="promo-skeleton" aria-hidden="true">
+                                <div class="promo-skeleton-row"><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div></div>
+                                <div class="promo-skeleton-row"><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div></div>
+                                <div class="promo-skeleton-row"><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <aside class="promo-side-stack" style="display:grid;gap:14px;">
+                        <div class="promo-side-card">
+                            <h3 class="promo-side-title"><i class="ph ph-calculator"></i> Thử mã nhanh</h3>
+                            <div>
+                                <label class="form-label" for="calcCode">Mã coupon</label>
+                                <input class="form-control" id="calcCode" placeholder="SALE10" autocomplete="off">
+                            </div>
+                            <div>
+                                <label class="form-label" for="calcSubtotal">Giá trị đơn (đ)</label>
+                                <input class="form-control pos-money-input" id="calcSubtotal" type="text" inputmode="numeric" data-money="vnd" value="3.000.000đ" placeholder="0đ" autocomplete="off">
+                            </div>
+                            <button class="btn btn-primary" type="button" id="calcRun">
+                                <i class="ph ph-play"></i> Tính giảm giá
+                            </button>
+                            <div class="promo-calc-result" id="calcResult" hidden>
+                                <div class="promo-calc-row"><span>Trạng thái</span><strong id="calcLifecycle">—</strong></div>
+                                <div class="promo-calc-row"><span>Giảm</span><strong class="pos-money" id="calcDiscount">0đ</strong></div>
+                                <div class="promo-calc-row is-total"><span>Khách trả</span><strong class="pos-money" id="calcPay">0đ</strong></div>
+                                <p class="promo-panel-sub" id="calcMessage" style="margin:0;"></p>
+                            </div>
+                        </div>
+
+                        <div class="promo-side-card">
+                            <h3 class="promo-side-title"><i class="ph ph-shield-check"></i> Policy POS Glasses</h3>
+                            <ul class="promo-rules" id="policyRulesList">
+                                <li>Đang tải quy tắc…</li>
+                            </ul>
+                        </div>
+                    </aside>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/format.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/components.js"></script>
+<script>
+(function promotionsPage() {
+    const user = requireRole(["admin", "staff"]);
+    const isAdmin = user && user.role === "admin";
+
+    /** @type {Array<Object>} */
+    let allItems = [];
+    let summary = {
+        total: 0, live: 0, scheduled: 0, expired: 0, exhausted: 0, disabled: 0, total_uses: 0
+    };
+    /** @type {object|null} */
+    let policyBundle = null;
+
+    let lifecycleFilter = "all";
+    let typeFilter = "all";
+    let searchQuery = "";
+    let sortMode = "newest";
+
+    const els = {
+        status: document.getElementById("promoStatus"),
+        body: document.getElementById("promoBody"),
+        search: document.getElementById("promoSearch"),
+        type: document.getElementById("promoType"),
+        sort: document.getElementById("promoSort"),
+        visibleCount: document.getElementById("visibleCount"),
+        createBtn: document.getElementById("createPromoBtn")
+    };
+
+    document.querySelectorAll(".promo-admin-only").forEach((node) => {
+        if (!isAdmin) node.hidden = true;
+    });
+
+    function ymd(date) {
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    }
+
+    function addDaysYmd(baseYmd, days) {
+        const d = new Date(`${baseYmd}T00:00:00`);
+        d.setDate(d.getDate() + days);
+        return ymd(d);
+    }
+
+    function defaultDateWindow() {
+        const start = ymd(new Date());
+        return { start_date: start, end_date: addDaysYmd(start, 30) };
+    }
+
+    async function loadPolicy() {
+        if (!isAdmin) {
+            document.getElementById("policyRulesList").innerHTML = `
+                <li>POS chỉ nhận mã <strong>live</strong> (bật + trong hạn + còn lượt)</li>
+                <li>Coupon cộng dồn giảm tay NV (NV bị cap hạng; coupon theo policy admin)</li>
+                <li>Mỗi checkout thành công +1 lượt dùng (atomic)</li>`;
+            return;
+        }
+        try {
+            policyBundle = await apiRequest("/api/admin/promotions/policy");
+            const notes = policyBundle?.policy?.notes || [];
+            const list = document.getElementById("policyRulesList");
+            if (list) {
+                list.innerHTML = notes.map((n) => `<li>${escapeHtml(n)}</li>`).join("")
+                    + `<li>POS chỉ redeem mã <strong>live</strong>; void/refund không hoàn lượt coupon</li>`;
+            }
+            renderTemplates(policyBundle?.policy?.templates || []);
+        } catch (error) {
+            document.getElementById("policyRulesList").innerHTML =
+                `<li>${escapeHtml(error.message || "Không tải được policy")}</li>`;
+        }
+    }
+
+    function renderTemplates(templates) {
+        const host = document.getElementById("promoTemplates");
+        if (!host) return;
+        if (!templates.length) {
+            host.className = "promo-templates-grid";
+            host.innerHTML = `<p class="promo-panel-sub" style="grid-column:1/-1;margin:0;">Không có mẫu.</p>`;
+            return;
+        }
+        host.className = "promo-templates-grid";
+        host.innerHTML = templates.map((t) => {
+            const label = t.label || t.id || "";
+            const desc = t.description || "";
+            return `
+            <button
+                type="button"
+                class="promo-template-card"
+                role="listitem"
+                data-template-id="${escapeHtml(t.id)}"
+                title="${escapeHtml(desc || label)}"
+                aria-label="Tạo mã từ mẫu ${escapeHtml(label)}">
+                <span class="promo-template-top">
+                    <i class="ph ph-lightning" aria-hidden="true"></i>
+                    <span class="promo-template-code">${escapeHtml(label)}</span>
+                </span>
+                <span class="promo-template-desc">${escapeHtml(desc)}</span>
+            </button>`;
+        }).join("");
+
+        host.querySelectorAll("[data-template-id]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const tpl = templates.find((item) => item.id === btn.dataset.templateId);
+                if (tpl) openPromoForm(null, tpl.payload);
+            });
+        });
+    }
+
+    /**
+     * Client-side mirror of server policy (fail-fast UX).
+     * Server remains source of truth.
+     */
+    function validatePromoClient(payload) {
+        const code = String(payload.code || "").trim().toUpperCase();
+        if (!/^[A-Z][A-Z0-9_-]{2,19}$/.test(code)) {
+            return "Mã phải 3–20 ký tự, bắt đầu bằng chữ, chỉ A-Z 0-9 _ -";
+        }
+        const blocked = ["FREE", "ADMIN", "TEST", "SALE100", "VIP100", "0DONG", "100OFF"];
+        if (blocked.includes(code) || /FREE|100OFF|0DONG/.test(code)) {
+            return "Mã bị chặn bởi policy POS Glasses";
+        }
+        const type = payload.discount_type;
+        const value = Number(payload.discount_value);
+        if (type === "percent") {
+            if (!Number.isFinite(value) || value < 1 || value > 30) {
+                return "Phần trăm giảm chỉ từ 1–30%";
+            }
+        } else {
+            if (!Number.isFinite(value) || value < 50000 || value > 2000000) {
+                return "Giảm tiền chỉ từ 50.000–2.000.000đ";
+            }
+            if (value % 1000 !== 0) return "Số tiền giảm phải bội số 1.000đ";
+        }
+        const minOrder = Number(payload.min_order_amount || 0);
+        const elevated = (type === "percent" && value >= 15) || (type === "amount" && value >= 500000);
+        if (elevated && minOrder < 1500000) {
+            return "Giảm mạnh cần đơn tối thiểu ≥ 1.500.000đ";
+        }
+        if (type === "amount" && minOrder > 0 && value > Math.round(minOrder * 0.5)) {
+            return "Giảm tiền không được vượt 50% đơn tối thiểu";
+        }
+        if (elevated && (payload.max_uses == null || payload.max_uses === "")) {
+            return "Giảm mạnh bắt buộc giới hạn số lượt dùng";
+        }
+        if (!payload.start_date || !payload.end_date) {
+            return "Bắt buộc ngày bắt đầu và kết thúc";
+        }
+        if (String(payload.start_date) > String(payload.end_date)) {
+            return "Ngày kết thúc phải ≥ ngày bắt đầu";
+        }
+        const aggressive = (type === "percent" && value >= 20) || (type === "amount" && value >= 1000000);
+        if (aggressive && String(payload.description || "").trim().length < 8) {
+            return "Giảm mạnh cần mô tả chiến dịch (≥ 8 ký tự)";
+        }
+        return null;
+    }
+
+    function setStatus(type, message, icon) {
+        if (!els.status) return;
+        els.status.className = `promo-status${type === "error" ? " is-error" : ""}`;
+        els.status.innerHTML = `<i class="ph ${icon || "ph-check-circle"}"></i> ${escapeHtml(message)}`;
+    }
+
+    function formatDateShort(value) {
+        if (!value) return "—";
+        const raw = String(value).slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return escapeHtml(String(value));
+        const [y, m, d] = raw.split("-");
+        return `${d}/${m}/${y}`;
+    }
+
+    function valueLabel(row) {
+        if (row.discount_type === "amount") {
+            return formatCurrency(row.discount_value || 0);
+        }
+        return `${Number(row.discount_value || row.discount_percent || 0)}%`;
+    }
+
+    function usageHtml(row) {
+        if (row.max_uses == null) {
+            return `<div class="promo-usage">
+                <span class="promo-usage-meta">${Number(row.used_count || 0)} / ∞</span>
+                <div class="promo-usage-bar"><div class="promo-usage-fill" style="width:8%"></div></div>
+            </div>`;
+        }
+        const pct = Number(row.usage_percent || 0);
+        const fillClass = pct >= 100 ? "is-full" : pct >= 80 ? "is-high" : "";
+        return `<div class="promo-usage">
+            <span class="promo-usage-meta">${Number(row.used_count || 0)} / ${Number(row.max_uses)}</span>
+            <div class="promo-usage-bar"><div class="promo-usage-fill ${fillClass}" style="width:${pct}%"></div></div>
+        </div>`;
+    }
+
+    function badgeHtml(row) {
+        const key = row.lifecycle || "disabled";
+        return `<span class="promo-badge ${escapeHtml(key)}"><i class="ph ph-circle"></i> ${escapeHtml(row.lifecycle_label || key)}</span>`;
+    }
+
+    function getFiltered() {
+        let list = allItems.slice();
+
+        if (lifecycleFilter === "expired") {
+            // KPI "Hết hạn / lượt" groups both
+            list = list.filter((r) => r.lifecycle === "expired" || r.lifecycle === "exhausted");
+        } else if (lifecycleFilter !== "all") {
+            list = list.filter((r) => r.lifecycle === lifecycleFilter);
+        }
+
+        if (typeFilter !== "all") {
+            list = list.filter((r) => r.discount_type === typeFilter);
+        }
+
+        const q = searchQuery.trim().toLowerCase();
+        if (q) {
+            list = list.filter((r) => {
+                const hay = `${r.code || ""} ${r.description || ""}`.toLowerCase();
+                return hay.includes(q);
+            });
+        }
+
+        list.sort((a, b) => {
+            if (sortMode === "code") return String(a.code).localeCompare(String(b.code), "vi");
+            if (sortMode === "uses") return Number(b.used_count) - Number(a.used_count);
+            if (sortMode === "ending") {
+                const ae = a.end_date ? String(a.end_date) : "9999";
+                const be = b.end_date ? String(b.end_date) : "9999";
+                return ae.localeCompare(be);
+            }
+            return Number(b.id) - Number(a.id);
+        });
+
+        return list;
+    }
+
+    function updateKpis() {
+        const ended = Number(summary.expired || 0) + Number(summary.exhausted || 0);
+        setText("kpiTotal", summary.total || 0);
+        setText("kpiLive", summary.live || 0);
+        setText("kpiScheduled", summary.scheduled || 0);
+        setText("kpiEnded", ended);
+        setText("kpiDisabled", summary.disabled || 0);
+        setText("kpiUsesNote", `${Number(summary.total_uses || 0).toLocaleString("vi-VN")} lượt đã dùng`);
+        setText("chipAll", summary.total || 0);
+        setText("chipLive", summary.live || 0);
+        setText("chipScheduled", summary.scheduled || 0);
+        setText("chipExpired", summary.expired || 0);
+        setText("chipExhausted", summary.exhausted || 0);
+        setText("chipDisabled", summary.disabled || 0);
+    }
+
+    function setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = String(value);
+    }
+
+    function syncFilterUi() {
+        document.querySelectorAll(".promo-kpi-card[data-lifecycle]").forEach((card) => {
+            const active = card.dataset.lifecycle === lifecycleFilter;
+            card.classList.toggle("is-active", active);
+            card.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        document.querySelectorAll(".promo-chip[data-lifecycle]").forEach((chip) => {
+            chip.classList.toggle("active", chip.dataset.lifecycle === lifecycleFilter);
+        });
+    }
+
+    function renderEmpty() {
+        els.body.innerHTML = `
+            <div class="promo-state">
+                <div class="promo-state-icon"><i class="ph ph-ticket"></i></div>
+                <h3>Chưa có mã phù hợp</h3>
+                <p>${allItems.length ? "Thử đổi bộ lọc hoặc từ khóa." : "Tạo mã đầu tiên để áp dụng tại quầy POS."}</p>
+                ${isAdmin && !allItems.length ? `<button class="btn btn-primary" type="button" id="emptyCreate"><i class="ph ph-plus"></i> Tạo mã</button>` : ""}
+            </div>`;
+        document.getElementById("emptyCreate")?.addEventListener("click", () => openPromoForm(null));
+        els.visibleCount.textContent = "0 mã";
+    }
+
+    function renderTable(list) {
+        if (!list.length) {
+            renderEmpty();
+            return;
+        }
+
+        const rows = list.map((row) => {
+            const adminActions = isAdmin ? `
+                <button class="btn btn-secondary btn-sm" type="button" data-action="toggle" data-id="${row.id}" data-active="${row.is_active ? 0 : 1}" title="${row.is_active ? "Tắt" : "Bật"}">
+                    <i class="ph ${row.is_active ? "ph-pause" : "ph-play"}"></i>
+                </button>
+                <button class="btn btn-secondary btn-sm" type="button" data-action="edit" data-id="${row.id}" title="Sửa">
+                    <i class="ph ph-pencil-simple"></i>
+                </button>
+                <button class="btn btn-secondary btn-sm" type="button" data-action="delete" data-id="${row.id}" title="Xóa">
+                    <i class="ph ph-trash"></i>
+                </button>` : `
+                <button class="btn btn-secondary btn-sm" type="button" data-action="use" data-code="${escapeHtml(row.code)}" title="Đưa vào thử mã">
+                    <i class="ph ph-arrow-right"></i>
+                </button>`;
+
+            return `
+                <tr data-id="${row.id}">
+                    <td>
+                        <div class="promo-code-cell">
+                            <span class="promo-code">${escapeHtml(row.code)}</span>
+                            <button type="button" class="promo-copy-btn" data-action="copy" data-code="${escapeHtml(row.code)}" title="Sao chép mã">
+                                <i class="ph ph-copy"></i>
+                            </button>
+                        </div>
+                        ${row.description ? `<div class="promo-desc" title="${escapeHtml(row.description)}">${escapeHtml(row.description)}</div>` : ""}
+                    </td>
+                    <td><span class="promo-type-pill">${row.discount_type === "amount" ? "Số tiền" : "Phần trăm"}</span></td>
+                    <td><strong class="pos-money">${valueLabel(row)}</strong></td>
+                    <td class="pos-money">${formatCurrency(row.min_order_amount || 0)}</td>
+                    <td>${usageHtml(row)}</td>
+                    <td>
+                        <div style="font-size:12.5px;font-weight:700;color:var(--text-secondary);">
+                            ${formatDateShort(row.start_date)} → ${formatDateShort(row.end_date)}
+                        </div>
+                    </td>
+                    <td>${badgeHtml(row)}</td>
+                    <td>
+                        <div class="promo-row-actions">${adminActions}</div>
+                    </td>
+                </tr>`;
+        }).join("");
+
+        els.body.innerHTML = `
+            <div class="promo-table-wrap table-responsive">
+                <table class="table promo-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Mã</th>
+                            <th>Loại</th>
+                            <th>Giá trị</th>
+                            <th>Đơn tối thiểu</th>
+                            <th>Lượt dùng</th>
+                            <th>Hiệu lực</th>
+                            <th>Trạng thái</th>
+                            <th style="text-align:right;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`;
+
+        els.visibleCount.textContent = `${list.length} / ${allItems.length} mã`;
+        bindRowActions();
+    }
+
+    function bindRowActions() {
+        els.body.querySelectorAll("[data-action]").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+                const action = btn.dataset.action;
+                if (action === "copy") {
+                    await copyCode(btn.dataset.code);
+                    return;
+                }
+                if (action === "use") {
+                    document.getElementById("calcCode").value = btn.dataset.code || "";
+                    document.getElementById("calcCode").focus();
+                    return;
+                }
+                if (!isAdmin) return;
+
+                const id = Number(btn.dataset.id);
+                if (action === "toggle") {
+                    await toggleActive(id, Number(btn.dataset.active) === 1);
+                } else if (action === "edit") {
+                    const row = allItems.find((item) => Number(item.id) === id);
+                    if (row) openPromoForm(row);
+                } else if (action === "delete") {
+                    await deletePromo(id);
+                }
+            });
+        });
+    }
+
+    async function copyCode(code) {
+        try {
+            await navigator.clipboard.writeText(code);
+            showToast(`Đã chép ${code}`, "success");
+        } catch {
+            showToast("Không chép được mã", "error");
+        }
+    }
+
+    function applyView() {
+        syncFilterUi();
+        updateKpis();
+        renderTable(getFiltered());
+    }
+
+    function setLifecycle(next) {
+        lifecycleFilter = next || "all";
+        applyView();
+    }
+
+    async function loadPromotions() {
+        setStatus("ok", "Đang tải", "ph-circle-notch");
+        els.body.innerHTML = `
+            <div class="promo-skeleton" aria-hidden="true">
+                <div class="promo-skeleton-row"><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div></div>
+                <div class="promo-skeleton-row"><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div><div class="promo-skel"></div></div>
+            </div>`;
+
+        try {
+            const endpoint = isAdmin ? "/api/admin/promotions" : "/api/staff/promotions";
+            const data = await apiRequest(endpoint);
+            // Support both {items, summary} and legacy array
+            if (Array.isArray(data)) {
+                allItems = data;
+                summary = {
+                    total: data.length,
+                    live: data.filter((r) => r.lifecycle === "live").length,
+                    scheduled: data.filter((r) => r.lifecycle === "scheduled").length,
+                    expired: data.filter((r) => r.lifecycle === "expired").length,
+                    exhausted: data.filter((r) => r.lifecycle === "exhausted").length,
+                    disabled: data.filter((r) => r.lifecycle === "disabled").length,
+                    total_uses: data.reduce((s, r) => s + Number(r.used_count || 0), 0)
+                };
+            } else {
+                allItems = Array.isArray(data.items) ? data.items : [];
+                summary = data.summary || summary;
+            }
+            applyView();
+            setStatus("ok", `${allItems.length} mã`, "ph-check-circle");
+        } catch (error) {
+            allItems = [];
+            summary = { total: 0, live: 0, scheduled: 0, expired: 0, exhausted: 0, disabled: 0, total_uses: 0 };
+            updateKpis();
+            els.body.innerHTML = `
+                <div class="promo-state">
+                    <div class="promo-state-icon error"><i class="ph ph-warning-circle"></i></div>
+                    <h3>Không tải được khuyến mãi</h3>
+                    <p>${escapeHtml(error.message || "Lỗi mạng")}</p>
+                    <button class="btn btn-danger" type="button" id="retryLoad"><i class="ph ph-arrow-clockwise"></i> Thử lại</button>
+                </div>`;
+            document.getElementById("retryLoad")?.addEventListener("click", loadPromotions);
+            setStatus("error", "Lỗi tải", "ph-warning-circle");
+        }
+    }
+
+    function toDateInput(value) {
+        if (!value) return "";
+        return String(value).slice(0, 10);
+    }
+
+    /**
+     * @param {object|null} existing - existing promo row when editing
+     * @param {object|null} templatePayload - prefill from template (create only)
+     */
+    async function openPromoForm(existing, templatePayload = null) {
+        if (!isAdmin) {
+            showToast("Chỉ quản trị mới được tạo/sửa mã", "warning");
+            return;
+        }
+
+        const defaults = policyBundle?.defaults || {};
+        const windowDates = defaultDateWindow();
+        const seed = existing
+            ? existing
+            : {
+                ...defaults,
+                ...windowDates,
+                min_order_amount: defaults.min_order_amount ?? 1500000,
+                max_uses: defaults.max_uses ?? 100,
+                ...(templatePayload || {})
+            };
+
+        // Auto-fill dates for templates
+        if (!existing) {
+            if (!seed.start_date) seed.start_date = windowDates.start_date;
+            if (!seed.end_date) seed.end_date = windowDates.end_date;
+        }
+
+        const fields = [
+            {
+                name: "code",
+                label: "Mã coupon (bắt đầu bằng chữ, 3–20 ký tự)",
+                value: seed.code || "",
+                placeholder: "SALE10",
+                required: true
+            },
+            {
+                name: "discount_type",
+                label: "Loại giảm",
+                type: "select",
+                value: seed.discount_type || "percent",
+                options: [
+                    { value: "percent", label: "Phần trăm 1–30%" },
+                    { value: "amount", label: "Số tiền 50k–2tr đ" }
+                ]
+            },
+            {
+                name: "discount_value",
+                label: (seed.discount_type === "amount")
+                    ? "Số tiền giảm (đ)"
+                    : "Phần trăm giảm (1–30)",
+                type: seed.discount_type === "amount" ? "money" : "number",
+                value: seed.discount_value || seed.discount_percent || 10,
+                required: true
+            },
+            {
+                name: "min_order_amount",
+                label: "Đơn tối thiểu (đ) — ≥ 1.500.000 nếu giảm mạnh",
+                type: "money",
+                money: true,
+                value: seed.min_order_amount ?? 1500000,
+                required: true
+            },
+            {
+                name: "max_uses",
+                label: "Số lượt tối đa (bắt buộc nếu giảm ≥15% / ≥500k)",
+                type: "number",
+                value: seed.max_uses ?? 100,
+                required: false
+            },
+            {
+                name: "start_date",
+                label: "Ngày bắt đầu",
+                type: "date",
+                value: toDateInput(seed.start_date) || windowDates.start_date,
+                required: true
+            },
+            {
+                name: "end_date",
+                label: "Ngày kết thúc (≤ 180 ngày từ bắt đầu)",
+                type: "date",
+                value: toDateInput(seed.end_date) || windowDates.end_date,
+                required: true
+            },
+            {
+                name: "description",
+                label: "Mô tả chiến dịch (bắt buộc nếu giảm ≥20% / ≥1tr)",
+                type: "textarea",
+                value: seed.description || "",
+                required: false
+            },
+            {
+                name: "is_active",
+                label: "Trạng thái",
+                type: "select",
+                value: seed.is_active === false || seed.is_active === 0 ? "0" : "1",
+                options: [
+                    { value: "1", label: "Bật ngay" },
+                    { value: "0", label: "Tạo nhưng tắt" }
+                ]
+            }
+        ];
+
+        const data = await showFormModal({
+            title: existing
+                ? `Sửa mã ${existing.code}`
+                : (templatePayload?.code
+                    ? `Tạo mã từ mẫu ${templatePayload.code}`
+                    : "Tạo mã giảm giá"),
+            fields,
+            submitText: existing ? "Cập nhật" : "Tạo mã giảm giá"
+        });
+
+        if (!data) return;
+
+        const payload = {
+            code: String(data.code || "").trim().toUpperCase(),
+            discount_type: data.discount_type,
+            discount_value: Number(data.discount_value),
+            min_order_amount: typeof data.min_order_amount === "number"
+                ? data.min_order_amount
+                : (typeof parseCurrencyInputValue === "function"
+                    ? parseCurrencyInputValue(data.min_order_amount)
+                    : Number(data.min_order_amount || 0)),
+            max_uses: data.max_uses === "" || data.max_uses == null ? null : Number(data.max_uses),
+            start_date: data.start_date || null,
+            end_date: data.end_date || null,
+            description: data.description || null,
+            is_active: data.is_active === "1" || data.is_active === 1 || data.is_active === true
+        };
+
+        const clientError = validatePromoClient(payload);
+        if (clientError) {
+            showToast(clientError, "warning");
+            // Re-open with same values so admin can fix
+            openPromoForm(existing ? { ...existing, ...payload, id: existing.id } : null, payload);
+            return;
+        }
+
+        try {
+            if (existing?.id) {
+                await apiRequest(`/api/admin/promotions/${existing.id}`, {
+                    method: "PUT",
+                    body: payload
+                });
+                showToast(`Đã cập nhật mã ${payload.code}`, "success");
+            } else {
+                const created = await apiRequest("/api/admin/promotions", {
+                    method: "POST",
+                    body: payload
+                });
+                showToast(`Đã tạo mã ${created.code || payload.code}`, "success");
+            }
+            await loadPromotions();
+        } catch (error) {
+            showToast(error.message || "Lưu thất bại — kiểm tra policy", "error");
+        }
+    }
+
+    async function toggleActive(id, nextActive) {
+        try {
+            await apiRequest(`/api/admin/promotions/${id}/active`, {
+                method: "PATCH",
+                body: { is_active: nextActive }
+            });
+            showToast(nextActive ? "Đã bật mã" : "Đã tắt mã", "success");
+            await loadPromotions();
+        } catch (error) {
+            showToast(error.message || "Không đổi được trạng thái", "error");
+        }
+    }
+
+    async function deletePromo(id) {
+        const row = allItems.find((item) => Number(item.id) === id);
+        const ok = await showConfirm({
+            title: "Xóa mã khuyến mãi?",
+            message: row
+                ? `Xóa vĩnh viễn mã ${row.code}. Nên tắt mã nếu muốn giữ lịch sử lượt dùng.`
+                : "Xóa vĩnh viễn mã này?",
+            confirmText: "Xóa",
+            type: "danger"
+        });
+        if (!ok) return;
+
+        try {
+            await apiRequest(`/api/admin/promotions/${id}`, { method: "DELETE" });
+            showToast("Đã xóa mã", "success");
+            await loadPromotions();
+        } catch (error) {
+            showToast(error.message || "Xóa thất bại", "error");
+        }
+    }
+
+    async function runCalculator() {
+        const code = String(document.getElementById("calcCode")?.value || "").trim();
+        const subtotal = Math.max(0, typeof getMoneyInputValue === "function"
+            ? getMoneyInputValue("calcSubtotal")
+            : (typeof parseCurrencyInputValue === "function"
+                ? parseCurrencyInputValue(document.getElementById("calcSubtotal")?.value)
+                : Number(document.getElementById("calcSubtotal")?.value || 0)));
+        const box = document.getElementById("calcResult");
+        if (!code) {
+            showToast("Nhập mã cần thử", "warning");
+            return;
+        }
+
+        try {
+            // Use staff validate endpoint — same rules as POS
+            const result = await apiRequest(
+                `/promotions/${encodeURIComponent(code)}?subtotal=${encodeURIComponent(subtotal)}`
+            );
+            const view = Array.isArray(result) ? result[0] : result;
+            const discount = Number(view.estimated_discount || 0);
+            box.hidden = false;
+            document.getElementById("calcLifecycle").textContent = view.lifecycle_label || "Áp dụng được";
+            document.getElementById("calcDiscount").textContent = formatCurrency(discount);
+            document.getElementById("calcPay").textContent = formatCurrency(Math.max(0, subtotal - discount));
+            document.getElementById("calcMessage").textContent = view.description || "Mã hợp lệ cho POS.";
+            document.getElementById("calcMessage").style.color = "var(--success-color)";
+        } catch (error) {
+            // Still try preview for admin diagnostics when invalid
+            box.hidden = false;
+            document.getElementById("calcLifecycle").textContent = "Không áp dụng";
+            document.getElementById("calcDiscount").textContent = formatCurrency(0);
+            document.getElementById("calcPay").textContent = formatCurrency(subtotal);
+            document.getElementById("calcMessage").textContent = error.message || "Mã không hợp lệ";
+            document.getElementById("calcMessage").style.color = "var(--danger-color)";
+        }
+    }
+
+    // Events
+    document.querySelectorAll(".promo-kpi-card[data-lifecycle], .promo-chip[data-lifecycle]").forEach((el) => {
+        el.addEventListener("click", () => setLifecycle(el.dataset.lifecycle));
+        el.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setLifecycle(el.dataset.lifecycle);
+            }
+        });
+    });
+
+    els.search?.addEventListener("input", () => {
+        searchQuery = els.search.value || "";
+        applyView();
+    });
+    els.type?.addEventListener("change", () => {
+        typeFilter = els.type.value || "all";
+        applyView();
+    });
+    els.sort?.addEventListener("change", () => {
+        sortMode = els.sort.value || "newest";
+        applyView();
+    });
+    document.getElementById("resetFilters")?.addEventListener("click", () => {
+        lifecycleFilter = "all";
+        typeFilter = "all";
+        searchQuery = "";
+        sortMode = "newest";
+        if (els.search) els.search.value = "";
+        if (els.type) els.type.value = "all";
+        if (els.sort) els.sort.value = "newest";
+        applyView();
+    });
+    document.getElementById("refreshPromos")?.addEventListener("click", loadPromotions);
+    els.createBtn?.addEventListener("click", () => openPromoForm(null));
+    document.getElementById("createPromoBtnSecondary")?.addEventListener("click", () => openPromoForm(null));
+    document.getElementById("createCustomPromoBtn")?.addEventListener("click", () => openPromoForm(null));
+    document.getElementById("calcRun")?.addEventListener("click", runCalculator);
+    document.getElementById("calcCode")?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            runCalculator();
+        }
+    });
+
+    if (user) {
+        loadPolicy().then(loadPromotions);
+    }
+})();
+</script>
+</body>
+</html>

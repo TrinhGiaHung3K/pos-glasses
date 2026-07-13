@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - Ca làm việc</title>
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <style>
+        .shift-grid { display: grid; gap: 14px; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); }
+        @media (max-width: 900px) { .shift-grid { grid-template-columns: 1fr; } }
+        .shift-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-default);
+            box-shadow: var(--shadow-xs);
+            padding: 18px;
+        }
+        .shift-status {
+            align-items: center;
+            border-radius: var(--radius-pill);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            gap: 6px;
+            min-height: 28px;
+            padding: 4px 10px;
+        }
+        .shift-status.is-open { background: var(--success-light); color: var(--success-color); }
+        .shift-status.is-closed { background: var(--bg-muted); color: var(--text-muted); }
+        .shift-metric {
+            background: var(--bg-muted);
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+        }
+        .shift-metric .k { color: var(--text-muted); font-size: 11px; font-weight: 700; }
+        .shift-metric .v { font-size: 16px; font-weight: 850; margin-top: 2px; }
+        .shift-metrics { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; margin: 12px 0; }
+    </style>
+</head>
+<body>
+<div class="pos-container">
+    <aside data-menu-component data-active-menu="shifts"></aside>
+    <main class="pos-main">
+        <header class="pos-topbar">
+            <div><h2 class="pos-topbar-title">Ca làm việc</h2></div>
+            <div class="pos-topbar-actions">
+                <button class="btn btn-secondary" type="button" id="btnRefresh"><i class="ph ph-arrow-clockwise"></i> Làm mới</button>
+            </div>
+        </header>
+        <div class="pos-content">
+            <section class="pos-page-intro">
+                <div>
+                    <h2>Quản lý ca thu ngân</h2>
+                    <p>Mở ca với tiền đầu ca, gắn đơn POS vào ca, đóng ca đối chiếu tiền mặt.</p>
+                </div>
+            </section>
+
+            <div class="shift-grid">
+                <div class="shift-card" id="currentPanel">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>Ca hiện tại</strong>
+                        <span class="shift-status is-closed" id="currentBadge">Chưa mở</span>
+                    </div>
+                    <div id="currentBody">
+                        <p class="text-muted mb-3">Bạn chưa mở ca. Nhập tiền mặt đầu ca để bắt đầu.</p>
+                        <label class="form-label" for="openingCash">Tiền đầu ca (VND)</label>
+                        <input class="form-control pos-money-input" id="openingCash" type="text" inputmode="numeric" placeholder="0" value="0">
+                        <label class="form-label mt-2" for="openNote">Ghi chú</label>
+                        <input class="form-control" id="openNote" type="text" maxlength="500" placeholder="Tùy chọn">
+                        <button class="btn btn-primary w-100 mt-3" type="button" id="btnOpen">
+                            <i class="ph ph-lock-open"></i> Mở ca
+                        </button>
+                    </div>
+                </div>
+
+                <div class="shift-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <strong>Lịch sử ca</strong>
+                        <select class="form-select form-select-sm" id="statusFilter" style="width:auto;">
+                            <option value="">Tất cả</option>
+                            <option value="open">Đang mở</option>
+                            <option value="closed">Đã đóng</option>
+                        </select>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>NV</th>
+                                    <th>Mở</th>
+                                    <th>Đóng</th>
+                                    <th>Đơn</th>
+                                    <th>Cash sales</th>
+                                    <th>Chênh lệch</th>
+                                    <th>TT</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyBody">
+                                <tr><td colspan="8" class="text-muted">Đang tải…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/format.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/components.js"></script>
+<script>
+    requireRole(["admin", "staff"]);
+    let currentShift = null;
+
+    function money(n) {
+        return typeof formatCurrency === "function" ? formatCurrency(n) : String(n);
+    }
+
+    /**
+     * Read VND from a money field.
+     * Must use getMoneyInputValue / parseCurrencyInputValue — never Number("1.500.000đ")
+     * which becomes NaN and falls back to 0.
+     */
+    function parseMoneyInput(elOrId) {
+        if (typeof getMoneyInputValue === "function") {
+            return getMoneyInputValue(elOrId);
+        }
+        const el = typeof elOrId === "string"
+            ? document.getElementById(elOrId)
+            : elOrId;
+        if (!el) return 0;
+        if (typeof parseCurrencyInputValue === "function") {
+            return parseCurrencyInputValue(el.value);
+        }
+        // Last resort: digits only (strip thousand dots / đ)
+        const digits = String(el.value || "").replace(/[^\d]/g, "");
+        return digits ? Number(digits) : 0;
+    }
+
+    function bindShiftMoneyFields(root) {
+        if (typeof enhanceMoneyInputs === "function") {
+            enhanceMoneyInputs(root || document);
+            return;
+        }
+        if (typeof attachMoneyInput === "function") {
+            (root || document).querySelectorAll?.("input.pos-money-input")?.forEach(attachMoneyInput);
+        }
+    }
+
+    function renderCurrent(shift) {
+        currentShift = shift;
+        const badge = document.getElementById("currentBadge");
+        const body = document.getElementById("currentBody");
+
+        if (!shift) {
+            badge.className = "shift-status is-closed";
+            badge.textContent = "Chưa mở";
+            body.innerHTML = `
+                <p class="text-muted mb-3">Bạn chưa mở ca. Nhập tiền mặt đầu ca để bắt đầu.</p>
+                <label class="form-label" for="openingCash">Tiền đầu ca (VND)</label>
+                <input class="form-control pos-money-input" id="openingCash" name="opening_cash"
+                       type="text" inputmode="numeric" data-money="vnd" placeholder="0đ" value="">
+                <label class="form-label mt-2" for="openNote">Ghi chú</label>
+                <input class="form-control" id="openNote" type="text" maxlength="500" placeholder="Tùy chọn">
+                <button class="btn btn-primary w-100 mt-3" type="button" id="btnOpen">
+                    <i class="ph ph-lock-open"></i> Mở ca
+                </button>`;
+            document.getElementById("btnOpen").onclick = openShift;
+            bindShiftMoneyFields(body);
+            if (typeof setMoneyInputValue === "function") {
+                setMoneyInputValue("openingCash", 0);
+            } else {
+                const openInput = document.getElementById("openingCash");
+                if (openInput) openInput.value = typeof formatCurrencyInputValue === "function"
+                    ? formatCurrencyInputValue(0)
+                    : "0đ";
+            }
+            return;
+        }
+
+        badge.className = "shift-status is-open";
+        badge.textContent = `Ca #${shift.id} đang mở`;
+        const expected = Number(shift.opening_cash || 0) + Number(shift.cash_sales || 0);
+        body.innerHTML = `
+            <div class="shift-metrics">
+                <div class="shift-metric"><div class="k">Đầu ca</div><div class="v pos-money">${money(shift.opening_cash)}</div></div>
+                <div class="shift-metric"><div class="k">Số đơn</div><div class="v">${shift.order_count || 0}</div></div>
+                <div class="shift-metric"><div class="k">Bán tiền mặt</div><div class="v pos-money">${money(shift.cash_sales)}</div></div>
+                <div class="shift-metric"><div class="k">Thẻ / CK</div><div class="v pos-money">${money(Number(shift.card_sales || 0) + Number(shift.bank_sales || 0))}</div></div>
+                <div class="shift-metric" style="grid-column:1/-1"><div class="k">Tiền mặt kỳ vọng</div><div class="v pos-money">${money(expected)}</div></div>
+            </div>
+            <label class="form-label" for="closingCash">Tiền mặt đếm cuối ca</label>
+            <input class="form-control pos-money-input" id="closingCash" name="closing_cash"
+                   type="text" inputmode="numeric" data-money="vnd" placeholder="0đ" value="">
+            <p class="text-muted small mt-1 mb-0">Gợi ý kỳ vọng: <strong class="pos-money">${money(expected)}</strong></p>
+            <label class="form-label mt-2" for="closeNote">Ghi chú đóng ca</label>
+            <input class="form-control" id="closeNote" type="text" maxlength="500">
+            <button class="btn btn-danger w-100 mt-3" type="button" id="btnClose">
+                <i class="ph ph-lock"></i> Đóng ca
+            </button>`;
+        document.getElementById("btnClose").onclick = closeShift;
+        bindShiftMoneyFields(body);
+        // Prefill with expected cash so staff can confirm or adjust
+        if (typeof setMoneyInputValue === "function") {
+            setMoneyInputValue("closingCash", expected);
+        } else {
+            const closeInput = document.getElementById("closingCash");
+            if (closeInput) {
+                closeInput.value = typeof formatCurrencyInputValue === "function"
+                    ? formatCurrencyInputValue(expected)
+                    : String(expected);
+            }
+        }
+    }
+
+    async function loadCurrent() {
+        try {
+            const data = await apiRequest("/api/staff/shifts/current");
+            renderCurrent(data.shift || null);
+        } catch (error) {
+            showToast(error.message || "Lỗi tải ca", "error");
+        }
+    }
+
+    async function loadHistory() {
+        const status = document.getElementById("statusFilter").value;
+        const qs = new URLSearchParams({ limit: "40", all: "1" });
+        if (status) qs.set("status", status);
+        const tbody = document.getElementById("historyBody");
+        try {
+            const data = await apiRequest(`/api/staff/shifts?${qs}`);
+            const items = data.items || data || [];
+            if (!items.length) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-muted">Chưa có ca nào.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = items.map((s) => `
+                <tr>
+                    <td>#${s.id}</td>
+                    <td>${escapeHtml(s.opened_by_name || s.user_id)}</td>
+                    <td>${escapeHtml(String(s.opened_at || "").replace("T", " ").slice(0, 16))}</td>
+                    <td>${s.closed_at ? escapeHtml(String(s.closed_at).replace("T", " ").slice(0, 16)) : "—"}</td>
+                    <td>${s.order_count || 0}</td>
+                    <td class="pos-money">${money(s.cash_sales)}</td>
+                    <td class="pos-money">${s.variance != null ? money(s.variance) : "—"}</td>
+                    <td><span class="shift-status ${s.status === "open" ? "is-open" : "is-closed"}">${s.status}</span></td>
+                </tr>
+            `).join("");
+        } catch (error) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-danger">${escapeHtml(error.message)}</td></tr>`;
+        }
+    }
+
+    async function openShift() {
+        try {
+            const opening_cash = parseMoneyInput("openingCash");
+            const note = document.getElementById("openNote")?.value.trim() || "";
+            await apiRequest("/api/staff/shifts/open", {
+                method: "POST",
+                body: { opening_cash, note: note || null }
+            });
+            showToast("Đã mở ca", "success");
+            await refreshAll();
+        } catch (error) {
+            showToast(error.message || "Không mở được ca", "error");
+        }
+    }
+
+    async function closeShift() {
+        if (!currentShift) return;
+        const closingInput = document.getElementById("closingCash");
+        if (!closingInput) {
+            showToast("Không tìm thấy ô tiền cuối ca", "error");
+            return;
+        }
+        const closing_cash = parseMoneyInput("closingCash");
+        if (!Number.isFinite(closing_cash) || closing_cash < 0) {
+            showToast("Tiền mặt cuối ca không hợp lệ", "warning");
+            closingInput.focus();
+            return;
+        }
+        // Empty field (user cleared) → still allow 0, but warn if no digits typed
+        if (!String(closingInput.value || "").trim() || !/\d/.test(closingInput.value)) {
+            showToast("Vui lòng nhập số tiền mặt đếm cuối ca", "warning");
+            closingInput.focus();
+            return;
+        }
+        const note = document.getElementById("closeNote")?.value.trim() || "";
+        const ok = await showConfirm({
+            title: "Đóng ca?",
+            message: `Xác nhận đóng ca #${currentShift.id} với tiền mặt ${money(closing_cash)}?`,
+            confirmText: "Đóng ca",
+            type: "warning"
+        });
+        if (!ok) return;
+        try {
+            const result = await apiRequest(`/api/staff/shifts/${currentShift.id}/close`, {
+                method: "POST",
+                body: { closing_cash, note: note || null }
+            });
+            const v = result.report?.variance ?? 0;
+            showToast(
+                `Đã đóng ca. Chênh lệch: ${money(v)}`,
+                Math.abs(Number(v)) > 0.01 ? "warning" : "success"
+            );
+            await refreshAll();
+        } catch (error) {
+            showToast(error.message || "Không đóng được ca", "error");
+        }
+    }
+
+    async function refreshAll() {
+        await Promise.all([loadCurrent(), loadHistory()]);
+    }
+
+    document.getElementById("btnRefresh").onclick = refreshAll;
+    document.getElementById("statusFilter").onchange = loadHistory;
+    document.getElementById("btnOpen").onclick = openShift;
+    refreshAll();
+</script>
+</body>
+</html>

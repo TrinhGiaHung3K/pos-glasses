@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - Lịch sử hóa đơn</title>
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+
+    <style>
+        /* ─────────────────────────────────────────
+           Invoices page - paid transaction history
+           Tokens from base.css; aligned with inventory
+           + dashboard operational surfaces.
+           ───────────────────────────────────────── */
+
+        .invoices-shell {
+            display: grid;
+            gap: 18px;
+        }
+
+        .invoices-toolbar {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .invoices-status {
+            align-items: center;
+            background: var(--accent-subtle);
+            border: 1px solid rgba(15, 118, 110, 0.14);
+            border-radius: var(--radius-pill);
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            gap: 7px;
+            min-height: 34px;
+            padding: 7px 12px;
+            white-space: nowrap;
+        }
+
+        .invoices-status.is-error {
+            background: var(--danger-light);
+            border-color: rgba(220, 38, 38, 0.18);
+            color: var(--danger-color);
+        }
+
+        .invoices-status.is-warn {
+            background: var(--warning-light);
+            border-color: rgba(217, 119, 6, 0.18);
+            color: #b45309;
+        }
+
+        .invoices-kpi-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+
+        .invoices-kpi-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            display: grid;
+            gap: 12px;
+            min-height: 124px;
+            padding: 16px;
+            transition:
+                border-color var(--transition-fast),
+                box-shadow var(--transition-fast),
+                transform var(--transition-fast);
+        }
+
+        .invoices-kpi-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-1px);
+        }
+
+        .invoices-kpi-card.is-active {
+            border-color: rgba(15, 118, 110, 0.35);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .invoices-kpi-card[data-period] {
+            cursor: pointer;
+        }
+
+        .invoices-kpi-card[data-period]:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        .invoices-kpi-top {
+            align-items: flex-start;
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+        }
+
+        .invoices-kpi-label {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+        }
+
+        .invoices-kpi-value {
+            color: var(--text-primary);
+            font-size: clamp(20px, 2vw, 28px);
+            font-weight: 950;
+            line-height: 1.05;
+            margin: 6px 0 0;
+            word-break: break-word;
+        }
+
+        .invoices-kpi-note {
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.45;
+            margin: 0;
+        }
+
+        .invoices-kpi-icon {
+            align-items: center;
+            background: var(--accent-light);
+            border-radius: var(--radius-sm);
+            color: var(--accent-color);
+            display: inline-flex;
+            flex-shrink: 0;
+            font-size: 20px;
+            height: 42px;
+            justify-content: center;
+            width: 42px;
+        }
+
+        .invoices-kpi-icon.success {
+            background: var(--success-light);
+            color: var(--success-color);
+        }
+
+        .invoices-kpi-icon.warning {
+            background: var(--warning-light);
+            color: var(--warning-color);
+        }
+
+        .invoices-kpi-icon.info {
+            background: var(--info-light);
+            color: var(--info-color);
+        }
+
+        /* Filter panel */
+        .invoices-filter-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            display: grid;
+            gap: 14px;
+            padding: 16px;
+        }
+
+        .invoices-period-chips,
+        .invoices-source-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .invoices-chip {
+            align-items: center;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-pill);
+            box-shadow: var(--shadow-xs);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            font-size: 13px;
+            font-weight: 700;
+            gap: 6px;
+            min-height: 36px;
+            padding: 7px 14px;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        .invoices-chip:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            transform: translateY(-1px);
+        }
+
+        .invoices-chip:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        .invoices-chip.active {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            box-shadow: var(--shadow-accent);
+            color: #ffffff;
+        }
+
+        .invoices-chip .chip-count {
+            background: rgba(20, 32, 31, 0.08);
+            border-radius: var(--radius-pill);
+            font-size: 11.5px;
+            font-weight: 850;
+            line-height: 1;
+            min-width: 22px;
+            padding: 4px 7px;
+            text-align: center;
+        }
+
+        .invoices-chip.active .chip-count {
+            background: rgba(255, 255, 255, 0.22);
+            color: #ffffff;
+        }
+
+        .invoices-filter-row {
+            align-items: end;
+            display: grid;
+            gap: 12px;
+            grid-template-columns: minmax(200px, 1.5fr) minmax(150px, 0.7fr) minmax(150px, 0.7fr) auto;
+        }
+
+        .invoices-filter-field {
+            display: grid;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .invoices-filter-field label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .invoices-search-wrap {
+            position: relative;
+        }
+
+        .invoices-search-wrap i {
+            color: var(--text-muted);
+            font-size: 18px;
+            left: 14px;
+            pointer-events: none;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .invoices-search-wrap .form-control {
+            padding-left: 42px !important;
+        }
+
+        .invoices-filter-actions {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .invoices-visible-count {
+            color: var(--text-muted);
+            font-size: 12.5px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        /* Panel + table */
+        .invoices-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .invoices-panel-header {
+            align-items: flex-start;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: space-between;
+            padding: 16px 18px;
+        }
+
+        .invoices-panel-title {
+            align-items: center;
+            color: var(--text-primary);
+            display: flex;
+            font-size: 15px;
+            font-weight: 850;
+            gap: 8px;
+            letter-spacing: -0.2px;
+            margin: 0;
+        }
+
+        .invoices-panel-title i {
+            color: var(--accent-color);
+            font-size: 18px;
+        }
+
+        .invoices-panel-subtitle {
+            color: var(--text-secondary);
+            font-size: 12.5px;
+            margin: 4px 0 0;
+        }
+
+        .invoices-table-wrap {
+            max-height: min(68vh, 720px);
+            overflow: auto;
+            scrollbar-gutter: stable;
+        }
+
+        .invoices-table {
+            margin: 0;
+            width: 100%;
+        }
+
+        .invoices-table thead th {
+            background: #f7faf9;
+            border-bottom: 1px solid var(--border-color) !important;
+            color: var(--text-muted);
+            font-size: 11.5px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            padding: 12px 16px !important;
+            position: sticky;
+            text-transform: uppercase;
+            top: 0;
+            white-space: nowrap;
+            z-index: 1;
+        }
+
+        .invoices-table tbody td {
+            vertical-align: middle;
+        }
+
+        .invoices-id {
+            background: var(--accent-subtle);
+            border: 1px solid rgba(15, 118, 110, 0.12);
+            border-radius: var(--radius-sm);
+            color: var(--accent-color);
+            display: inline-flex;
+            font-family: "Roboto Mono", "Cascadia Mono", Consolas, monospace;
+            font-size: 12.5px;
+            font-weight: 850;
+            letter-spacing: 0.02em;
+            padding: 5px 9px;
+            white-space: nowrap;
+        }
+
+        .invoices-customer-cell {
+            display: grid;
+            gap: 3px;
+            min-width: 0;
+        }
+
+        .invoices-customer-name {
+            color: var(--text-primary);
+            font-size: 13.5px;
+            font-weight: 800;
+            line-height: 1.35;
+            margin: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .invoices-customer-meta {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 650;
+        }
+
+        .invoices-staff {
+            align-items: center;
+            display: inline-flex;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .invoices-staff-avatar {
+            align-items: center;
+            background: var(--bg-muted);
+            border-radius: var(--radius-pill);
+            color: var(--text-secondary);
+            display: inline-flex;
+            flex-shrink: 0;
+            font-size: 14px;
+            height: 30px;
+            justify-content: center;
+            width: 30px;
+        }
+
+        .invoices-staff-name {
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .invoices-source-badge,
+        .invoices-status-badge {
+            align-items: center;
+            border: 1px solid transparent;
+            border-radius: var(--radius-pill);
+            display: inline-flex;
+            font-size: 11.5px;
+            font-weight: 800;
+            gap: 5px;
+            line-height: 1.2;
+            padding: 6px 10px;
+            white-space: nowrap;
+        }
+
+        .invoices-source-badge.pos {
+            background: var(--accent-light);
+            border-color: rgba(15, 118, 110, 0.14);
+            color: var(--accent-color);
+        }
+
+        .invoices-source-badge.staff {
+            background: var(--info-light);
+            border-color: rgba(2, 132, 199, 0.14);
+            color: var(--info-color);
+        }
+
+        .invoices-source-badge.qr,
+        .invoices-source-badge.table,
+        .invoices-source-badge.table-order {
+            background: #f5f3ff;
+            border-color: rgba(124, 58, 237, 0.14);
+            color: #6d28d9;
+        }
+
+        .invoices-source-badge.other {
+            background: var(--bg-muted);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .invoices-status-badge.completed {
+            background: var(--success-light);
+            border-color: rgba(16, 185, 129, 0.14);
+            color: var(--success-color);
+        }
+
+        .invoices-status-badge.pending {
+            background: var(--warning-light);
+            border-color: rgba(245, 158, 11, 0.18);
+            color: #b45309;
+        }
+
+        .invoices-status-badge.cancelled {
+            background: var(--danger-light);
+            border-color: rgba(244, 63, 94, 0.16);
+            color: var(--danger-color);
+        }
+
+        .invoices-status-badge.other {
+            background: var(--bg-muted);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .invoices-amount {
+            color: var(--accent-color);
+            font-size: 14px;
+            font-weight: 850;
+            letter-spacing: -0.2px;
+            white-space: nowrap;
+        }
+
+        .invoices-date {
+            color: var(--text-secondary);
+            display: grid;
+            font-size: 12.5px;
+            font-weight: 650;
+            gap: 2px;
+            white-space: nowrap;
+        }
+
+        .invoices-date strong {
+            color: var(--text-primary);
+            font-weight: 800;
+        }
+
+        .invoices-row-actions {
+            display: flex;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+
+        .invoices-row-actions .btn {
+            min-height: 34px;
+            padding: 6px 10px;
+            white-space: nowrap;
+        }
+
+        /* States */
+        .invoices-state {
+            align-items: center;
+            display: grid;
+            gap: 10px;
+            justify-items: center;
+            min-height: 220px;
+            padding: 36px 24px;
+            place-items: center;
+            text-align: center;
+        }
+
+        .invoices-state-icon {
+            align-items: center;
+            border-radius: var(--radius-default);
+            display: inline-flex;
+            font-size: 24px;
+            height: 52px;
+            justify-content: center;
+            margin-bottom: 4px;
+            width: 52px;
+        }
+
+        .invoices-state-icon.empty {
+            background: var(--accent-light);
+            color: var(--accent-color);
+        }
+
+        .invoices-state-icon.error {
+            background: var(--danger-light);
+            color: var(--danger-color);
+        }
+
+        .invoices-state h3 {
+            color: var(--text-primary);
+            font-size: 17px;
+            font-weight: 800;
+            margin: 0;
+        }
+
+        .invoices-state p {
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            line-height: 1.6;
+            margin: 0 0 8px;
+            max-width: 440px;
+        }
+
+        .invoices-skeleton-rows {
+            display: grid;
+            gap: 0;
+        }
+
+        .invoices-skeleton-row {
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            display: grid;
+            gap: 14px;
+            grid-template-columns: 72px minmax(0, 1.2fr) 110px 100px 100px 90px 120px 100px;
+            padding: 14px 18px;
+        }
+
+        .invoices-skeleton-block,
+        .invoices-skeleton-line {
+            background: #eef1f7;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .invoices-skeleton-block {
+            height: 28px;
+            width: 64px;
+        }
+
+        .invoices-skeleton-line {
+            border-radius: var(--radius-pill);
+            height: 12px;
+        }
+
+        .invoices-skeleton-line.short { width: 42%; }
+        .invoices-skeleton-line.medium { width: 68%; }
+        .invoices-skeleton-line.long { width: 90%; }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .invoices-skeleton-block::after,
+            .invoices-skeleton-line::after {
+                animation: invoicesShimmer 1.2s infinite;
+                background: linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.7),
+                    transparent
+                );
+                content: "";
+                inset: 0;
+                position: absolute;
+                transform: translateX(-100%);
+            }
+
+            @keyframes invoicesShimmer {
+                to { transform: translateX(100%); }
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .invoices-kpi-card,
+            .invoices-chip {
+                transition: none;
+            }
+
+            .invoices-kpi-card:hover,
+            .invoices-chip:hover {
+                transform: none;
+            }
+        }
+
+        /* Breakpoints: sm 640 / md 768 / lg 1024 / xl 1280 */
+        @media (max-width: 1280px) {
+            .invoices-kpi-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .invoices-filter-row {
+                grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr) minmax(0, 0.8fr);
+            }
+
+            .invoices-filter-actions {
+                grid-column: 1 / -1;
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .invoices-kpi-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .invoices-filter-row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .invoices-toolbar {
+                justify-content: flex-start;
+                width: 100%;
+            }
+
+            .invoices-kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .invoices-filter-row {
+                grid-template-columns: 1fr;
+            }
+
+            .invoices-customer-name {
+                white-space: normal;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+            }
+
+            .invoices-skeleton-row {
+                grid-template-columns: 64px 1fr;
+            }
+
+            .invoices-row-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .invoices-panel-header {
+                padding: 14px;
+            }
+
+            .invoices-filter-panel {
+                padding: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="pos-container">
+    <aside data-menu-component data-active-menu="invoices"></aside>
+
+    <main class="pos-main">
+        <header class="pos-topbar">
+            <div>
+                <h2 class="pos-topbar-title">Lịch sử hóa đơn</h2>
+            </div>
+            <div class="pos-topbar-actions">
+                <button class="btn btn-secondary" type="button" id="refreshInvoicesButton">
+                    <i class="ph ph-arrow-clockwise"></i> Làm mới
+                </button>
+                <button class="btn btn-primary" type="button" onclick="location.href='orders.html'">
+                    <i class="ph ph-cash-register"></i> Bán hàng
+                </button>
+            </div>
+        </header>
+
+        <div class="pos-content">
+            <div class="invoices-shell">
+                <section class="pos-page-intro">
+                    <div>
+                        <h2>Giao dịch đã thanh toán</h2>
+                        <p>Tra cứu hóa đơn, khách hàng, nhân viên và tổng tiền để xem hoặc in lại khi cần.</p>
+                    </div>
+                    <div class="invoices-toolbar">
+                        <span class="invoices-status" id="invoicesStatus" role="status" aria-live="polite">
+                            <i class="ph ph-circle-notch"></i> Đang tải dữ liệu
+                        </span>
+                        <button class="btn btn-primary" type="button" onclick="location.href='orders.html'">
+                            <i class="ph ph-plus"></i> Tạo hóa đơn mới
+                        </button>
+                    </div>
+                </section>
+
+                <section class="invoices-kpi-grid" aria-label="Chỉ số hóa đơn">
+                    <article
+                        class="invoices-kpi-card is-active"
+                        data-period="all"
+                        role="button"
+                        tabindex="0"
+                        aria-pressed="true"
+                        title="Xem toàn bộ hóa đơn">
+                        <div class="invoices-kpi-top">
+                            <div>
+                                <div class="invoices-kpi-label">Tổng hóa đơn</div>
+                                <h3 class="invoices-kpi-value pos-numeric" id="kpiTotalCount">0</h3>
+                            </div>
+                            <span class="invoices-kpi-icon"><i class="ph ph-receipt"></i></span>
+                        </div>
+                        <p class="invoices-kpi-note" id="kpiTotalNote">Toàn bộ giao dịch đã ghi nhận.</p>
+                    </article>
+
+                    <article
+                        class="invoices-kpi-card"
+                        data-period="today"
+                        role="button"
+                        tabindex="0"
+                        aria-pressed="false"
+                        title="Lọc hóa đơn hôm nay">
+                        <div class="invoices-kpi-top">
+                            <div>
+                                <div class="invoices-kpi-label">Hôm nay</div>
+                                <h3 class="invoices-kpi-value pos-numeric" id="kpiTodayCount">0</h3>
+                            </div>
+                            <span class="invoices-kpi-icon success"><i class="ph ph-calendar-blank"></i></span>
+                        </div>
+                        <p class="invoices-kpi-note" id="kpiTodayNote">0đ doanh thu trong ngày.</p>
+                    </article>
+
+                    <article class="invoices-kpi-card" aria-label="Doanh thu hôm nay">
+                        <div class="invoices-kpi-top">
+                            <div>
+                                <div class="invoices-kpi-label">DT hôm nay</div>
+                                <h3 class="invoices-kpi-value pos-money" id="kpiTodayRevenue">0đ</h3>
+                            </div>
+                            <span class="invoices-kpi-icon"><i class="ph ph-trend-up"></i></span>
+                        </div>
+                        <p class="invoices-kpi-note">Tổng tiền các hóa đơn trong ngày.</p>
+                    </article>
+
+                    <article class="invoices-kpi-card" aria-label="Tổng doanh thu">
+                        <div class="invoices-kpi-top">
+                            <div>
+                                <div class="invoices-kpi-label">Tổng doanh thu</div>
+                                <h3 class="invoices-kpi-value pos-money" id="kpiTotalRevenue">0đ</h3>
+                            </div>
+                            <span class="invoices-kpi-icon info"><i class="ph ph-currency-circle-dollar"></i></span>
+                        </div>
+                        <p class="invoices-kpi-note" id="kpiTotalRevenueNote">Theo bộ lọc hiện tại.</p>
+                    </article>
+
+                    <article class="invoices-kpi-card" aria-label="Giá trị trung bình">
+                        <div class="invoices-kpi-top">
+                            <div>
+                                <div class="invoices-kpi-label">TB mỗi HĐ</div>
+                                <h3 class="invoices-kpi-value pos-money" id="kpiAverage">0đ</h3>
+                            </div>
+                            <span class="invoices-kpi-icon warning"><i class="ph ph-gauge"></i></span>
+                        </div>
+                        <p class="invoices-kpi-note">Doanh thu trung bình trên mỗi hóa đơn.</p>
+                    </article>
+                </section>
+
+                <section class="invoices-filter-panel" aria-label="Bộ lọc hóa đơn">
+                    <div>
+                        <div class="invoices-filter-field" style="margin-bottom: 8px;">
+                            <label>Khoảng thời gian</label>
+                        </div>
+                        <div class="invoices-period-chips" role="tablist" aria-label="Lọc theo thời gian">
+                            <button class="invoices-chip active" type="button" data-period="all" role="tab" aria-selected="true">
+                                Tất cả <span class="chip-count" id="chipAll">0</span>
+                            </button>
+                            <button class="invoices-chip" type="button" data-period="today" role="tab" aria-selected="false">
+                                Hôm nay <span class="chip-count" id="chipToday">0</span>
+                            </button>
+                            <button class="invoices-chip" type="button" data-period="7d" role="tab" aria-selected="false">
+                                7 ngày <span class="chip-count" id="chip7d">0</span>
+                            </button>
+                            <button class="invoices-chip" type="button" data-period="30d" role="tab" aria-selected="false">
+                                30 ngày <span class="chip-count" id="chip30d">0</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="invoices-filter-field" style="margin-bottom: 8px;">
+                            <label>Nguồn đơn</label>
+                        </div>
+                        <div class="invoices-source-chips" id="sourceChips" role="tablist" aria-label="Lọc theo nguồn">
+                            <button class="invoices-chip active" type="button" data-source="all" role="tab" aria-selected="true">
+                                Mọi nguồn <span class="chip-count" id="chipSourceAll">0</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="invoices-filter-row">
+                        <div class="invoices-filter-field">
+                            <label for="invoiceSearch">Tìm kiếm</label>
+                            <div class="invoices-search-wrap">
+                                <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+                                <input
+                                    class="form-control"
+                                    type="search"
+                                    id="invoiceSearch"
+                                    placeholder="Mã HĐ, khách hàng, nhân viên, bàn..."
+                                    autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="invoices-filter-field">
+                            <label for="invoiceStaff">Nhân viên</label>
+                            <select class="form-select" id="invoiceStaff">
+                                <option value="all">Tất cả nhân viên</option>
+                            </select>
+                        </div>
+
+                        <div class="invoices-filter-field">
+                            <label for="invoicePayment">Thanh toán</label>
+                            <select class="form-select" id="invoicePayment">
+                                <option value="all">Mọi hình thức</option>
+                                <option value="cash">Tiền mặt</option>
+                                <option value="card">Thẻ</option>
+                                <option value="bank_transfer">Chuyển khoản</option>
+                            </select>
+                        </div>
+
+                        <div class="invoices-filter-field">
+                            <label for="invoiceStatus">Trạng thái</label>
+                            <select class="form-select" id="invoiceStatus">
+                                <option value="all">Mọi trạng thái</option>
+                                <option value="completed">Hoàn tất</option>
+                                <option value="partial_refund">Hoàn 1 phần</option>
+                                <option value="refunded">Đã hoàn</option>
+                                <option value="voided">Đã hủy</option>
+                            </select>
+                        </div>
+
+                        <div class="invoices-filter-field">
+                            <label for="invoiceSort">Sắp xếp</label>
+                            <select class="form-select" id="invoiceSort">
+                                <option value="newest">Mới nhất</option>
+                                <option value="oldest">Cũ nhất</option>
+                                <option value="amount-desc">Tổng tiền cao nhất</option>
+                                <option value="amount-asc">Tổng tiền thấp nhất</option>
+                                <option value="customer">Khách hàng A-Z</option>
+                            </select>
+                        </div>
+
+                        <div class="invoices-filter-actions">
+                            <span class="invoices-visible-count" id="visibleCount">0 / 0 hóa đơn</span>
+                            <button class="btn btn-secondary" type="button" id="resetFiltersButton">
+                                <i class="ph ph-x-circle"></i> Xóa lọc
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="invoices-panel" aria-label="Danh sách hóa đơn">
+                    <div class="invoices-panel-header">
+                        <div>
+                            <h3 class="invoices-panel-title">
+                                <i class="ph ph-clock-counter-clockwise"></i> Hồ sơ giao dịch
+                            </h3>
+                            <p class="invoices-panel-subtitle">
+                                Mã hóa đơn, khách, nhân viên lập, nguồn, trạng thái và tổng thanh toán.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="invoicesBody">
+                        <!-- Filled by JS -->
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/format.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/components.js"></script>
+<script>
+(function invoicesPage() {
+    /** @type {Array<Object>} */
+    let allOrders = [];
+    let activePeriod = "all";
+    let activeSource = "all";
+    let activeStaff = "all";
+    let activePayment = "all";
+    let activeStatus = "all";
+    let searchQuery = "";
+    let sortMode = "newest";
+
+    const els = {
+        status: document.getElementById("invoicesStatus"),
+        body: document.getElementById("invoicesBody"),
+        search: document.getElementById("invoiceSearch"),
+        staff: document.getElementById("invoiceStaff"),
+        payment: document.getElementById("invoicePayment"),
+        statusFilter: document.getElementById("invoiceStatus"),
+        sort: document.getElementById("invoiceSort"),
+        reset: document.getElementById("resetFiltersButton"),
+        refresh: document.getElementById("refreshInvoicesButton"),
+        visibleCount: document.getElementById("visibleCount"),
+        sourceChips: document.getElementById("sourceChips"),
+        kpiTotalCount: document.getElementById("kpiTotalCount"),
+        kpiTodayCount: document.getElementById("kpiTodayCount"),
+        kpiTodayRevenue: document.getElementById("kpiTodayRevenue"),
+        kpiTotalRevenue: document.getElementById("kpiTotalRevenue"),
+        kpiAverage: document.getElementById("kpiAverage"),
+        kpiTotalNote: document.getElementById("kpiTotalNote"),
+        kpiTodayNote: document.getElementById("kpiTodayNote"),
+        kpiTotalRevenueNote: document.getElementById("kpiTotalRevenueNote"),
+        chipAll: document.getElementById("chipAll"),
+        chipToday: document.getElementById("chipToday"),
+        chip7d: document.getElementById("chip7d"),
+        chip30d: document.getElementById("chip30d"),
+        chipSourceAll: document.getElementById("chipSourceAll")
+    };
+
+    const currentUser = requireAuth();
+    if (currentUser) {
+        const welcome = document.getElementById("welcomeUser");
+        if (welcome) {
+            welcome.textContent = currentUser.username;
+        }
+    }
+
+    function numberValue(value) {
+        return Number(value || 0);
+    }
+
+    function normalizeText(value) {
+        return String(value || "")
+            .trim()
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function parseOrderDate(value) {
+        if (!value) return null;
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function startOfDay(date) {
+        const next = new Date(date);
+        next.setHours(0, 0, 0, 0);
+        return next;
+    }
+
+    function isSameDay(left, right) {
+        return (
+            left.getFullYear() === right.getFullYear() &&
+            left.getMonth() === right.getMonth() &&
+            left.getDate() === right.getDate()
+        );
+    }
+
+    function matchesPeriod(order, period, now = new Date()) {
+        if (period === "all") return true;
+        const created = parseOrderDate(order.created_at);
+        if (!created) return false;
+
+        if (period === "today") {
+            return isSameDay(created, now);
+        }
+
+        const days = period === "7d" ? 7 : period === "30d" ? 30 : 0;
+        if (!days) return true;
+
+        const cutoff = startOfDay(now);
+        cutoff.setDate(cutoff.getDate() - (days - 1));
+        return created >= cutoff;
+    }
+
+    function sourceKey(source) {
+        const raw = String(source || "staff").toLowerCase();
+        if (raw === "pos") return "pos";
+        if (raw === "staff") return "staff";
+        if (raw === "qr" || raw === "table" || raw === "table-order") return "qr";
+        return "other";
+    }
+
+    function sourceLabel(source) {
+        const map = {
+            pos: "POS quầy",
+            staff: "Nhân viên",
+            qr: "QR bàn",
+            table: "QR bàn",
+            "table-order": "Yêu cầu QR"
+        };
+        return map[String(source || "").toLowerCase()] || (source ? String(source) : "Khác");
+    }
+
+    function sourceIcon(source) {
+        const key = sourceKey(source);
+        if (key === "pos") return "ph-cash-register";
+        if (key === "qr") return "ph-qr-code";
+        if (key === "staff") return "ph-user";
+        return "ph-circles-three";
+    }
+
+    function statusMeta(status) {
+        const key = String(status || "completed").toLowerCase();
+        if (key === "completed" || key === "paid" || key === "done") {
+            return { key: "completed", label: "Hoàn tất", icon: "ph-check-circle", raw: "completed" };
+        }
+        if (key === "pending" || key === "processing") {
+            return { key: "pending", label: "Đang xử lý", icon: "ph-hourglass", raw: key };
+        }
+        if (key === "voided" || key === "cancelled" || key === "canceled" || key === "void") {
+            return { key: "cancelled", label: "Đã hủy", icon: "ph-x-circle", raw: "voided" };
+        }
+        if (key === "refunded") {
+            return { key: "cancelled", label: "Đã hoàn", icon: "ph-arrow-u-up-left", raw: "refunded" };
+        }
+        if (key === "partial_refund") {
+            return { key: "partial_refund", label: "Hoàn 1 phần", icon: "ph-arrow-counter-clockwise", raw: "partial_refund" };
+        }
+        return { key: "other", label: status || "Khác", icon: "ph-circle", raw: key };
+    }
+
+    function orderNetRevenue(order) {
+        const status = String(order?.status || "completed").toLowerCase();
+        if (status === "voided" || status === "cancelled" || status === "canceled" || status === "refunded") {
+            return 0;
+        }
+        const total = numberValue(order?.total_amount);
+        const refunded = numberValue(order?.refunded_amount);
+        if (status === "partial_refund") {
+            return Math.max(0, total - refunded);
+        }
+        return Math.max(0, total);
+    }
+
+    function paymentMethodKey(value) {
+        const key = String(value || "").toLowerCase();
+        if (key === "cash" || key === "card" || key === "bank_transfer") return key;
+        return key || "other";
+    }
+
+    async function voidInvoice(id) {
+        const reason = window.prompt("Lý do hủy hóa đơn #" + id + " (bắt buộc):", "");
+        if (reason == null) return;
+        if (String(reason).trim().length < 3) {
+            showToast("Lý do hủy tối thiểu 3 ký tự", "warning");
+            return;
+        }
+        try {
+            await apiRequest(`/api/staff/orders/${id}/void`, {
+                method: "POST",
+                body: { reason: String(reason).trim() }
+            });
+            showToast(`Đã hủy hóa đơn #${id}`, "success");
+            await loadInvoices();
+        } catch (error) {
+            showToast(error.message || "Hủy hóa đơn thất bại", "error");
+        }
+    }
+
+    async function refundInvoice(id) {
+        const reason = window.prompt("Lý do hoàn tiền hóa đơn #" + id + " (bắt buộc):", "");
+        if (reason == null) return;
+        if (String(reason).trim().length < 3) {
+            showToast("Lý do hoàn tối thiểu 3 ký tự", "warning");
+            return;
+        }
+        try {
+            await apiRequest(`/api/staff/orders/${id}/refund`, {
+                method: "POST",
+                body: { reason: String(reason).trim() }
+            });
+            showToast(`Đã hoàn tiền hóa đơn #${id}`, "success");
+            await loadInvoices();
+        } catch (error) {
+            showToast(error.message || "Hoàn tiền thất bại", "error");
+        }
+    }
+
+    window.voidInvoice = voidInvoice;
+    window.refundInvoice = refundInvoice;
+
+    function customerDisplayName(order) {
+        const name = String(order.customer_name || "").trim();
+        if (!name || name === "Khách lẻ") {
+            return "Khách vãng lai";
+        }
+        return name;
+    }
+
+    function isWalkInCustomer(order) {
+        const name = String(order.customer_name || "").trim();
+        return !name || name === "Khách lẻ" || name === "Khách vãng lai";
+    }
+
+    function formatDateParts(value) {
+        const date = parseOrderDate(value);
+        if (!date) {
+            return { day: "-", time: "" };
+        }
+        return {
+            day: date.toLocaleDateString("vi-VN"),
+            time: date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+        };
+    }
+
+    function setStatus(kind, message, icon) {
+        if (!els.status) return;
+        els.status.classList.remove("is-error", "is-warn");
+        if (kind === "error") els.status.classList.add("is-error");
+        if (kind === "warn") els.status.classList.add("is-warn");
+        els.status.innerHTML = `<i class="ph ${icon}"></i> ${escapeHtml(message)}`;
+    }
+
+    function setText(node, value) {
+        if (node) node.textContent = value;
+    }
+
+    function sumAmount(orders) {
+        return orders.reduce((sum, order) => sum + orderNetRevenue(order), 0);
+    }
+
+    function getPeriodScopedOrders(period) {
+        return allOrders.filter((order) => matchesPeriod(order, period));
+    }
+
+    function buildSourceCounts(orders) {
+        const counts = { all: orders.length, pos: 0, staff: 0, qr: 0, other: 0 };
+        orders.forEach((order) => {
+            counts[sourceKey(order.source)] += 1;
+        });
+        return counts;
+    }
+
+    function updateSourceChips(periodOrders) {
+        const counts = buildSourceCounts(periodOrders);
+        const definitions = [
+            { key: "all", label: "Mọi nguồn", count: counts.all },
+            { key: "pos", label: "POS quầy", count: counts.pos },
+            { key: "staff", label: "Nhân viên", count: counts.staff },
+            { key: "qr", label: "QR bàn", count: counts.qr },
+            { key: "other", label: "Khác", count: counts.other }
+        ].filter((item) => item.key === "all" || item.count > 0 || item.key === activeSource);
+
+        els.sourceChips.innerHTML = definitions.map((item) => {
+            const isActive = activeSource === item.key;
+            return `
+                <button
+                    class="invoices-chip${isActive ? " active" : ""}"
+                    type="button"
+                    data-source="${item.key}"
+                    role="tab"
+                    aria-selected="${isActive ? "true" : "false"}">
+                    ${escapeHtml(item.label)}
+                    <span class="chip-count">${item.count}</span>
+                </button>
+            `;
+        }).join("");
+
+        els.sourceChips.querySelectorAll("[data-source]").forEach((chip) => {
+            chip.addEventListener("click", () => {
+                activeSource = chip.dataset.source || "all";
+                applyView();
+            });
+        });
+    }
+
+    function updateStaffOptions(periodOrders) {
+        const previous = activeStaff;
+        const staffSet = new Map();
+
+        periodOrders.forEach((order) => {
+            const name = String(order.username || "Admin").trim() || "Admin";
+            staffSet.set(name, (staffSet.get(name) || 0) + 1);
+        });
+
+        const options = Array.from(staffSet.entries())
+            .sort((a, b) => a[0].localeCompare(b[0], "vi"))
+            .map(([name, count]) => `
+                <option value="${escapeHtml(name)}">${escapeHtml(name)} (${count})</option>
+            `)
+            .join("");
+
+        els.staff.innerHTML = `<option value="all">Tất cả nhân viên</option>${options}`;
+
+        if (previous !== "all" && staffSet.has(previous)) {
+            els.staff.value = previous;
+            activeStaff = previous;
+        } else {
+            els.staff.value = "all";
+            activeStaff = "all";
+        }
+    }
+
+    function updateKpis() {
+        const all = allOrders;
+        const todayOrders = getPeriodScopedOrders("today");
+        const periodOrders = getPeriodScopedOrders(activePeriod);
+
+        // Rebuild dependent filters first so KPI revenue matches the table.
+        updateSourceChips(periodOrders);
+        updateStaffOptions(periodOrders);
+
+        const filteredForRevenue = getFilteredOrders(false);
+        const todayRevenue = sumAmount(todayOrders);
+        const filteredRevenue = sumAmount(filteredForRevenue);
+        const average = filteredForRevenue.length
+            ? filteredRevenue / filteredForRevenue.length
+            : 0;
+
+        setText(els.kpiTotalCount, String(all.length));
+        setText(els.kpiTodayCount, String(todayOrders.length));
+        setText(els.kpiTodayRevenue, formatCurrency(todayRevenue));
+        setText(els.kpiTotalRevenue, formatCurrency(filteredRevenue));
+        setText(els.kpiAverage, formatCurrency(average));
+
+        setText(
+            els.kpiTotalNote,
+            all.length
+                ? `${formatCurrency(sumAmount(all))} tổng ghi nhận.`
+                : "Chưa có giao dịch nào."
+        );
+        setText(
+            els.kpiTodayNote,
+            `${formatCurrency(todayRevenue)} doanh thu trong ngày.`
+        );
+        setText(
+            els.kpiTotalRevenueNote,
+            activePeriod === "all" && activeSource === "all" && activeStaff === "all" && !searchQuery
+                ? "Theo toàn bộ lịch sử hóa đơn."
+                : "Theo bộ lọc đang chọn."
+        );
+
+        setText(els.chipAll, String(all.length));
+        setText(els.chipToday, String(todayOrders.length));
+        setText(els.chip7d, String(getPeriodScopedOrders("7d").length));
+        setText(els.chip30d, String(getPeriodScopedOrders("30d").length));
+
+        if (!all.length) {
+            setStatus("ok", "Chưa có hóa đơn", "ph-receipt");
+        } else if (!todayOrders.length) {
+            setStatus("warn", "Hôm nay chưa có HĐ", "ph-warning");
+        } else {
+            setStatus("ok", `${todayOrders.length} HĐ hôm nay`, "ph-check-circle");
+        }
+    }
+
+    function syncPeriodControls() {
+        document.querySelectorAll(".invoices-chip[data-period]").forEach((chip) => {
+            const isActive = chip.dataset.period === activePeriod;
+            chip.classList.toggle("active", isActive);
+            chip.setAttribute("aria-selected", isActive ? "true" : "false");
+        });
+
+        document.querySelectorAll(".invoices-kpi-card[data-period]").forEach((card) => {
+            const isActive = card.dataset.period === activePeriod;
+            card.classList.toggle("is-active", isActive);
+            card.setAttribute("aria-pressed", isActive ? "true" : "false");
+        });
+    }
+
+    function getFilteredOrders(includeSort = true) {
+        const query = normalizeText(searchQuery);
+
+        let list = allOrders.filter((order) => {
+            if (!matchesPeriod(order, activePeriod)) return false;
+
+            if (activeSource !== "all" && sourceKey(order.source) !== activeSource) {
+                return false;
+            }
+
+            const staffName = String(order.username || "Admin").trim() || "Admin";
+            if (activeStaff !== "all" && staffName !== activeStaff) {
+                return false;
+            }
+
+            if (activePayment !== "all" && paymentMethodKey(order.payment_method) !== activePayment) {
+                return false;
+            }
+
+            if (activeStatus !== "all") {
+                const raw = String(order.status || "completed").toLowerCase();
+                if (raw !== activeStatus) return false;
+            }
+
+            if (!query) return true;
+
+            const haystack = normalizeText([
+                order.id,
+                customerDisplayName(order),
+                order.customer_name,
+                order.username,
+                order.table_code,
+                order.table_name,
+                sourceLabel(order.source),
+                order.status,
+                order.payment_method
+            ].filter(Boolean).join(" "));
+
+            return haystack.includes(query);
+        });
+
+        if (!includeSort) return list;
+
+        return list.slice().sort((a, b) => {
+            const amountA = orderNetRevenue(a);
+            const amountB = orderNetRevenue(b);
+            const dateA = parseOrderDate(a.created_at)?.getTime() || 0;
+            const dateB = parseOrderDate(b.created_at)?.getTime() || 0;
+            const nameA = customerDisplayName(a);
+            const nameB = customerDisplayName(b);
+            const idA = numberValue(a.id);
+            const idB = numberValue(b.id);
+
+            switch (sortMode) {
+                case "oldest":
+                    return dateA - dateB || idA - idB;
+                case "amount-desc":
+                    return amountB - amountA || dateB - dateA;
+                case "amount-asc":
+                    return amountA - amountB || dateB - dateA;
+                case "customer":
+                    return nameA.localeCompare(nameB, "vi") || dateB - dateA;
+                case "newest":
+                default:
+                    return dateB - dateA || idB - idA;
+            }
+        });
+    }
+
+    function renderSkeleton() {
+        const rows = Array.from({ length: 7 }, () => `
+            <div class="invoices-skeleton-row" aria-hidden="true">
+                <div class="invoices-skeleton-block"></div>
+                <div style="display:grid;gap:8px;min-width:0;">
+                    <div class="invoices-skeleton-line long"></div>
+                    <div class="invoices-skeleton-line short"></div>
+                </div>
+                <div class="invoices-skeleton-line medium"></div>
+                <div class="invoices-skeleton-line medium"></div>
+                <div class="invoices-skeleton-line short"></div>
+                <div class="invoices-skeleton-line medium"></div>
+                <div class="invoices-skeleton-line medium"></div>
+                <div class="invoices-skeleton-line short"></div>
+            </div>
+        `).join("");
+
+        els.body.innerHTML = `
+            <div class="invoices-skeleton-rows" role="status" aria-label="Đang tải hóa đơn">
+                ${rows}
+            </div>
+        `;
+        setText(els.visibleCount, "Đang tải...");
+    }
+
+    function renderEmptyCatalog() {
+        els.body.innerHTML = `
+            <div class="invoices-state">
+                <div class="invoices-state-icon empty"><i class="ph ph-receipt"></i></div>
+                <h3>Chưa có hóa đơn nào</h3>
+                <p>Tạo giao dịch đầu tiên tại quầy bán hàng để bắt đầu lưu lịch sử thanh toán.</p>
+                <button class="btn btn-primary" type="button" onclick="location.href='orders.html'">
+                    <i class="ph ph-cash-register"></i> Mở quầy POS
+                </button>
+            </div>
+        `;
+        setText(els.visibleCount, "0 / 0 hóa đơn");
+    }
+
+    function renderFilterEmpty() {
+        els.body.innerHTML = `
+            <div class="invoices-state">
+                <div class="invoices-state-icon empty"><i class="ph ph-magnifying-glass"></i></div>
+                <h3>Không tìm thấy hóa đơn phù hợp</h3>
+                <p>Thử đổi từ khóa, khoảng thời gian, nguồn đơn hoặc xóa bộ lọc hiện tại.</p>
+                <button class="btn btn-secondary" type="button" id="emptyResetButton">
+                    <i class="ph ph-x-circle"></i> Xóa bộ lọc
+                </button>
+            </div>
+        `;
+        const btn = document.getElementById("emptyResetButton");
+        if (btn) btn.addEventListener("click", resetFilters);
+        setText(els.visibleCount, `0 / ${allOrders.length} hóa đơn`);
+    }
+
+    function renderError(error) {
+        els.body.innerHTML = `
+            <div class="invoices-state">
+                <div class="invoices-state-icon error"><i class="ph ph-warning-circle"></i></div>
+                <h3>Không thể tải hóa đơn</h3>
+                <p>${escapeHtml(error?.message || "Vui lòng kiểm tra kết nối và thử lại.")}</p>
+                <button class="btn btn-danger" type="button" id="retryInvoicesButton">
+                    <i class="ph ph-arrow-clockwise"></i> Thử lại
+                </button>
+            </div>
+        `;
+        setStatus("error", "Lỗi tải dữ liệu", "ph-warning-circle");
+        const btn = document.getElementById("retryInvoicesButton");
+        if (btn) btn.addEventListener("click", () => loadInvoices());
+        setText(els.visibleCount, "0 / 0 hóa đơn");
+    }
+
+    function renderTable(orders) {
+        if (!orders.length) {
+            if (!allOrders.length) {
+                renderEmptyCatalog();
+            } else {
+                renderFilterEmpty();
+            }
+            return;
+        }
+
+        const rows = orders.map((order) => {
+            const id = numberValue(order.id);
+            const customer = customerDisplayName(order);
+            const staff = String(order.username || "Admin").trim() || "Admin";
+            const amount = orderNetRevenue(order);
+            const source = order.source || "staff";
+            const sourceClass = sourceKey(source);
+            const status = statusMeta(order.status);
+            const canVoid = status.raw === "completed";
+            const canRefund = status.raw === "completed" || status.raw === "partial_refund";
+            const dateParts = formatDateParts(order.created_at);
+            const tableLabel = order.table_code || order.table_name || "";
+            const walkIn = isWalkInCustomer(order);
+
+            return `
+                <tr>
+                    <td>
+                        <span class="invoices-id">#${id}</span>
+                    </td>
+                    <td>
+                        <div class="invoices-customer-cell">
+                            <p class="invoices-customer-name" title="${escapeHtml(customer)}">${escapeHtml(customer)}</p>
+                            <span class="invoices-customer-meta">
+                                ${walkIn ? "Không gắn hội viên" : "Khách có hồ sơ"}
+                                ${tableLabel ? ` · Bàn ${escapeHtml(tableLabel)}` : ""}
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="invoices-staff" title="${escapeHtml(staff)}">
+                            <span class="invoices-staff-avatar"><i class="ph ph-user"></i></span>
+                            <span class="invoices-staff-name">${escapeHtml(staff)}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="invoices-source-badge ${sourceClass}">
+                            <i class="ph ${sourceIcon(source)}"></i>
+                            ${escapeHtml(sourceLabel(source))}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="invoices-status-badge ${status.key}">
+                            <i class="ph ${status.icon}"></i>
+                            ${escapeHtml(status.label)}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="invoices-amount pos-money">${formatCurrency(amount)}</span>
+                    </td>
+                    <td>
+                        <div class="invoices-date">
+                            <strong>${escapeHtml(dateParts.day)}</strong>
+                            <span>${escapeHtml(dateParts.time)}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="invoices-row-actions">
+                            <button
+                                class="btn btn-secondary btn-sm"
+                                type="button"
+                                onclick="location.href='invoice_detail.html?id=${id}'"
+                                title="Xem chi tiết hóa đơn #${id}">
+                                <i class="ph ph-eye"></i> Xem
+                            </button>
+                            <button
+                                class="btn btn-success btn-sm"
+                                type="button"
+                                onclick="window.open('invoice_detail.html?id=${id}', '_blank')"
+                                title="Mở trang in hóa đơn #${id}">
+                                <i class="ph ph-printer"></i>
+                            </button>
+                            ${canVoid ? `
+                            <button
+                                class="btn btn-secondary btn-sm"
+                                type="button"
+                                onclick="voidInvoice(${id})"
+                                title="Hủy hóa đơn #${id}">
+                                <i class="ph ph-x-circle"></i>
+                            </button>` : ""}
+                            ${canRefund ? `
+                            <button
+                                class="btn btn-secondary btn-sm"
+                                type="button"
+                                onclick="refundInvoice(${id})"
+                                title="Hoàn tiền hóa đơn #${id}">
+                                <i class="ph ph-arrow-u-up-left"></i>
+                            </button>` : ""}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+
+        els.body.innerHTML = `
+            <div class="invoices-table-wrap table-responsive">
+                <table class="table invoices-table align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">Mã HĐ</th>
+                            <th>Khách hàng</th>
+                            <th style="width: 150px;">Nhân viên</th>
+                            <th style="width: 130px;">Nguồn</th>
+                            <th style="width: 120px;">Trạng thái</th>
+                            <th style="width: 130px;">Thanh toán</th>
+                            <th style="width: 120px;">Ngày tạo</th>
+                            <th style="width: 140px; text-align: right;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        setText(els.visibleCount, `${orders.length} / ${allOrders.length} hóa đơn`);
+    }
+
+    function applyView() {
+        syncPeriodControls();
+        updateKpis();
+        renderTable(getFilteredOrders(true));
+    }
+
+    function setPeriod(period) {
+        activePeriod = period || "all";
+        // Reset source when period changes if source becomes empty - applyView rebuilds chips
+        applyView();
+    }
+
+    function resetFilters() {
+        activePeriod = "all";
+        activeSource = "all";
+        activeStaff = "all";
+        activePayment = "all";
+        activeStatus = "all";
+        searchQuery = "";
+        sortMode = "newest";
+        if (els.search) els.search.value = "";
+        if (els.sort) els.sort.value = "newest";
+        if (els.staff) els.staff.value = "all";
+        if (els.payment) els.payment.value = "all";
+        if (els.statusFilter) els.statusFilter.value = "all";
+        applyView();
+    }
+
+    async function loadInvoices() {
+        renderSkeleton();
+        setStatus("ok", "Đang tải dữ liệu", "ph-circle-notch");
+
+        try {
+            const orders = await apiRequest("/orders");
+            allOrders = Array.isArray(orders) ? orders : [];
+            applyView();
+
+            if (allOrders.length) {
+                const todayCount = getPeriodScopedOrders("today").length;
+                if (todayCount > 0) {
+                    setStatus("ok", `${todayCount} HĐ hôm nay`, "ph-check-circle");
+                }
+            }
+        } catch (error) {
+            console.error("Lỗi khi tải danh sách hóa đơn:", error);
+            allOrders = [];
+            updateKpis();
+            renderError(error);
+        }
+    }
+
+    // Events
+    document.querySelectorAll(".invoices-chip[data-period]").forEach((chip) => {
+        chip.addEventListener("click", () => setPeriod(chip.dataset.period));
+    });
+
+    document.querySelectorAll(".invoices-kpi-card[data-period]").forEach((card) => {
+        card.addEventListener("click", () => setPeriod(card.dataset.period));
+        card.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setPeriod(card.dataset.period);
+            }
+        });
+    });
+
+    if (els.search) {
+        els.search.addEventListener("input", () => {
+            searchQuery = els.search.value || "";
+            applyView();
+        });
+    }
+
+    if (els.staff) {
+        els.staff.addEventListener("change", () => {
+            activeStaff = els.staff.value || "all";
+            applyView();
+        });
+    }
+
+    if (els.payment) {
+        els.payment.addEventListener("change", () => {
+            activePayment = els.payment.value || "all";
+            applyView();
+        });
+    }
+
+    if (els.statusFilter) {
+        els.statusFilter.addEventListener("change", () => {
+            activeStatus = els.statusFilter.value || "all";
+            applyView();
+        });
+    }
+
+    if (els.sort) {
+        els.sort.addEventListener("change", () => {
+            sortMode = els.sort.value || "newest";
+            applyView();
+        });
+    }
+
+    if (els.reset) {
+        els.reset.addEventListener("click", resetFilters);
+    }
+
+    if (els.refresh) {
+        els.refresh.addEventListener("click", () => loadInvoices());
+    }
+
+    loadInvoices();
+})();
+</script>
+
+</body>
+</html>

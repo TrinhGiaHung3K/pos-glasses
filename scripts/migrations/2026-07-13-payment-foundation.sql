@@ -1,0 +1,60 @@
+CREATE TABLE IF NOT EXISTS `payment_intents` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `public_id` varchar(64) NOT NULL,
+  `order_id` int DEFAULT NULL,
+  `provider` varchar(30) NOT NULL,
+  `purpose` varchar(30) NOT NULL DEFAULT 'order',
+  `is_test` tinyint(1) NOT NULL DEFAULT 0,
+  `currency` char(3) NOT NULL DEFAULT 'VND',
+  `expected_amount` bigint NOT NULL,
+  `received_amount` bigint NOT NULL DEFAULT 0,
+  `transfer_content` varchar(50) NOT NULL,
+  `bank_code` varchar(30) DEFAULT NULL,
+  `account_number_masked` varchar(40) DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'pending',
+  `expires_at` datetime NOT NULL,
+  `paid_at` datetime DEFAULT NULL,
+  `cancelled_at` datetime DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_payment_intents_public_id` (`public_id`),
+  UNIQUE KEY `uq_payment_intents_transfer_content` (`transfer_content`),
+  KEY `idx_payment_intents_status_expiry` (`status`, `expires_at`),
+  KEY `idx_payment_intents_order` (`order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `payment_transactions` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `provider` varchar(30) NOT NULL,
+  `provider_transaction_id` varchar(100) NOT NULL,
+  `payment_intent_id` bigint DEFAULT NULL,
+  `account_number_masked` varchar(40) DEFAULT NULL,
+  `transfer_type` varchar(10) NOT NULL,
+  `amount` bigint NOT NULL,
+  `transfer_content` varchar(500) DEFAULT NULL,
+  `bank_reference` varchar(100) DEFAULT NULL,
+  `transaction_at` datetime DEFAULT NULL,
+  `signature_valid` tinyint(1) NOT NULL DEFAULT 0,
+  `match_status` varchar(30) NOT NULL DEFAULT 'unmatched',
+  `raw_payload_json` json DEFAULT NULL,
+  `received_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_payment_provider_transaction` (`provider`, `provider_transaction_id`),
+  KEY `idx_payment_transactions_intent` (`payment_intent_id`),
+  KEY `idx_payment_transactions_match` (`match_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `payment_webhook_deliveries` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `provider` varchar(30) NOT NULL,
+  `delivery_key` varchar(120) NOT NULL,
+  `signature_valid` tinyint(1) NOT NULL DEFAULT 0,
+  `processing_status` varchar(30) NOT NULL,
+  `error_code` varchar(80) DEFAULT NULL,
+  `received_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `processed_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_payment_webhook_delivery` (`provider`, `delivery_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

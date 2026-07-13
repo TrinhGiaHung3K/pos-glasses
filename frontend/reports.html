@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Glasses - Báo cáo</title>
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/vendor/phosphor/regular/style.css">
+
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+
+    <style>
+        .reports-shell {
+            display: grid;
+            gap: 18px;
+        }
+
+        .reports-actions {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .report-filter-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            display: grid;
+            gap: 14px;
+            grid-template-columns: 1.1fr repeat(4, minmax(150px, 1fr)) auto;
+            padding: 16px;
+        }
+
+        .report-filter-field {
+            display: grid;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .report-filter-field label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .report-filter-actions {
+            align-items: end;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .report-status {
+            align-items: center;
+            background: var(--accent-subtle);
+            border: 1px solid rgba(15, 118, 110, 0.14);
+            border-radius: var(--radius-pill);
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            gap: 7px;
+            min-height: 34px;
+            padding: 7px 12px;
+            white-space: nowrap;
+        }
+
+        .report-status.is-error {
+            background: var(--danger-light);
+            border-color: rgba(220, 38, 38, 0.18);
+            color: var(--danger-color);
+        }
+
+        .report-metric-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .report-metric-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            display: grid;
+            gap: 14px;
+            min-height: 130px;
+            padding: 16px;
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+        }
+
+        .report-metric-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-1px);
+        }
+
+        .report-metric-top {
+            align-items: flex-start;
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+        }
+
+        .report-metric-title {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            margin-bottom: 6px;
+        }
+
+        .report-metric-value {
+            color: var(--text-primary);
+            font-size: clamp(22px, 2.1vw, 30px);
+            font-weight: 950;
+            line-height: 1;
+            margin: 0;
+        }
+
+        .report-metric-icon {
+            align-items: center;
+            background: var(--accent-light);
+            border-radius: var(--radius-sm);
+            color: var(--accent-color);
+            display: inline-flex;
+            flex-shrink: 0;
+            font-size: 20px;
+            height: 42px;
+            justify-content: center;
+            width: 42px;
+        }
+
+        .report-metric-icon.success {
+            background: var(--success-light);
+            color: var(--success-color);
+        }
+
+        .report-metric-icon.warning {
+            background: var(--warning-light);
+            color: var(--warning-color);
+        }
+
+        .report-metric-icon.info {
+            background: var(--info-light);
+            color: var(--info-color);
+        }
+
+        .report-metric-note {
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.45;
+            margin: 0;
+        }
+
+        .report-grid {
+            display: grid;
+            gap: 18px;
+            grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+        }
+
+        .report-two-col {
+            display: grid;
+            gap: 18px;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        }
+
+        .report-panel,
+        .report-chart-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-xs);
+            min-width: 0;
+            padding: 18px;
+        }
+
+        .report-card-header {
+            align-items: flex-start;
+            display: flex;
+            gap: 14px;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .report-card-title {
+            align-items: center;
+            color: var(--text-primary);
+            display: flex;
+            font-size: 15px;
+            font-weight: 850;
+            gap: 8px;
+            letter-spacing: -0.2px;
+            margin: 0;
+        }
+
+        .report-card-title i {
+            color: var(--accent-color);
+            font-size: 19px;
+        }
+
+        .report-card-subtitle {
+            color: var(--text-secondary);
+            font-size: 12.5px;
+            margin: 4px 0 0;
+        }
+
+        .report-chart-wrapper {
+            height: 330px;
+            position: relative;
+            width: 100%;
+        }
+
+        .report-chart-wrapper.compact {
+            height: 260px;
+        }
+
+        .chart-legend {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+            min-height: 28px;
+        }
+
+        .chart-legend-item {
+            align-items: center;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-pill);
+            color: var(--text-secondary);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            gap: 7px;
+            line-height: 1;
+            padding: 7px 10px;
+            white-space: nowrap;
+        }
+
+        .chart-legend-swatch {
+            border-radius: var(--radius-pill);
+            flex-shrink: 0;
+            height: 8px;
+            width: 8px;
+        }
+
+        .chart-legend-value {
+            color: var(--text-primary);
+            font-weight: 900;
+        }
+
+        .chart-html-tooltip {
+            background: #10201d;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-lg);
+            color: #f8fafc;
+            min-width: 190px;
+            opacity: 0;
+            padding: 10px 12px;
+            pointer-events: none;
+            position: absolute;
+            transform: translate(-50%, calc(-100% - 12px));
+            transition: opacity var(--transition-fast);
+            z-index: 5;
+        }
+
+        .chart-html-tooltip-title {
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 900;
+            margin-bottom: 7px;
+        }
+
+        .chart-html-tooltip-row {
+            align-items: center;
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+        }
+
+        .chart-html-tooltip-row + .chart-html-tooltip-row {
+            margin-top: 6px;
+        }
+
+        .chart-html-tooltip-name {
+            align-items: center;
+            color: #cbd5e1;
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 700;
+            gap: 7px;
+        }
+
+        .chart-html-tooltip-value {
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .report-preview-panel {
+            display: grid;
+            gap: 12px;
+        }
+
+        .report-preview-item {
+            background: #f7fbfa;
+            border: 1px solid rgba(15, 118, 110, 0.12);
+            border-radius: var(--radius-sm);
+            display: grid;
+            gap: 5px;
+            padding: 13px 14px;
+        }
+
+        .report-preview-item strong {
+            color: var(--text-primary);
+            font-size: 13.5px;
+        }
+
+        .report-preview-item span {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .report-table-wrap {
+            max-height: 520px;
+            overflow: auto;
+            scrollbar-gutter: stable;
+        }
+
+        .report-table-wrap thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .report-source-chip {
+            background: var(--accent-subtle);
+            border-radius: var(--radius-pill);
+            color: var(--accent-color);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            padding: 5px 9px;
+            white-space: nowrap;
+        }
+
+        .report-empty-state {
+            align-items: center;
+            border: 1px dashed var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            display: grid;
+            min-height: 130px;
+            padding: 18px;
+            place-items: center;
+            text-align: center;
+        }
+
+        .report-empty-state i {
+            color: var(--accent-color);
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .report-metric-card {
+                transition: none;
+            }
+        }
+
+        @media (max-width: 1320px) {
+            .report-filter-panel {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .report-filter-actions {
+                justify-content: flex-start;
+            }
+
+            .report-metric-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .report-grid,
+            .report-two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .reports-actions {
+                justify-content: flex-start;
+                width: 100%;
+            }
+
+            .report-filter-panel,
+            .report-metric-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .report-filter-actions {
+                display: grid;
+                grid-template-columns: 1fr;
+            }
+
+            .report-card-header {
+                display: grid;
+            }
+
+            .report-chart-wrapper,
+            .report-chart-wrapper.compact {
+                height: 260px;
+            }
+        }
+
+        @media print {
+            .pos-sidebar,
+            .pos-topbar,
+            .report-filter-panel,
+            .reports-actions {
+                display: none !important;
+            }
+
+            .pos-main {
+                margin-left: 0 !important;
+            }
+
+            .pos-content {
+                padding: 0 !important;
+            }
+
+            .report-panel,
+            .report-chart-card,
+            .report-metric-card {
+                box-shadow: none !important;
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="pos-container">
+    <aside data-menu-component data-active-menu="reports"></aside>
+
+    <main class="pos-main">
+        <header class="pos-topbar">
+            <div>
+                <h2 class="pos-topbar-title">Báo cáo bán hàng</h2>
+            </div>
+            <div class="pos-topbar-actions">
+                <button class="btn btn-secondary" type="button" id="printReportButton">
+                    <i class="ph ph-printer"></i> In báo cáo
+                </button>
+                <button class="btn btn-primary" type="button" id="exportCsvButton">
+                    <i class="ph ph-download-simple"></i> Xuất CSV
+                </button>
+            </div>
+        </header>
+
+        <div class="pos-content">
+            <div class="reports-shell">
+                <section class="pos-page-intro">
+                    <div>
+                        <h2>Báo cáo hiệu suất giao dịch</h2>
+                        <p>Lọc, xem, in và xuất báo cáo doanh thu theo thời gian, nguồn đơn, nhân viên và khách hàng.</p>
+                    </div>
+                    <div class="reports-actions">
+                        <span class="report-status" id="reportStatus">
+                            <i class="ph ph-circle-notch"></i> Đang tải dữ liệu
+                        </span>
+                        <button class="btn btn-primary" type="button" id="viewReportButton">
+                            <i class="ph ph-chart-line-up"></i> Xem báo cáo
+                        </button>
+                    </div>
+                </section>
+
+                <section class="report-filter-panel" aria-label="Bộ lọc báo cáo">
+                    <div class="report-filter-field">
+                        <label for="reportRangeFilter">Kỳ báo cáo</label>
+                        <select class="form-select" id="reportRangeFilter">
+                            <option value="last7">7 ngày gần nhất</option>
+                            <option value="last30" selected>30 ngày gần nhất</option>
+                            <option value="thisMonth">Tháng này</option>
+                            <option value="all">Toàn bộ dữ liệu</option>
+                            <option value="custom">Tùy chọn ngày</option>
+                        </select>
+                    </div>
+                    <div class="report-filter-field">
+                        <label for="reportFromDate">Từ ngày</label>
+                        <input class="form-control" id="reportFromDate" type="date">
+                    </div>
+                    <div class="report-filter-field">
+                        <label for="reportToDate">Đến ngày</label>
+                        <input class="form-control" id="reportToDate" type="date">
+                    </div>
+                    <div class="report-filter-field">
+                        <label for="reportStaffFilter">Nhân viên</label>
+                        <select class="form-select" id="reportStaffFilter">
+                            <option value="all">Tất cả nhân viên</option>
+                        </select>
+                    </div>
+                    <div class="report-filter-field">
+                        <label for="reportSourceFilter">Nguồn đơn</label>
+                        <select class="form-select" id="reportSourceFilter">
+                            <option value="all">Tất cả nguồn</option>
+                        </select>
+                    </div>
+                    <div class="report-filter-actions">
+                        <button class="btn btn-primary" type="button" id="viewReportInlineButton">
+                            <i class="ph ph-eye"></i> Xem
+                        </button>
+                    </div>
+                </section>
+
+                <!-- AI revenue insights (admin) -->
+                <div id="reportsAiInsightsHost" hidden></div>
+
+                <section class="report-metric-grid" aria-label="Chỉ số báo cáo">
+                    <article class="report-metric-card">
+                        <div class="report-metric-top">
+                            <div>
+                                <div class="report-metric-title">Doanh thu kỳ này</div>
+                                <h3 class="report-metric-value pos-money" id="totalRevenue">0đ</h3>
+                            </div>
+                            <span class="report-metric-icon"><i class="ph ph-currency-circle-dollar"></i></span>
+                        </div>
+                        <p class="report-metric-note" id="reportRevenueNote">Đang tổng hợp doanh thu.</p>
+                    </article>
+
+                    <article class="report-metric-card">
+                        <div class="report-metric-top">
+                            <div>
+                                <div class="report-metric-title">Tổng hóa đơn</div>
+                                <h3 class="report-metric-value pos-numeric" id="totalOrders">0</h3>
+                            </div>
+                            <span class="report-metric-icon info"><i class="ph ph-receipt"></i></span>
+                        </div>
+                        <p class="report-metric-note" id="reportOrderNote">Số hóa đơn trong bộ lọc hiện tại.</p>
+                    </article>
+
+                    <article class="report-metric-card">
+                        <div class="report-metric-top">
+                            <div>
+                                <div class="report-metric-title">Giá trị trung bình</div>
+                                <h3 class="report-metric-value pos-money" id="reportAverageOrder">0đ</h3>
+                            </div>
+                            <span class="report-metric-icon success"><i class="ph ph-gauge"></i></span>
+                        </div>
+                        <p class="report-metric-note">Doanh thu trung bình trên mỗi hóa đơn.</p>
+                    </article>
+
+                    <article class="report-metric-card">
+                        <div class="report-metric-top">
+                            <div>
+                                <div class="report-metric-title">Hóa đơn có khách</div>
+                                <h3 class="report-metric-value pos-numeric" id="reportMemberOrders">0</h3>
+                            </div>
+                            <span class="report-metric-icon warning"><i class="ph ph-identification-card"></i></span>
+                        </div>
+                        <p class="report-metric-note" id="reportMemberNote">Tỷ lệ hóa đơn gắn hồ sơ khách hàng.</p>
+                    </article>
+                </section>
+
+                <section class="report-grid">
+                    <div class="report-chart-card">
+                        <div class="report-card-header">
+                            <div>
+                                <h4 class="report-card-title"><i class="ph ph-chart-line-up"></i> Xu hướng doanh thu</h4>
+                                <p class="report-card-subtitle">Doanh thu và số hóa đơn theo từng ngày trong kỳ lọc.</p>
+                            </div>
+                        </div>
+                        <div class="report-chart-wrapper">
+                            <canvas id="reportTrendChart"></canvas>
+                        </div>
+                        <div class="chart-legend" id="reportTrendLegend" aria-label="Chú giải xu hướng doanh thu"></div>
+                    </div>
+
+                    <aside class="report-panel">
+                        <div class="report-card-header">
+                            <div>
+                                <h4 class="report-card-title"><i class="ph ph-file-text"></i> Bản xem báo cáo</h4>
+                                <p class="report-card-subtitle">Tóm tắt để quản lý nắm nhanh trước khi xuất file.</p>
+                            </div>
+                        </div>
+                        <div class="report-preview-panel" id="reportPreviewPanel">
+                            <div class="report-empty-state">
+                                <div>
+                                    <i class="ph ph-circle-notch"></i>
+                                    <div>Đang chuẩn bị bản xem báo cáo.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+                </section>
+
+                <section class="report-two-col">
+                    <div class="report-chart-card">
+                        <div class="report-card-header">
+                            <div>
+                                <h4 class="report-card-title"><i class="ph ph-git-branch"></i> Doanh thu theo nguồn đơn</h4>
+                                <p class="report-card-subtitle">So sánh POS, QR và đơn nhân viên nhập.</p>
+                            </div>
+                        </div>
+                        <div class="report-chart-wrapper compact">
+                            <canvas id="reportSourceChart"></canvas>
+                        </div>
+                        <div class="chart-legend" id="reportSourceLegend" aria-label="Chú giải doanh thu theo nguồn đơn"></div>
+                    </div>
+
+                    <div class="report-chart-card">
+                        <div class="report-card-header">
+                            <div>
+                                <h4 class="report-card-title"><i class="ph ph-users-three"></i> Doanh thu theo nhân viên</h4>
+                                <p class="report-card-subtitle">Xếp hạng nhân viên theo doanh thu trong kỳ.</p>
+                            </div>
+                        </div>
+                        <div class="report-chart-wrapper compact">
+                            <canvas id="reportStaffChart"></canvas>
+                        </div>
+                        <div class="chart-legend" id="reportStaffLegend" aria-label="Chú giải doanh thu theo nhân viên"></div>
+                    </div>
+                </section>
+
+                <section class="report-panel">
+                    <div class="report-card-header">
+                        <div>
+                            <h4 class="report-card-title"><i class="ph ph-list-checks"></i> Chi tiết giao dịch</h4>
+                            <p class="report-card-subtitle">Danh sách hóa đơn sau khi áp dụng bộ lọc báo cáo.</p>
+                        </div>
+                    </div>
+                    <div class="table-responsive report-table-wrap">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Mã hóa đơn</th>
+                                    <th>Thời gian</th>
+                                    <th>Khách hàng</th>
+                                    <th>Nhân viên</th>
+                                    <th>Nguồn</th>
+                                    <th>Trạng thái</th>
+                                    <th>Tổng tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportDetailTable">
+                                <tr>
+                                    <td colspan="7">Đang tải dữ liệu báo cáo...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/format.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/components.js"></script>
+<script>
+    const currentUser = requireAuth();
+    const reportState = {
+        orders: [],
+        filteredOrders: [],
+        charts: {}
+    };
+    const reportPalette = {
+        accent: "#0f766e",
+        accentSoft: "rgba(15, 118, 110, 0.14)",
+        text: "#14201f",
+        muted: "#758582",
+        border: "rgba(20, 32, 31, 0.08)",
+        success: "#16a34a",
+        warning: "#d97706",
+        info: "#0284c7",
+        danger: "#dc2626"
+    };
+
+    if (currentUser && document.getElementById("welcomeUser")) {
+        document.getElementById("welcomeUser").textContent = currentUser.username;
+    }
+
+    if (window.Chart) {
+        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+        Chart.defaults.color = reportPalette.muted;
+
+        // Tooltip styling consistent with current UI (dark sidebar bg + proper gaps)
+        Chart.defaults.plugins.tooltip.backgroundColor = "#10201d";
+        Chart.defaults.plugins.tooltip.titleColor = "#f8fafc";
+        Chart.defaults.plugins.tooltip.bodyColor = "#e2e8f0";
+        Chart.defaults.plugins.tooltip.borderColor = "rgba(255, 255, 255, 0.08)";
+        Chart.defaults.plugins.tooltip.borderWidth = 1;
+        Chart.defaults.plugins.tooltip.cornerRadius = 8;
+        Chart.defaults.plugins.tooltip.padding = 10;
+        Chart.defaults.plugins.tooltip.boxPadding = 6;
+        Chart.defaults.plugins.tooltip.boxWidth = 8;
+        Chart.defaults.plugins.tooltip.boxHeight = 8;
+    }
+
+    function setText(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+        }
+    }
+
+    function numberValue(value) {
+        return Number(value || 0);
+    }
+
+    function compactNumber(value) {
+        return numberValue(value).toLocaleString("vi-VN");
+    }
+
+    function safeFormatCurrency(value) {
+        if (typeof formatCurrency === "function") {
+            return formatCurrency(numberValue(value));
+        }
+
+        return `${compactNumber(value)}đ`;
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    function csvCell(value) {
+        return `"${String(value ?? "").replaceAll('"', '""')}"`;
+    }
+
+    function dateKey(value) {
+        const date = new Date(value);
+        date.setHours(0, 0, 0, 0);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
+
+    function shortDateLabel(key) {
+        const [year, month, day] = key.split("-").map(Number);
+        return new Date(year, month - 1, day).toLocaleDateString("vi-VN", {
+            day: "2-digit",
+            month: "2-digit"
+        });
+    }
+
+    function formatDateTime(value) {
+        if (!value) {
+            return "";
+        }
+
+        return new Date(value).toLocaleString("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    }
+
+    function sourceLabel(source) {
+        const labels = {
+            pos: "POS tại quầy",
+            staff: "Nhân viên nhập",
+            table: "QR tại bàn",
+            qr: "QR tại bàn"
+        };
+
+        return labels[source] || "Khác";
+    }
+
+    function statusLabel(status) {
+        const labels = {
+            completed: "Hoàn tất",
+            pending: "Đang chờ",
+            cancelled: "Đã hủy",
+            voided: "Đã hủy",
+            refunded: "Đã hoàn",
+            partial_refund: "Hoàn 1 phần"
+        };
+
+        return labels[String(status || "").toLowerCase()] || status || "Hoàn tất";
+    }
+
+    /** Net revenue for reporting (exclude voided/full refund; net partial refunds). */
+    function orderNetRevenue(order) {
+        const status = String(order?.status || "completed").toLowerCase();
+        if (status === "voided" || status === "cancelled" || status === "canceled" || status === "refunded") {
+            return 0;
+        }
+        const total = numberValue(order?.total_amount);
+        const refunded = numberValue(order?.refunded_amount);
+        if (status === "partial_refund") {
+            return Math.max(0, total - refunded);
+        }
+        return Math.max(0, total);
+    }
+
+    function isRevenueOrder(order) {
+        const status = String(order?.status || "completed").toLowerCase();
+        return status === "completed" || status === "partial_refund" || status === "paid" || status === "done";
+    }
+
+    function setReportStatus(message, type = "info") {
+        const status = document.getElementById("reportStatus");
+        if (!status) {
+            return;
+        }
+
+        status.className = `report-status${type === "error" ? " is-error" : ""}`;
+        status.innerHTML = `<i class="ph ${type === "error" ? "ph-warning" : "ph-check-circle"}"></i> ${escapeHtml(message)}`;
+    }
+
+    function getRangeDates(range) {
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        const from = new Date(today);
+        from.setHours(0, 0, 0, 0);
+
+        if (range === "last7") {
+            from.setDate(today.getDate() - 6);
+            return { from, to: today };
+        }
+
+        if (range === "last30") {
+            from.setDate(today.getDate() - 29);
+            return { from, to: today };
+        }
+
+        if (range === "thisMonth") {
+            from.setDate(1);
+            return { from, to: today };
+        }
+
+        if (range === "custom") {
+            const fromValue = document.getElementById("reportFromDate").value;
+            const toValue = document.getElementById("reportToDate").value;
+            const customFrom = fromValue ? new Date(`${fromValue}T00:00:00`) : null;
+            const customTo = toValue ? new Date(`${toValue}T23:59:59`) : null;
+            return { from: customFrom, to: customTo };
+        }
+
+        return { from: null, to: null };
+    }
+
+    function groupBy(items, getKey) {
+        return items.reduce((map, item) => {
+            const key = getKey(item);
+            if (!map.has(key)) {
+                map.set(key, []);
+            }
+            map.get(key).push(item);
+            return map;
+        }, new Map());
+    }
+
+    function sumBy(items, getValue) {
+        return items.reduce((sum, item) => sum + numberValue(getValue(item)), 0);
+    }
+
+    function daysBetween(from, to, fallbackOrders) {
+        if (!from || !to) {
+            const keys = [...new Set(fallbackOrders.map((order) => dateKey(order.created_at || new Date())))].sort();
+            return keys.length ? keys : [dateKey(new Date())];
+        }
+
+        const keys = [];
+        const cursor = new Date(from);
+        cursor.setHours(0, 0, 0, 0);
+        const end = new Date(to);
+        end.setHours(0, 0, 0, 0);
+
+        while (cursor <= end) {
+            keys.push(dateKey(cursor));
+            cursor.setDate(cursor.getDate() + 1);
+        }
+
+        return keys;
+    }
+
+    function buildReportAnalytics(orders) {
+        const range = document.getElementById("reportRangeFilter").value;
+        const { from, to } = getRangeDates(range);
+        const revenueOrders = orders.filter(isRevenueOrder);
+        const totalRevenue = sumBy(revenueOrders, orderNetRevenue);
+        const totalOrders = revenueOrders.length;
+        const dailyGroups = groupBy(revenueOrders, (order) => dateKey(order.created_at || new Date()));
+        const sourceGroups = groupBy(revenueOrders, (order) => sourceLabel(order.source || "staff"));
+        const staffGroups = groupBy(revenueOrders, (order) => order.username || "Chưa gán nhân viên");
+        const memberOrders = revenueOrders.filter((order) => order.customer_name && order.customer_name !== "Khách lẻ").length;
+        const daily = daysBetween(from, to, revenueOrders).map((key) => ({
+            key,
+            label: shortDateLabel(key),
+            orders: (dailyGroups.get(key) || []).length,
+            revenue: sumBy(dailyGroups.get(key) || [], orderNetRevenue)
+        }));
+        const bestDay = daily.reduce((best, item) => item.revenue > best.revenue ? item : best, {
+            label: "Chưa có dữ liệu",
+            revenue: 0,
+            orders: 0
+        });
+        const staffBreakdown = Array.from(staffGroups.entries())
+            .map(([label, rows]) => ({
+                label,
+                orders: rows.length,
+                revenue: sumBy(rows, orderNetRevenue)
+            }))
+            .sort((left, right) => right.revenue - left.revenue);
+        const sourceBreakdown = Array.from(sourceGroups.entries())
+            .map(([label, rows]) => ({
+                label,
+                orders: rows.length,
+                revenue: sumBy(rows, orderNetRevenue)
+            }))
+            .sort((left, right) => right.revenue - left.revenue);
+
+        return {
+            from,
+            to,
+            totalRevenue,
+            totalOrders,
+            averageOrderValue: totalOrders ? totalRevenue / totalOrders : 0,
+            memberOrders,
+            memberRatio: totalOrders ? Math.round(memberOrders / totalOrders * 100) : 0,
+            daily,
+            bestDay,
+            staffBreakdown,
+            sourceBreakdown,
+            topStaff: staffBreakdown[0] || null,
+            topSource: sourceBreakdown[0] || null
+        };
+    }
+
+    function populateFilterOptions(orders) {
+        const staffSelect = document.getElementById("reportStaffFilter");
+        const sourceSelect = document.getElementById("reportSourceFilter");
+        const staff = [...new Set(orders.map((order) => order.username || "Chưa gán nhân viên"))].sort();
+        const sources = [...new Set(orders.map((order) => sourceLabel(order.source || "staff")))].sort();
+
+        staffSelect.innerHTML = `<option value="all">Tất cả nhân viên</option>` + staff
+            .map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`)
+            .join("");
+        sourceSelect.innerHTML = `<option value="all">Tất cả nguồn</option>` + sources
+            .map((source) => `<option value="${escapeHtml(source)}">${escapeHtml(source)}</option>`)
+            .join("");
+
+        if (typeof enhanceCustomSelects === "function") {
+            enhanceCustomSelects(document);
+        }
+    }
+
+    function applyFilters() {
+        const range = document.getElementById("reportRangeFilter").value;
+        const staff = document.getElementById("reportStaffFilter").value;
+        const source = document.getElementById("reportSourceFilter").value;
+        const { from, to } = getRangeDates(range);
+
+        reportState.filteredOrders = reportState.orders.filter((order) => {
+            const createdAt = order.created_at ? new Date(order.created_at) : new Date();
+            const orderStaff = order.username || "Chưa gán nhân viên";
+            const orderSource = sourceLabel(order.source || "staff");
+            const inRange = (!from || createdAt >= from) && (!to || createdAt <= to);
+            const staffMatched = staff === "all" || orderStaff === staff;
+            const sourceMatched = source === "all" || orderSource === source;
+
+            return inRange && staffMatched && sourceMatched;
+        });
+
+        const analytics = buildReportAnalytics(reportState.filteredOrders);
+        renderReport(analytics);
+    }
+
+    function renderReport(analytics) {
+        renderReportMetrics(analytics);
+        renderReportPreview(analytics);
+        renderReportCharts(analytics);
+        renderReportDetailTable(reportState.filteredOrders);
+        setReportStatus(`Đã lọc ${compactNumber(reportState.filteredOrders.length)} hóa đơn`);
+    }
+
+    function renderReportMetrics(analytics) {
+        setText("totalRevenue", safeFormatCurrency(analytics.totalRevenue));
+        setText("totalOrders", compactNumber(analytics.totalOrders));
+        setText("reportAverageOrder", safeFormatCurrency(analytics.averageOrderValue));
+        setText("reportMemberOrders", compactNumber(analytics.memberOrders));
+        setText("reportRevenueNote", analytics.totalOrders
+            ? `Ngày tốt nhất: ${analytics.bestDay.label} với ${safeFormatCurrency(analytics.bestDay.revenue)}.`
+            : "Không có doanh thu trong bộ lọc hiện tại.");
+        setText("reportOrderNote", analytics.topSource
+            ? `Nguồn mạnh nhất: ${analytics.topSource.label}, ${compactNumber(analytics.topSource.orders)} hóa đơn.`
+            : "Chưa có nguồn đơn nổi bật.");
+        setText("reportMemberNote", `${analytics.memberRatio}% hóa đơn có hồ sơ khách hàng.`);
+    }
+
+    function renderReportPreview(analytics) {
+        const target = document.getElementById("reportPreviewPanel");
+        const fromText = analytics.from ? analytics.from.toLocaleDateString("vi-VN") : "đầu dữ liệu";
+        const toText = analytics.to ? analytics.to.toLocaleDateString("vi-VN") : "hiện tại";
+        const topStaff = analytics.topStaff
+            ? `${escapeHtml(analytics.topStaff.label)} đạt ${safeFormatCurrency(analytics.topStaff.revenue)}`
+            : "Chưa có nhân viên phát sinh doanh thu";
+        const topSource = analytics.topSource
+            ? `${escapeHtml(analytics.topSource.label)} chiếm ${safeFormatCurrency(analytics.topSource.revenue)}`
+            : "Chưa có nguồn đơn phát sinh doanh thu";
+
+        target.innerHTML = `
+            <div class="report-preview-item">
+                <strong>Kỳ báo cáo</strong>
+                <span>${escapeHtml(fromText)} đến ${escapeHtml(toText)}</span>
+            </div>
+            <div class="report-preview-item">
+                <strong>Kết quả chính</strong>
+                <span>${compactNumber(analytics.totalOrders)} hóa đơn, doanh thu ${safeFormatCurrency(analytics.totalRevenue)}, trung bình ${safeFormatCurrency(analytics.averageOrderValue)}.</span>
+            </div>
+            <div class="report-preview-item">
+                <strong>Ngày bán tốt nhất</strong>
+                <span>${escapeHtml(analytics.bestDay.label)} với ${safeFormatCurrency(analytics.bestDay.revenue)} từ ${compactNumber(analytics.bestDay.orders)} hóa đơn.</span>
+            </div>
+            <div class="report-preview-item">
+                <strong>Nhân viên nổi bật</strong>
+                <span>${topStaff}</span>
+            </div>
+            <div class="report-preview-item">
+                <strong>Nguồn đơn nổi bật</strong>
+                <span>${topSource}</span>
+            </div>
+        `;
+    }
+
+    function destroyReportChart(key) {
+        if (reportState.charts[key]) {
+            reportState.charts[key].destroy();
+            delete reportState.charts[key];
+        }
+    }
+
+    function chartContext(id) {
+        const canvas = document.getElementById(id);
+        return canvas ? canvas.getContext("2d") : null;
+    }
+
+    function currencyTick(value) {
+        if (Math.abs(value) >= 1000000) {
+            return `${Math.round(value / 100000) / 10} Tr`;
+        }
+
+        return compactNumber(value);
+    }
+
+    function percentValue(value, total) {
+        if (!total) {
+            return "0%";
+        }
+
+        return `${Math.round((numberValue(value) / total) * 100)}%`;
+    }
+
+    function paletteByIndex(index) {
+        return [
+            reportPalette.accent,
+            reportPalette.info,
+            reportPalette.warning,
+            reportPalette.success,
+            "#64748b",
+            "#7c3aed"
+        ][index % 6];
+    }
+
+    function colorToken(color, index = 0) {
+        if (Array.isArray(color)) {
+            return color[index] || reportPalette.accent;
+        }
+
+        if (typeof color === "string") {
+            return color;
+        }
+
+        return reportPalette.accent;
+    }
+
+    function createChartGradients(context, startColor, endColor) {
+        const { chart } = context;
+        const { ctx, chartArea } = chart;
+
+        if (!chartArea) {
+            return startColor;
+        }
+
+        const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+        gradient.addColorStop(0, startColor);
+        gradient.addColorStop(1, endColor);
+        return gradient;
+    }
+
+    function renderChartLegend(chart, targetId, items = []) {
+        const target = document.getElementById(targetId);
+        if (!target || !chart) {
+            return;
+        }
+
+        const legendItems = items.length
+            ? items
+            : chart.data.datasets.map((dataset, index) => ({
+                label: dataset.label,
+                value: "",
+                color: colorToken(dataset.borderColor || dataset.backgroundColor, index)
+            }));
+
+        target.innerHTML = legendItems.map((item) => `
+            <span class="chart-legend-item">
+                <span class="chart-legend-swatch" style="background:${escapeHtml(item.color)}"></span>
+                <span>${escapeHtml(item.label)}</span>
+                ${item.value ? `<span class="chart-legend-value">${escapeHtml(item.value)}</span>` : ""}
+            </span>
+        `).join("");
+    }
+
+    function chartTooltipValue(point) {
+        const label = point.dataset.label || "";
+        const rawValue = Array.isArray(point.raw) ? point.raw[0] : point.raw;
+
+        if (point.dataset.yAxisID === "orders" || label.includes("Hóa đơn")) {
+            return compactNumber(rawValue);
+        }
+
+        return safeFormatCurrency(rawValue);
+    }
+
+    function externalTooltipHandler(context) {
+        const { chart, tooltip } = context;
+        let tooltipEl = chart.canvas.parentNode.querySelector(".chart-html-tooltip");
+
+        if (!tooltipEl) {
+            tooltipEl = document.createElement("div");
+            tooltipEl.className = "chart-html-tooltip";
+            chart.canvas.parentNode.appendChild(tooltipEl);
+        }
+
+        if (tooltip.opacity === 0) {
+            tooltipEl.style.opacity = 0;
+            return;
+        }
+
+        const title = tooltip.title?.[0] || "";
+        const rows = tooltip.dataPoints.map((point) => {
+            const datasetColor = colorToken(point.dataset.borderColor || point.dataset.backgroundColor, point.dataIndex);
+            return `
+                <div class="chart-html-tooltip-row">
+                    <span class="chart-html-tooltip-name">
+                        <span class="chart-legend-swatch" style="background:${escapeHtml(datasetColor)}"></span>
+                        ${escapeHtml(point.dataset.label || point.label)}
+                    </span>
+                    <span class="chart-html-tooltip-value">${escapeHtml(chartTooltipValue(point))}</span>
+                </div>
+            `;
+        }).join("");
+
+        tooltipEl.innerHTML = `
+            <div class="chart-html-tooltip-title">${escapeHtml(title)}</div>
+            ${rows}
+        `;
+        tooltipEl.style.opacity = 1;
+        tooltipEl.style.left = `${chart.canvas.offsetLeft + tooltip.caretX}px`;
+        tooltipEl.style.top = `${chart.canvas.offsetTop + tooltip.caretY}px`;
+    }
+
+    const averageLinePlugin = {
+        id: "posAverageLine",
+        afterDatasetsDraw(chart, _args, pluginOptions) {
+            const value = numberValue(pluginOptions?.value);
+            const scale = chart.scales[pluginOptions?.scaleID || "y"];
+
+            if (!scale || !value) {
+                return;
+            }
+
+            const y = scale.getPixelForValue(value);
+            const { left, right, top, bottom } = chart.chartArea;
+
+            if (y < top || y > bottom) {
+                return;
+            }
+
+            const { ctx } = chart;
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = pluginOptions.color || "rgba(15, 118, 110, 0.34)";
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(left, y);
+            ctx.lineTo(right, y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = pluginOptions.labelColor || reportPalette.muted;
+            ctx.font = "800 11px 'Plus Jakarta Sans', sans-serif";
+            ctx.textAlign = "right";
+            ctx.fillText(pluginOptions.label || "Trung bình", right - 4, y - 8);
+            ctx.restore();
+        }
+    };
+
+    const valueLabelPlugin = {
+        id: "posValueLabels",
+        afterDatasetsDraw(chart, _args, pluginOptions) {
+            if (pluginOptions?.display === false) {
+                return;
+            }
+
+            const { ctx } = chart;
+            const isHorizontal = chart.options.indexAxis === "y";
+            const formatter = pluginOptions?.formatter || ((value) => compactNumber(value));
+
+            ctx.save();
+            ctx.fillStyle = pluginOptions?.color || reportPalette.text;
+            ctx.font = "800 11px 'Plus Jakarta Sans', sans-serif";
+            ctx.textBaseline = "middle";
+
+            chart.data.datasets.forEach((dataset, datasetIndex) => {
+                if (dataset.showValueLabels === false) {
+                    return;
+                }
+
+                const meta = chart.getDatasetMeta(datasetIndex);
+                if (meta.hidden) {
+                    return;
+                }
+
+                meta.data.forEach((element, dataIndex) => {
+                    const value = dataset.data[dataIndex];
+                    const numericValue = numberValue(value);
+                    if (!numericValue && pluginOptions?.hideZero !== false) {
+                        return;
+                    }
+
+                    ctx.textAlign = isHorizontal ? "left" : "center";
+                    ctx.fillText(
+                        formatter(value, { chart, dataset, dataIndex, datasetIndex }),
+                        isHorizontal ? element.x + 8 : element.x,
+                        isHorizontal ? element.y : element.y - 10
+                    );
+                });
+            });
+
+            ctx.restore();
+        }
+    };
+
+    function renderReportCharts(analytics) {
+        renderReportTrendChart(analytics);
+        renderReportSourceChart(analytics);
+        renderReportStaffChart(analytics);
+    }
+
+    function renderReportTrendChart(analytics) {
+        const ctx = chartContext("reportTrendChart");
+        if (!ctx || !window.Chart) {
+            return;
+        }
+
+        destroyReportChart("trend");
+        const averageRevenue = sumBy(analytics.daily, (day) => day.revenue) / Math.max(analytics.daily.length, 1);
+
+        reportState.charts.trend = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: analytics.daily.map((day) => day.label),
+                datasets: [
+                    {
+                        label: "Doanh thu",
+                        data: analytics.daily.map((day) => day.revenue),
+                        backgroundColor: (context) => createChartGradients(context, "rgba(15, 118, 110, 0.88)", "rgba(20, 184, 166, 0.28)"),
+                        borderColor: "rgba(15, 118, 110, 0.92)",
+                        borderRadius: {
+                            topLeft: 9,
+                            topRight: 9
+                        },
+                        borderSkipped: false,
+                        maxBarThickness: 34,
+                        order: 2,
+                        showValueLabels: false,
+                        yAxisID: "y"
+                    },
+                    {
+                        type: "line",
+                        label: "Hóa đơn",
+                        data: analytics.daily.map((day) => day.orders),
+                        borderColor: reportPalette.info,
+                        backgroundColor: "rgba(2, 132, 199, 0.12)",
+                        borderWidth: 2.25,
+                        fill: false,
+                        order: 1,
+                        pointBackgroundColor: "#ffffff",
+                        pointBorderColor: reportPalette.info,
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 6,
+                        pointRadius: 3,
+                        showValueLabels: false,
+                        tension: 0.34,
+                        yAxisID: "orders"
+                    }
+                ]
+            },
+            plugins: [averageLinePlugin],
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: "index"
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    posAverageLine: {
+                        value: averageRevenue,
+                        label: `TB ${currencyTick(averageRevenue)}`,
+                        color: "rgba(15, 118, 110, 0.34)"
+                    },
+                    tooltip: {
+                        enabled: false,
+                        external: externalTooltipHandler,
+                        callbacks: {
+                            label(context) {
+                                if (context.dataset.yAxisID === "orders") {
+                                    return `Hóa đơn: ${compactNumber(context.raw)}`;
+                                }
+
+                                return `Doanh thu: ${safeFormatCurrency(context.raw)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxRotation: 0
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        border: {
+                            display: false
+                        },
+                        grid: {
+                            color: reportPalette.border
+                        },
+                        ticks: {
+                            callback: currencyTick
+                        }
+                    },
+                    orders: {
+                        display: false,
+                        beginAtZero: true,
+                        position: "right",
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            }
+        });
+
+        renderChartLegend(reportState.charts.trend, "reportTrendLegend", [
+            { label: "Doanh thu kỳ lọc", value: safeFormatCurrency(sumBy(analytics.daily, (day) => day.revenue)), color: reportPalette.accent },
+            { label: "Hóa đơn", value: compactNumber(sumBy(analytics.daily, (day) => day.orders)), color: reportPalette.info },
+            { label: "Trung bình ngày", value: currencyTick(averageRevenue), color: "rgba(15, 118, 110, 0.5)" }
+        ]);
+    }
+
+    function renderReportSourceChart(analytics) {
+        const ctx = chartContext("reportSourceChart");
+        if (!ctx || !window.Chart) {
+            return;
+        }
+
+        destroyReportChart("source");
+        const rows = analytics.sourceBreakdown.length
+            ? analytics.sourceBreakdown
+            : [{ label: "Chưa có dữ liệu", revenue: 0, orders: 0 }];
+        const totalRevenue = sumBy(rows, (row) => row.revenue);
+
+        reportState.charts.source = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: rows.map((row) => row.label),
+                datasets: [{
+                    label: "Doanh thu",
+                    data: rows.map((row) => row.revenue),
+                    backgroundColor: (context) => {
+                        const colors = [
+                            "rgba(15, 118, 110, 0.88)",
+                            "rgba(2, 132, 199, 0.8)",
+                            "rgba(217, 119, 6, 0.78)",
+                            "rgba(100, 116, 139, 0.74)"
+                        ];
+                        return colors[Math.min(context.dataIndex, colors.length - 1)];
+                    },
+                    borderColor: rows.map((_, index) => paletteByIndex(index)),
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    maxBarThickness: 34
+                }]
+            },
+            plugins: [valueLabelPlugin],
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    posValueLabels: {
+                        formatter: (value) => currencyTick(value)
+                    },
+                    tooltip: {
+                        enabled: false,
+                        external: externalTooltipHandler,
+                        callbacks: {
+                            label(context) {
+                                const row = rows[context.dataIndex];
+                                return `Doanh thu: ${safeFormatCurrency(context.raw)} · ${compactNumber(row.orders)} hóa đơn`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: {
+                            color: reportPalette.border
+                        },
+                        ticks: {
+                            callback: currencyTick
+                        }
+                    },
+                    y: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        renderChartLegend(reportState.charts.source, "reportSourceLegend", rows.map((row, index) => ({
+            label: `${row.label} · ${percentValue(row.revenue, totalRevenue)}`,
+            value: compactNumber(row.orders),
+            color: paletteByIndex(index)
+        })));
+    }
+
+    function renderReportStaffChart(analytics) {
+        const ctx = chartContext("reportStaffChart");
+        if (!ctx || !window.Chart) {
+            return;
+        }
+
+        destroyReportChart("staff");
+        const rows = analytics.staffBreakdown.slice(0, 8);
+        const chartRows = rows.length
+            ? rows
+            : [{ label: "Chưa có dữ liệu", revenue: 0, orders: 0 }];
+        const totalStaffRevenue = sumBy(chartRows, (row) => row.revenue);
+
+        reportState.charts.staff = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: chartRows.map((row) => row.label),
+                datasets: [{
+                    label: "Doanh thu",
+                    data: chartRows.map((row) => row.revenue),
+                    backgroundColor: (context) => {
+                        const colors = [
+                            "rgba(15, 118, 110, 0.9)",
+                            "rgba(2, 132, 199, 0.82)",
+                            "rgba(217, 119, 6, 0.78)",
+                            "rgba(100, 116, 139, 0.72)"
+                        ];
+                        return colors[Math.min(context.dataIndex, colors.length - 1)];
+                    },
+                    borderColor: chartRows.map((_, index) => paletteByIndex(index)),
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    maxBarThickness: 28
+                }]
+            },
+            plugins: [valueLabelPlugin],
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    posValueLabels: {
+                        formatter: (value) => currencyTick(value)
+                    },
+                    tooltip: {
+                        enabled: false,
+                        external: externalTooltipHandler,
+                        callbacks: {
+                            label(context) {
+                                const row = chartRows[context.dataIndex];
+                                return `Doanh thu: ${safeFormatCurrency(context.raw)} · ${compactNumber(row.orders)} hóa đơn`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: {
+                            color: reportPalette.border
+                        },
+                        ticks: {
+                            callback: currencyTick
+                        }
+                    },
+                    y: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            autoSkip: false
+                        }
+                    }
+                }
+            }
+        });
+
+        renderChartLegend(reportState.charts.staff, "reportStaffLegend", chartRows.slice(0, 3).map((row, index) => ({
+            label: `#${index + 1} ${row.label}`,
+            value: totalStaffRevenue ? percentValue(row.revenue, totalStaffRevenue) : safeFormatCurrency(row.revenue),
+            color: paletteByIndex(index)
+        })));
+    }
+
+    function renderReportDetailTable(orders) {
+        const target = document.getElementById("reportDetailTable");
+
+        if (!orders.length) {
+            target.innerHTML = `
+                <tr>
+                    <td colspan="7">Không có hóa đơn nào phù hợp bộ lọc.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        target.innerHTML = orders.map((order) => `
+            <tr>
+                <td><strong>#${escapeHtml(order.id)}</strong></td>
+                <td>${formatDateTime(order.created_at)}</td>
+                <td>${escapeHtml(order.customer_name || "Khách lẻ")}</td>
+                <td>${escapeHtml(order.username || "Chưa gán")}</td>
+                <td><span class="report-source-chip">${escapeHtml(sourceLabel(order.source || "staff"))}</span></td>
+                <td>${escapeHtml(statusLabel(order.status || "completed"))}</td>
+                <td style="color: var(--accent-color); font-weight: 850;">${safeFormatCurrency(order.total_amount)}</td>
+            </tr>
+        `).join("");
+    }
+
+    function exportReportCsv() {
+        const headers = ["Ma hoa don", "Thoi gian", "Khach hang", "Nhan vien", "Nguon", "Trang thai", "Tong tien"];
+        const rows = reportState.filteredOrders.map((order) => [
+            `#${order.id}`,
+            formatDateTime(order.created_at),
+            order.customer_name || "Khach le",
+            order.username || "Chua gan",
+            sourceLabel(order.source || "staff"),
+            statusLabel(order.status || "completed"),
+            numberValue(order.total_amount)
+        ]);
+        const csv = [headers, ...rows]
+            .map((row) => row.map(csvCell).join(","))
+            .join("\r\n");
+        const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const date = new Date().toISOString().slice(0, 10);
+
+        link.href = url;
+        link.download = `pos-glasses-report-${date}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    }
+
+    async function loadReport() {
+        setReportStatus("Đang tải dữ liệu");
+
+        try {
+            reportState.orders = await apiRequest("/orders");
+            populateFilterOptions(reportState.orders);
+            applyFilters();
+        } catch (error) {
+            console.error("Lỗi khi tạo báo cáo:", error);
+            setReportStatus("Không tải được báo cáo", "error");
+            document.getElementById("reportDetailTable").innerHTML = `
+                <tr>
+                    <td colspan="7">Không tải được dữ liệu báo cáo.</td>
+                </tr>
+            `;
+        }
+    }
+
+    let reportsAiPanel = null;
+
+    function mapReportRangeForAi() {
+        const range = document.getElementById("reportRangeFilter")?.value || "last30";
+        const fromEl = document.getElementById("reportFromDate");
+        const toEl = document.getElementById("reportToDate");
+        if (range === "last7") return { range: "7d" };
+        if (range === "last30") return { range: "30d" };
+        if (range === "thisMonth") return { range: "thisMonth" };
+        if (range === "custom") {
+            return {
+                range: "custom",
+                from: fromEl?.value || undefined,
+                to: toEl?.value || undefined
+            };
+        }
+        // "all" → analyze last 30d as a practical AI window
+        return { range: "30d" };
+    }
+
+    function ensureReportsAiPanel() {
+        if (reportsAiPanel || !window.PosAiInsights) return reportsAiPanel;
+        const user = typeof window.getCurrentUser === "function" ? window.getCurrentUser() : null;
+        if (!user || user.role !== "admin") return null;
+        reportsAiPanel = window.PosAiInsights.mount("#reportsAiInsightsHost", {
+            surface: "reports",
+            title: "Gợi ý AI báo cáo",
+            endpoint: null,
+            autoLoad: false,
+            getRange: mapReportRangeForAi
+        });
+        return reportsAiPanel;
+    }
+
+    function refreshReportsAiInsights() {
+        const panel = ensureReportsAiPanel();
+        if (panel && typeof panel.load === "function") {
+            panel.load();
+        }
+    }
+
+    document.getElementById("viewReportButton").addEventListener("click", () => {
+        applyFilters();
+        refreshReportsAiInsights();
+    });
+    document.getElementById("viewReportInlineButton").addEventListener("click", () => {
+        applyFilters();
+        refreshReportsAiInsights();
+    });
+    document.getElementById("exportCsvButton").addEventListener("click", exportReportCsv);
+    document.getElementById("printReportButton").addEventListener("click", () => window.print());
+    document.getElementById("reportRangeFilter").addEventListener("change", () => {
+        const isCustom = document.getElementById("reportRangeFilter").value === "custom";
+        document.getElementById("reportFromDate").disabled = !isCustom;
+        document.getElementById("reportToDate").disabled = !isCustom;
+        applyFilters();
+        refreshReportsAiInsights();
+    });
+    document.getElementById("reportStaffFilter").addEventListener("change", applyFilters);
+    document.getElementById("reportSourceFilter").addEventListener("change", applyFilters);
+    document.getElementById("reportFromDate").addEventListener("change", () => {
+        applyFilters();
+        refreshReportsAiInsights();
+    });
+    document.getElementById("reportToDate").addEventListener("change", () => {
+        applyFilters();
+        refreshReportsAiInsights();
+    });
+
+    document.getElementById("reportFromDate").disabled = true;
+    document.getElementById("reportToDate").disabled = true;
+
+    loadReport().then(() => {
+        setTimeout(refreshReportsAiInsights, 300);
+    });
+</script>
+<script src="assets/js/aiInsights.js"></script>
+<script src="assets/js/aiAssistant.js"></script>
+</body>
+</html>

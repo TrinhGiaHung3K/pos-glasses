@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>POS Glasses - Sản phẩm</title>
+    <link rel="stylesheet" href="../assets/css/base.css">
+    <style>
+        body{margin:0;background:#f4f6f8;color:#17202a;font-family:Inter,system-ui,sans-serif}
+        .product-shell{max-width:560px;margin:0 auto;min-height:100vh;padding:24px 18px 48px}
+        .product-brand{display:flex;align-items:center;gap:10px;margin-bottom:18px;font-weight:800}
+        .product-brand img{width:42px;height:42px;object-fit:contain}
+        .product-card{background:#fff;border:1px solid #dde3e8;border-radius:24px;overflow:hidden;box-shadow:0 18px 50px rgba(15,23,42,.08)}
+        .product-image{aspect-ratio:4/3;background:#eef1f4;display:grid;place-items:center}
+        .product-image img{width:100%;height:100%;object-fit:cover}
+        .product-body{padding:22px}.product-kicker{color:#687584;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em}
+        h1{font-size:1.65rem;margin:8px 0}.product-price{font-size:1.8rem;font-weight:850;margin:16px 0}
+        .stock{display:inline-flex;padding:7px 11px;border-radius:999px;background:#e9f8ef;color:#137a41;font-weight:700}
+        .stock.out{background:#fff0ee;color:#b42318}.cta{display:block;margin-top:22px;padding:14px;border-radius:14px;text-align:center;background:#111827;color:#fff;text-decoration:none;font-weight:800}
+        .state{text-align:center;padding:70px 24px;color:#687584}
+    </style>
+</head>
+<body>
+<main class="product-shell">
+    <div class="product-brand"><img src="../assets/images/pos-glasses-optic-bridge-logo.png" alt=""><span>POS Glasses</span></div>
+    <section id="content" class="product-card"><div class="state">Đang tải sản phẩm…</div></section>
+</main>
+<script src="../assets/js/format.js"></script>
+<script>
+    const escapeText = (value) => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    async function loadProduct() {
+        const content = document.getElementById("content");
+        const code = new URLSearchParams(location.search).get("code") || "";
+        try {
+            const response = await fetch(`/api/public/products/by-qr/${encodeURIComponent(code)}`);
+            if (!response.ok) throw new Error("Mã QR không còn hiệu lực hoặc sản phẩm không tồn tại.");
+            const product = await response.json();
+            const image = product.image ? `../${String(product.image).replace(/^\//, "")}` : "../assets/images/pos-glasses-optic-bridge-logo.png";
+            const inStock = product.availability === "in_stock";
+            content.innerHTML = `
+                <div class="product-image"><img src="${escapeText(image)}" alt="${escapeText(product.name)}"></div>
+                <div class="product-body">
+                    <div class="product-kicker">${escapeText(product.brand || "POS Glasses")} · ${escapeText(product.sku)}</div>
+                    <h1>${escapeText(product.name)}</h1>
+                    <div class="product-price">${formatCurrency(product.price)}</div>
+                    <span class="stock ${inStock ? "" : "out"}">${inStock ? "Còn hàng tại cửa hàng" : "Tạm hết hàng"}</span>
+                    <a class="cta" href="/orders.html?productQr=${encodeURIComponent(product.public_code)}">Nhờ nhân viên tư vấn sản phẩm này</a>
+                </div>`;
+        } catch (error) {
+            content.innerHTML = `<div class="state"><h1>Không mở được sản phẩm</h1><p>${escapeText(error.message)}</p></div>`;
+        }
+    }
+    loadProduct();
+</script>
+</body>
+</html>
