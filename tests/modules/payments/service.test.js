@@ -24,6 +24,9 @@ function harness(overrides = {}) {
         async findPendingIntentByContent(content) {
             return intents.find((row) => row.status === "pending" && content.includes(row.transfer_content)) || null;
         },
+        async findIntentCandidateByContent(content) {
+            return intents.find((row) => ["pending", "expired"].includes(row.status) && content.includes(row.transfer_content)) || null;
+        },
         async recordTransaction(tx) {
             if (transactions.some((row) => row.provider_transaction_id === tx.provider_transaction_id)) {
                 return { inserted: false };
@@ -126,6 +129,39 @@ test("wrong amount is recorded but never pays test intent", async () => {
     assert.equal(result.match_status, "amount_mismatch");
     assert.equal(intents[0].status, "pending");
     assert.equal(transactions[0].match_status, "amount_mismatch");
+});
+
+test("BIDV virtual account matches configured sub-account", async () => {
+    const { service, intents } = harness({ config: { accountNumber: "002470" } });
+    const intent = await service.createTestIntent({ id: 1, role: "admin" });
+    const payload = {
+        id: 9003,
+        accountNumber: "12345678906699",
+        subAccount: "002470",
+        transferType: "in",
+        transferAmount: 2900,
+        content: intent.transfer_content
+    };
+    const result = await service.handleWebhook({}, JSON.stringify(payload), payload);
+    assert.equal(result.match_status, "matched");
+    assert.equal(intents[0].status, "paid");
+});
+
+test("late payment is linked for review but never auto-finalized", async () => {
+    const { service, intents, transactions } = harness();
+    const intent = await service.createTestIntent({ id: 1, role: "admin" });
+    intents[0].status = "expired";
+    const payload = {
+        id: 9004,
+        accountNumber: "123456789",
+        transferType: "in",
+        transferAmount: 2900,
+        content: intent.transfer_content
+    };
+    const result = await service.handleWebhook({}, JSON.stringify(payload), payload);
+    assert.equal(result.match_status, "late_payment");
+    assert.equal(intents[0].status, "expired");
+    assert.equal(transactions[0].payment_intent_id, intents[0].id);
 });
 
 test("real order intent reserves through orders service and finalizes only after webhook", async () => {

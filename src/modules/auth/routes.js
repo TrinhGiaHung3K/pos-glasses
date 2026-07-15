@@ -3,6 +3,7 @@ const asyncHandler = require("../../middleware/asyncHandler");
 const { createAuthController } = require("./controller");
 const { createLoginRateLimiter } = require("../../middleware/rateLimit");
 const { env } = require("../../config/env");
+const authMiddleware = require("../../middleware/authMiddleware");
 
 function createAuthRouter(service) {
     const router = express.Router();
@@ -10,6 +11,8 @@ function createAuthRouter(service) {
     const loginLimiter = createLoginRateLimiter(env.security);
 
     router.post("/login", loginLimiter, asyncHandler(controller.login));
+    router.get("/api/auth/session", authMiddleware, asyncHandler(controller.session));
+    router.post("/logout", asyncHandler(controller.logout));
 
     // Public register only when enabled; still exposed so FE gets clear 403
     router.post("/register", asyncHandler(controller.register));

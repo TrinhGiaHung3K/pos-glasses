@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const { env } = require("../../config/env");
 const { createHttpError } = require("../../middleware/httpError");
 
-const SALT_ROUNDS = 10;
+const SALT_ROUNDS = 12;
 const ALLOWED_ROLES = new Set(["admin", "staff"]);
 
 function generateToken(user) {
@@ -38,6 +38,14 @@ function createAuthService(repository, options = {}) {
     }
 
     return {
+        async validateSession(claims) {
+            const user = await repository.findById(Number(claims?.id));
+            if (!user || (user.is_active != null && Number(user.is_active) === 0)) {
+                throw createHttpError(401, "Phiên đăng nhập không còn hiệu lực");
+            }
+            return publicUser(user);
+        },
+
         findAllUsers() {
             return repository.findAllUsers().then((rows) =>
                 rows.map((row) => ({
@@ -158,8 +166,12 @@ function createAuthService(repository, options = {}) {
                 throw createHttpError(400, "Tên đăng nhập chỉ gồm chữ, số, . _ -");
             }
 
-            if (password.length < 6) {
-                throw createHttpError(400, "Mật khẩu phải có ít nhất 6 ký tự");
+            if (typeof password !== "string" || password.length < 10 || password.length > 128) {
+                throw createHttpError(400, "Mật khẩu phải từ 10 đến 128 ký tự");
+            }
+
+            if (!/[A-Za-zÀ-ỹ]/u.test(password) || !/\d/.test(password)) {
+                throw createHttpError(400, "Mật khẩu phải có ít nhất một chữ và một số");
             }
 
             if (confirmPassword != null && password !== confirmPassword) {

@@ -2937,8 +2937,7 @@
             });
         }
         startQsPayCountdown(intent.expires_at);
-        const token = getAuthToken();
-        const url = `/api/staff/payment-intents/${encodeURIComponent(intent.public_id)}/stream?token=${encodeURIComponent(token)}`;
+        const url = `/api/staff/payment-intents/${encodeURIComponent(intent.public_id)}/stream`;
         qsPayEventSource = new EventSource(url);
         qsPayEventSource.onmessage = (event) => {
             const data = JSON.parse(event.data || "{}");

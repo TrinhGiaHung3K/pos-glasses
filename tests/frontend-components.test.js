@@ -117,7 +117,7 @@ test("phone barcode scanner mode removes camera dependency and keeps staff ranki
 test("dashboard page exposes expanded POS analytics with Chart.js panels", () => {
     const source = read("frontend/dashboard.html");
 
-    assert.match(source, /https:\/\/cdn\.jsdelivr\.net\/npm\/chart\.js/);
+    assert.match(source, /\/vendor\/chartjs\/chart\.umd\.min\.js/);
     assert.match(source, /id="dashboardStatus"/);
     assert.match(source, /id="todayRevenue"/);
     assert.match(source, /id="averageOrderValue"/);

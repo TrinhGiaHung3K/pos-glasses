@@ -141,13 +141,12 @@
         if (eventSource) {
             eventSource.close();
         }
-        const token = localStorage.getItem("auth_token") || "";
-        if (!token || typeof EventSource === "undefined") {
+        if (!getAuthToken() || typeof EventSource === "undefined") {
             // Fallback poll every 12s
             setInterval(() => loadOrders(true), 12000);
             return;
         }
-        const url = `/api/staff/table-orders/stream?token=${encodeURIComponent(token)}`;
+        const url = "/api/staff/table-orders/stream";
         eventSource = new EventSource(url);
         eventSource.onmessage = (ev) => {
             try {

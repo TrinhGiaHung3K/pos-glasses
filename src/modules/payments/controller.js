@@ -19,13 +19,22 @@ function createPaymentsController(service) {
         },
         async stream(req, res) {
             const publicId = String(req.params.publicId || "");
-            await service.findIntent(publicId);
+            const intent = await service.findIntent(publicId);
             res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
             res.setHeader("Cache-Control", "no-cache, no-transform");
             res.setHeader("Connection", "keep-alive");
+            res.setHeader("X-Accel-Buffering", "no");
             res.flushHeaders?.();
             const send = (event) => res.write(`data: ${JSON.stringify(event)}\n\n`);
-            send({ type: "hello", public_id: publicId, at: new Date().toISOString() });
+            // Send the persisted state immediately. This closes the race where
+            // the webhook is processed before EventSource has connected.
+            send({
+                type: `payment.${intent.status}`,
+                public_id: publicId,
+                order_id: intent.order_id,
+                status: intent.status,
+                at: new Date().toISOString()
+            });
             const heartbeat = setInterval(() => res.write(`: ping ${Date.now()}\n\n`), 25000);
             const unsubscribe = subscribePaymentEvents((event) => {
                 if (event.public_id === publicId) send(event);

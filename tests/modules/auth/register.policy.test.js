@@ -33,7 +33,7 @@ test("admin createUser creates staff account", async () => {
 
     const result = await service.createUser({
         username: "staff9",
-        password: "secret1",
+        password: "secret1234",
         role: "staff"
     });
 

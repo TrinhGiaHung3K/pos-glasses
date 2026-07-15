@@ -15,9 +15,11 @@ function createFakePaymentProvider(options = {}) {
             return {
                 provider_transaction_id: String(payload.id || payload.transaction_id || ""),
                 account_number: String(payload.accountNumber || payload.account_number || ""),
+                sub_account: String(payload.subAccount || payload.sub_account || ""),
                 transfer_type: String(payload.transferType || payload.transfer_type || "in").toLowerCase(),
                 amount: Math.round(Number(payload.transferAmount ?? payload.amount ?? 0)),
                 transfer_content: String(payload.content || payload.transfer_content || ""),
+                payment_code: String(payload.code || ""),
                 bank_reference: String(payload.referenceCode || payload.reference || ""),
                 transaction_at: payload.transactionDate || payload.transaction_at || new Date().toISOString(),
                 raw: payload

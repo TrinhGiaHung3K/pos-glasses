@@ -6,10 +6,21 @@ const { createSePayProvider } = require("../../../src/modules/payments/providers
 test("SePay provider accepts API key and HMAC signatures", () => {
     const provider = createSePayProvider({ webhookSecret: "secret" });
     const body = JSON.stringify({ id: 1 });
-    const signature = crypto.createHmac("sha256", "secret").update(body).digest("hex");
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature = crypto.createHmac("sha256", "secret").update(`${timestamp}.${body}`).digest("hex");
     assert.equal(provider.verifyWebhook({ authorization: "Apikey secret" }, body), true);
-    assert.equal(provider.verifyWebhook({ "x-sepay-signature": signature }, body), true);
-    assert.equal(provider.verifyWebhook({ "x-sepay-signature": "bad" }, body), false);
+    assert.equal(provider.verifyWebhook({
+        "x-sepay-signature": `sha256=${signature}`,
+        "x-sepay-timestamp": timestamp
+    }, body), true);
+    assert.equal(provider.verifyWebhook({
+        "x-sepay-signature": "sha256=bad",
+        "x-sepay-timestamp": timestamp
+    }, body), false);
+    assert.equal(provider.verifyWebhook({
+        "x-sepay-signature": `sha256=${signature}`,
+        "x-sepay-timestamp": String(Number(timestamp) - 3600)
+    }, body), false);
 });
 
 test("SePay provider normalizes incoming transaction", () => {
@@ -17,6 +28,7 @@ test("SePay provider normalizes incoming transaction", () => {
     const tx = provider.normalizeTransaction({
         id: 92704,
         accountNumber: "1017588888",
+        subAccount: "002470",
         transferType: "in",
         transferAmount: 2900,
         content: "PGTABC",
@@ -26,4 +38,5 @@ test("SePay provider normalizes incoming transaction", () => {
     assert.equal(tx.provider_transaction_id, "92704");
     assert.equal(tx.amount, 2900);
     assert.equal(tx.transfer_content, "PGTABC");
+    assert.equal(tx.sub_account, "002470");
 });

@@ -31,6 +31,7 @@
         }
 
         const request = {
+            credentials: "same-origin",
             ...Object.fromEntries(
                 Object.entries(options).filter(([key]) => key !== "auth")
             ),
@@ -49,6 +50,7 @@
             // Auto-redirect to login on 401 (unauthorized/expired token)
             if (useAuth && response.status === 401) {
                 localStorage.removeItem("auth_token");
+                localStorage.removeItem("auth_session");
                 localStorage.removeItem("user");
                 // Only redirect if not already on login page
                 if (!window.location.pathname.endsWith("login.html")) {

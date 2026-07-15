@@ -2035,6 +2035,10 @@
             state.paymentEventSource.close();
             state.paymentEventSource = null;
         }
+        if (state.paymentPollTimer) {
+            clearInterval(state.paymentPollTimer);
+            state.paymentPollTimer = null;
+        }
     }
 
     function hidePaymentWaiting() {
@@ -2085,6 +2089,49 @@
             focusSearch();
             window.location.href = `/invoice_detail.html?id=${orderId}`;
         });
+    }
+
+    function handlePersistedPaymentStatus(intent, data) {
+        const status = String(data?.status || "").toLowerCase();
+        if (status === "paid") {
+            completeConfirmedBankPayment(data.order_id || intent.order_id);
+            return true;
+        }
+        if (["expired", "needs_review", "failed"].includes(status)) {
+            const node = document.getElementById("paymentWaitingStatus");
+            if (node) {
+                node.textContent = status === "expired"
+                    ? "QR đã hết hạn. Nếu đã chuyển tiền, vui lòng báo quản trị viên đối soát."
+                    : "Giao dịch cần quản trị viên đối soát trước khi hoàn tất hóa đơn.";
+            }
+            state.paymentEventSource?.close();
+            if (state.paymentPollTimer) {
+                clearInterval(state.paymentPollTimer);
+                state.paymentPollTimer = null;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    function startPaymentStatusPolling(intent) {
+        let checking = false;
+        const check = async () => {
+            if (checking) return;
+            checking = true;
+            try {
+                const current = await apiRequest(`/api/staff/payment-intents/${encodeURIComponent(intent.public_id)}`);
+                handlePersistedPaymentStatus(intent, current);
+            } catch (error) {
+                if (error?.status !== 401) {
+                    console.warn("Payment status polling failed", error);
+                }
+            } finally {
+                checking = false;
+            }
+        };
+        check();
+        state.paymentPollTimer = setInterval(check, 3000);
     }
 
     function openPaymentWaiting(intent) {
@@ -2172,20 +2219,17 @@
             });
         }
         startPaymentCountdown(intent.expires_at);
-        const token = getAuthToken();
-        const url = `/api/staff/payment-intents/${encodeURIComponent(intent.public_id)}/stream?token=${encodeURIComponent(token)}`;
+        const url = `/api/staff/payment-intents/${encodeURIComponent(intent.public_id)}/stream`;
         state.paymentEventSource = new EventSource(url);
         state.paymentEventSource.onmessage = (event) => {
             const data = JSON.parse(event.data || "{}");
-            if (data.type === "payment.paid") completeConfirmedBankPayment(data.order_id || intent.order_id);
-            if (data.type === "payment.expired") {
-                const status = document.getElementById("paymentWaitingStatus");
-                if (status) status.textContent = "QR đã hết hạn. Tồn kho đã được hoàn giữ chỗ.";
-                const simulateButton = document.getElementById("paymentSimulateButton");
-                if (simulateButton) simulateButton.disabled = true;
-                state.paymentEventSource?.close();
-            }
+            handlePersistedPaymentStatus(intent, data);
         };
+        state.paymentEventSource.onerror = () => {
+            const status = document.getElementById("paymentWaitingStatus");
+            if (status) status.textContent = "Kết nối realtime gián đoạn; hệ thống vẫn đang tự kiểm tra giao dịch.";
+        };
+        startPaymentStatusPolling(intent);
     }
 
     async function checkout() {

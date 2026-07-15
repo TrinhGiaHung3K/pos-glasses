@@ -1,3 +1,15 @@
+const { env } = require("../../config/env");
+
+function sessionCookieOptions() {
+    return {
+        httpOnly: true,
+        secure: env.isProd,
+        sameSite: "strict",
+        path: "/",
+        maxAge: env.security.sessionCookieMaxAgeMs
+    };
+}
+
 function createAuthController(service) {
     return {
         async listUsers(req, res) {
@@ -5,7 +17,32 @@ function createAuthController(service) {
         },
 
         async login(req, res) {
-            res.json(await service.login(req.body, { ip: req.ip }));
+            const result = await service.login(req.body, { ip: req.ip });
+            res.cookie(env.security.sessionCookieName, result.token, sessionCookieOptions());
+            const { token, ...safeResult } = result;
+            res.json({ ...safeResult, authenticated: true });
+        },
+
+        async session(req, res) {
+            res.json({
+                authenticated: true,
+                user: {
+                    id: req.user.id,
+                    username: req.user.username,
+                    role: req.user.role,
+                    is_active: true
+                }
+            });
+        },
+
+        async logout(req, res) {
+            res.clearCookie(env.security.sessionCookieName, {
+                httpOnly: true,
+                secure: env.isProd,
+                sameSite: "strict",
+                path: "/"
+            });
+            res.status(204).end();
         },
 
         async register(req, res) {

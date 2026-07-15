@@ -3,13 +3,18 @@ const { createHttpError } = require("../../middleware/httpError");
 const { publishPaymentEvent } = require("./events");
 
 function maskAccount(value) {
-    const text = String(value || "").replace(/\s/g, "");
+    const text = String(value || "").replace(/\D/g, "");
     return text ? `${"*".repeat(Math.max(0, text.length - 4))}${text.slice(-4)}` : "";
+}
+
+function normalizeAccountIdentifier(value) {
+    return String(value || "").replace(/\D/g, "");
 }
 
 function publicIntent(intent, qr) {
     return {
         public_id: intent.public_id,
+        order_id: intent.order_id ? Number(intent.order_id) : null,
         provider: intent.provider,
         purpose: intent.purpose,
         is_test: Boolean(intent.is_test),
@@ -20,6 +25,7 @@ function publicIntent(intent, qr) {
         bank_code: intent.bank_code,
         account_number_masked: intent.account_number_masked,
         status: intent.status,
+        payment_status: intent.status,
         expires_at: intent.expires_at,
         qr_payload: qr?.qr_payload || null
     };
@@ -126,17 +132,31 @@ function createPaymentsService(repository, options = {}) {
                 signature_valid: true,
                 processing_status: "received"
             });
-            if (!delivery.inserted) return { success: true, duplicate: true };
-            const expectedAccount = String(config.accountNumber || "").replace(/\s/g, "");
-            const receivedAccount = String(tx.account_number || "").replace(/\s/g, "");
-            const accountMatches = !expectedAccount || expectedAccount === receivedAccount;
+            // A duplicated delivery can be a provider retry after an earlier
+            // attempt failed before the transaction row was inserted. Continue
+            // through the idempotent transaction insert instead of returning.
+            const expectedAccount = normalizeAccountIdentifier(config.accountNumber);
+            const receivedAccounts = [tx.account_number, tx.sub_account]
+                .map(normalizeAccountIdentifier)
+                .filter(Boolean);
+            const accountMatches = !expectedAccount || receivedAccounts.includes(expectedAccount);
+            const matchContent = `${tx.payment_code || ""} ${tx.transfer_content || ""}`.trim();
+            const candidateCutoff = new Date(
+                Date.now() - Math.max(1, Number(config.lateMatchWindowMinutes) || 60) * 60_000
+            );
             const intent = accountMatches
-                ? await repository.findPendingIntentByContent(tx.transfer_content)
+                ? (repository.findIntentCandidateByContent
+                    ? await repository.findIntentCandidateByContent(matchContent, candidateCutoff)
+                    : await repository.findPendingIntentByContent(matchContent))
                 : null;
+            const activeIntent = intent
+                && intent.status === "pending"
+                && new Date(intent.expires_at).getTime() > Date.now();
             const amountMatches = intent && Number(intent.expected_amount) === tx.amount;
             const matchStatus = !accountMatches ? "account_mismatch"
                 : !intent ? "unmatched"
-                    : !amountMatches ? "amount_mismatch" : "matched";
+                    : !activeIntent ? "late_payment"
+                        : !amountMatches ? "amount_mismatch" : "matched";
             const recorded = await repository.recordTransaction({
                 ...tx,
                 provider: provider.name,
@@ -200,4 +220,4 @@ function createPaymentsService(repository, options = {}) {
     };
 }
 
-module.exports = { createPaymentsService, maskAccount, publicIntent };
+module.exports = { createPaymentsService, maskAccount, normalizeAccountIdentifier, publicIntent };

@@ -164,12 +164,31 @@ async function ensureProductImageDir() {
  * Persist a client-processed product image (transparent PNG preferred).
  * Returns a web path under /images/products suitable for products.image.
  */
-async function saveProcessedProductImage(payload = {}) {
+async function saveProcessedProductImage(payload = {}, imageStorage = null) {
     const dataUrl = payload.dataUrl || payload.data_url || payload.image;
     const { mimeType, buffer } = parseImageDataUrl(dataUrl);
     const slug = sanitizeImageSlug(payload.sku || payload.filename || "product");
     const ext = extensionForMime(mimeType);
     const filename = `${slug}-${Date.now()}.${ext}`;
+
+    if (imageStorage?.upload) {
+        try {
+            const uploaded = await imageStorage.upload({ buffer, mimeType, slug, filename });
+            return {
+                message: "Đã tải ảnh sản phẩm lên Cloudinary",
+                path: uploaded.path,
+                image: uploaded.path,
+                provider: uploaded.provider || imageStorage.name || "cloudinary",
+                public_id: uploaded.publicId || null,
+                mimeType,
+                bytes: uploaded.bytes || buffer.length,
+                width: uploaded.width || null,
+                height: uploaded.height || null
+            };
+        } catch (error) {
+            throw createHttpError(502, `Không thể tải ảnh lên Cloudinary: ${error.message}`);
+        }
+    }
 
     await ensureProductImageDir();
     const absolutePath = path.join(PRODUCT_IMAGE_DIR, filename);
@@ -180,6 +199,7 @@ async function saveProcessedProductImage(payload = {}) {
         message: "Đã lưu ảnh sản phẩm",
         path: publicPath,
         image: publicPath,
+        provider: "local",
         mimeType,
         bytes: buffer.length
     };
@@ -187,6 +207,7 @@ async function saveProcessedProductImage(payload = {}) {
 
 function createProductsService(repository, options = {}) {
     const auditService = options.auditService || null;
+    const imageStorage = options.imageStorage || null;
 
     async function writeAudit(entry) {
         if (!auditService?.log) return;
@@ -286,7 +307,7 @@ function createProductsService(repository, options = {}) {
         },
 
         saveProcessedImage(payload) {
-            return saveProcessedProductImage(payload);
+            return saveProcessedProductImage(payload, imageStorage);
         },
 
         /**

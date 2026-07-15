@@ -8,7 +8,7 @@
     }
 
     function getAuthToken() {
-        return localStorage.getItem("auth_token");
+        return localStorage.getItem("auth_token") || localStorage.getItem("auth_session");
     }
 
     function requireAuth() {
@@ -19,6 +19,7 @@
             // Clear any partial auth data
             localStorage.removeItem("user");
             localStorage.removeItem("auth_token");
+            localStorage.removeItem("auth_session");
             window.location.href = "/login.html";
             return null;
         }
@@ -43,18 +44,26 @@
     }
 
     function saveAuth(data) {
-        if (data.token) {
-            localStorage.setItem("auth_token", data.token);
+        // New sessions use an HttpOnly SameSite cookie. Keep only a harmless
+        // marker and the display user in localStorage; never expose the JWT to JS.
+        localStorage.removeItem("auth_token");
+        if (data.authenticated) {
+            localStorage.setItem("auth_session", "cookie");
         }
         if (data.user) {
             localStorage.setItem("user", JSON.stringify(data.user));
         }
     }
 
-    function logout() {
+    async function logout() {
         localStorage.removeItem("user");
         localStorage.removeItem("auth_token");
-        window.location.href = "/login.html";
+        localStorage.removeItem("auth_session");
+        try {
+            await fetch("/logout", { method: "POST", credentials: "same-origin", keepalive: true });
+        } finally {
+            window.location.href = "/login.html";
+        }
     }
 
     function getLandingForUser(user = getCurrentUser()) {

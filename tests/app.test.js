@@ -13,11 +13,14 @@ async function request(app, path, options = {}) {
 
     try {
         const response = await fetch(`http://127.0.0.1:${port}${path}`, options);
-        const body = await response.json();
+        const text = await response.text();
+        let body = null;
+        try { body = text ? JSON.parse(text) : null; } catch { body = text; }
 
         return {
             status: response.status,
-            body
+            body,
+            headers: response.headers
         };
     } finally {
         await new Promise((resolve, reject) => {
@@ -42,17 +45,15 @@ function authHeaders(role = "staff") {
     };
 }
 
-test("GET / returns API health payload", async () => {
+test("GET / redirects browsers to login", async () => {
     const { createApp } = require("../src/app");
 
     const app = createApp();
 
-    const response = await request(app, "/");
+    const response = await request(app, "/", { redirect: "manual" });
 
-    assert.equal(response.status, 200);
-    assert.equal(response.body.message, "POS Glasses API Running");
-    assert.equal(typeof response.body.request_id, "string");
-    assert.ok(response.body.request_id.length > 0);
+    assert.equal(response.status, 302);
+    assert.equal(response.headers.get("location"), "/login.html");
 });
 
 test("GET /favicon.ico is public and does not fall through to auth", async () => {
@@ -328,6 +329,73 @@ test("admin AI endpoint rejects staff even inside authenticated router", async (
     const response = await request(app, "/api/admin/ai/chat", {
         method: "POST", headers: { "Content-Type": "application/json", ...authHeaders("staff") },
         body: JSON.stringify({ message: "doanh thu" })
+    });
+    assert.equal(response.status, 403);
+});
+
+test("login issues an HttpOnly cookie and omits the JWT from JSON", async () => {
+    const { createApp } = require("../src/app");
+    const token = jwt.sign({ id: 2, username: "staff", role: "staff" }, env.jwt.secret, { expiresIn: "1h" });
+    const app = createApp({
+        services: {
+            auth: {
+                login: async () => ({
+                    message: "Login successful",
+                    token,
+                    user: { id: 2, username: "staff", role: "staff", is_active: true }
+                })
+            }
+        }
+    });
+    const response = await request(app, "/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: "staff", password: "not-used-here" })
+    });
+    assert.equal(response.status, 200);
+    assert.equal(response.body.authenticated, true);
+    assert.equal(response.body.token, undefined);
+    assert.match(response.headers.get("set-cookie"), /pos_session=.*HttpOnly.*SameSite=Strict/i);
+});
+
+test("cookie-authenticated writes require same-origin CSRF metadata", async () => {
+    const { createApp } = require("../src/app");
+    const token = jwt.sign({ id: 2, username: "staff", role: "staff" }, env.jwt.secret, { expiresIn: "1h" });
+    const app = createApp({
+        services: {
+            auth: {
+                validateSession: async (claims) => claims
+            },
+            orders: {
+                checkout: async () => ({ order_id: 1 })
+            }
+        }
+    });
+    const response = await request(app, "/api/staff/pos/checkout", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Cookie: `${env.security.sessionCookieName}=${token}`
+        },
+        body: JSON.stringify({ items: [] })
+    });
+    assert.equal(response.status, 403);
+    assert.match(response.body.message, /không cùng nguồn/);
+});
+
+test("staff cannot mutate the product catalog", async () => {
+    const { createApp } = require("../src/app");
+    const app = createApp({
+        services: {
+            products: {
+                create: async () => ({ id: 1 })
+            }
+        }
+    });
+    const response = await request(app, "/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders("staff") },
+        body: JSON.stringify({ name: "Test", sku: "TEST", price: 1000, quantity: 1 })
     });
     assert.equal(response.status, 403);
 });

@@ -288,7 +288,7 @@
             <p id="loginResult" class="result-msg"></p>
 
             <div class="auth-switch">
-                Chưa có tài khoản? <a href="register.html">Tạo tài khoản mới</a>
+                Cần tài khoản mới? Liên hệ quản trị viên hệ thống.
             </div>
         </div>
     </div>
@@ -337,14 +337,14 @@
                 body: { username, password }
             });
 
-            if (data.token) {
+            if (data.authenticated) {
                 saveAuth(data);
                 resultEl.innerHTML = "Đăng nhập thành công!";
                 resultEl.className = "result-msg success";
                 setTimeout(() => redirectAfterLogin(data.user), 500);
             }
         } catch (error) {
-            resultEl.innerHTML = error.message;
+            resultEl.textContent = error.message;
             resultEl.className = "result-msg error";
             btn.disabled = false;
             btn.innerHTML = '<span>Đăng nhập</span> <i class="ph ph-arrow-right"></i>';
@@ -355,10 +355,22 @@
         if (e.key === "Enter") handleLogin();
     });
 
-    // If already logged in, redirect
-    if (getCurrentUser() && getAuthToken()) {
-        redirectAfterLogin(getCurrentUser());
-    }
+    // Restore an existing HttpOnly-cookie session without exposing its JWT.
+    (async function restoreSession() {
+        if (getCurrentUser() && getAuthToken()) {
+            redirectAfterLogin(getCurrentUser());
+            return;
+        }
+        try {
+            const session = await apiRequest("/api/auth/session");
+            if (session?.authenticated) {
+                saveAuth(session);
+                redirectAfterLogin(session.user);
+            }
+        } catch {
+            // No active session: stay on the login form.
+        }
+    })();
 </script>
 
 </body>

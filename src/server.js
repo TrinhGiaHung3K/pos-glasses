@@ -112,6 +112,9 @@ async function startServer(options = {}) {
         }
     } catch (error) {
         logger.error("MySQL connection failed", error);
+        if (env.isProd) {
+            throw error;
+        }
     }
 
     return new Promise((resolve, reject) => {

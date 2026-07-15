@@ -7,6 +7,7 @@ const requestLogger = require("./middleware/requestLogger");
 const requestId = require("./middleware/requestId");
 const securityHeaders = require("./middleware/securityHeaders");
 const authMiddleware = require("./middleware/authMiddleware");
+const csrfProtection = require("./middleware/csrfProtection");
 const errorHandler = require("./middleware/errorHandler");
 const notFoundHandler = require("./middleware/notFoundHandler");
 const { requireRole } = require("./middleware/requireRole");
@@ -34,6 +35,7 @@ const { createOrdersService } = require("./modules/orders/service");
 const { createProductsRepository } = require("./modules/products/repository");
 const { createProductsRouter } = require("./modules/products/routes");
 const { createProductsService } = require("./modules/products/service");
+const { createProductImageStorage } = require("./modules/products/imageStorage");
 const { createPromotionsRepository } = require("./modules/promotions/repository");
 const {
     createAdminPromotionsRouter,
@@ -121,7 +123,10 @@ function createDefaultServices(repositories) {
 
     const services = {
         auth: createAuthService(repositories.auth, { auditService: audit }),
-        products: createProductsService(repositories.products, { auditService: audit }),
+        products: createProductsService(repositories.products, {
+            auditService: audit,
+            imageStorage: createProductImageStorage(env.cloudinary)
+        }),
         customers: createCustomersService(repositories.customers),
         orders,
         promotions: createPromotionsService(repositories.promotions),
@@ -178,15 +183,41 @@ function createApp(options = {}) {
     app.set("trust proxy", 1);
     app.use(requestId);
     app.use(securityHeaders);
-    app.use(cors({
-        origin: env.security.corsOrigins,
-        credentials: true,
-        exposedHeaders: ["X-Request-Id", "X-RateLimit-Limit", "X-RateLimit-Remaining", "Deprecation"]
+    app.use(cors((req, callback) => {
+        const origin = String(req.headers.origin || "");
+        let sameOrigin = false;
+        try {
+            sameOrigin = Boolean(origin) && new URL(origin).host.toLowerCase() === String(req.headers.host || "").toLowerCase();
+        } catch {
+            sameOrigin = false;
+        }
+        const configured = env.security.corsOrigins;
+        const allowed = !origin
+            || sameOrigin
+            || configured === true
+            || (Array.isArray(configured) && configured.includes(origin));
+        callback(null, {
+            origin: allowed,
+            credentials: true,
+            methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+            allowedHeaders: ["Authorization", "Content-Type", "Idempotency-Key", "X-Requested-With"],
+            exposedHeaders: ["X-Request-Id", "X-RateLimit-Limit", "X-RateLimit-Remaining", "Deprecation"],
+            maxAge: 600
+        });
+    }));
+    const captureRawBody = (req, res, buffer) => {
+        req.rawBody = buffer.toString("utf8");
+    };
+    // Product images are the only large JSON request. Authenticate before
+    // allocating that body; all other JSON, including webhooks, stays small.
+    app.use("/products/image", authMiddleware, express.json({
+        limit: "10mb",
+        verify: captureRawBody
     }));
     app.use(express.json({
-        limit: "12mb",
+        limit: "256kb",
         verify(req, res, buffer) {
-            req.rawBody = buffer.toString("utf8");
+            captureRawBody(req, res, buffer);
         }
     }));
 
@@ -196,13 +227,12 @@ function createApp(options = {}) {
     app.use("/vendor/bootstrap", express.static(path.join(__dirname, "..", "node_modules", "bootstrap", "dist")));
     app.use("/vendor/phosphor", express.static(path.join(__dirname, "..", "node_modules", "@phosphor-icons", "web", "src")));
     app.use("/vendor/jsbarcode", express.static(path.join(__dirname, "..", "node_modules", "jsbarcode", "dist")));
+    app.use("/vendor/tourguide", express.static(path.join(__dirname, "..", "node_modules", "@sjmc11", "tourguidejs", "dist")));
+    app.use("/vendor/chartjs", express.static(path.join(__dirname, "..", "node_modules", "chart.js", "dist")));
     app.use(express.static(path.join(__dirname, "..", "frontend")));
 
     app.get("/", (req, res) => {
-        res.json({
-            message: "POS Glasses API Running",
-            request_id: req.requestId || null
-        });
+        res.redirect(302, "/login.html");
     });
 
     // Browsers request this automatically. Keep it public so a missing icon
@@ -225,6 +255,7 @@ function createApp(options = {}) {
     app.use(createPublicProductQrRouter(services.productQr));
 
     app.use(authMiddleware);
+    app.use(csrfProtection);
     app.use(requireRole("admin", "staff"));
     app.use(createProductsRouter(services.products));
     app.use(createCustomersRouter(services.customers));

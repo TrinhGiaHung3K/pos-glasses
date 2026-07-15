@@ -49,6 +49,17 @@ function createPaymentsRepository(db) {
             );
             return rows.length === 1 ? rows[0] : null;
         },
+        async findIntentCandidateByContent(content, createdAfter) {
+            const [rows] = await db.execute(
+                `SELECT * FROM payment_intents
+                 WHERE status IN ('pending', 'expired')
+                   AND created_at >= ?
+                   AND ? LIKE CONCAT('%', transfer_content, '%')
+                 ORDER BY created_at DESC LIMIT 2`,
+                [toSqlDatetime(createdAfter), content]
+            );
+            return rows.length === 1 ? rows[0] : null;
+        },
         async recordTransaction(transaction) {
             try {
                 const [result] = await db.execute(

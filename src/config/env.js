@@ -21,16 +21,19 @@ function parseBoolean(value, fallback = false) {
     return fallback;
 }
 
-function parseCorsOrigins(value) {
+function parseCorsOrigins(value, options = {}) {
     if (!value || !String(value).trim()) {
-        return true; // reflect request origin (dev-friendly)
+        // Reflect origins only in local development. Production falls back to
+        // the configured public application URL instead of accepting every
+        // requesting origin while credentials are enabled.
+        return options.isProd ? [options.publicAppUrl] : true;
     }
     const list = String(value)
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean);
     if (list.includes("*")) {
-        return true;
+        return options.isProd ? [options.publicAppUrl] : true;
     }
     return list;
 }
@@ -43,6 +46,7 @@ function createEnv(source = process.env) {
     const isTest = nodeEnv === "test";
     const jwtSecret = source.JWT_SECRET || DEFAULT_JWT_SECRET;
     const jwtIsDefault = !source.JWT_SECRET || jwtSecret === DEFAULT_JWT_SECRET;
+    const publicAppUrl = String(source.PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
 
     // Fail-fast in production if JWT secret is missing/default
     if (isProd && jwtIsDefault) {
@@ -65,7 +69,9 @@ function createEnv(source = process.env) {
         security: {
             // Public self-register: off by default (admin creates users)
             allowPublicRegister: parseBoolean(source.ALLOW_PUBLIC_REGISTER, false),
-            corsOrigins: parseCorsOrigins(source.CORS_ORIGINS),
+            corsOrigins: parseCorsOrigins(source.CORS_ORIGINS, { isProd, publicAppUrl }),
+            sessionCookieName: source.SESSION_COOKIE_NAME || "pos_session",
+            sessionCookieMaxAgeMs: Math.max(1, parseInteger(source.SESSION_TTL_HOURS, 24)) * 60 * 60 * 1000,
             loginRateLimit: {
                 windowMs: parseInteger(source.LOGIN_RATE_WINDOW_MS, 15 * 60 * 1000),
                 maxAttempts: parseInteger(source.LOGIN_RATE_MAX, 10)
@@ -84,11 +90,26 @@ function createEnv(source = process.env) {
         payment: {
             provider: source.PAYMENT_PROVIDER || "fake",
             webhookSecret: source.PAYMENT_WEBHOOK_SECRET || "",
+            webhookApiKey: source.PAYMENT_WEBHOOK_API_KEY || source.PAYMENT_WEBHOOK_SECRET || "",
+            webhookAuthMode: String(source.PAYMENT_WEBHOOK_AUTH || "auto").trim().toLowerCase(),
+            webhookMaxSkewSeconds: parseInteger(source.PAYMENT_WEBHOOK_MAX_SKEW_SECONDS, 300),
             accountNumber: source.PAYMENT_ACCOUNT_NUMBER || "",
             bankCode: source.PAYMENT_BANK_CODE || "",
-            intentTtlMinutes: parseInteger(source.PAYMENT_INTENT_TTL_MINUTES, 10),
+            intentTtlMinutes: parseInteger(source.PAYMENT_INTENT_TTL_MINUTES, 30),
+            lateMatchWindowMinutes: parseInteger(source.PAYMENT_LATE_MATCH_WINDOW_MINUTES, 60),
             testMode: parseBoolean(source.PAYMENT_TEST_MODE, false),
             testAmount: parseInteger(source.PAYMENT_TEST_AMOUNT, 2900)
+        },
+        cloudinary: {
+            enabled: parseBoolean(
+                source.CLOUDINARY_ENABLED,
+                Boolean(source.CLOUDINARY_URL || (source.CLOUDINARY_CLOUD_NAME && source.CLOUDINARY_API_KEY && source.CLOUDINARY_API_SECRET))
+            ),
+            url: source.CLOUDINARY_URL || "",
+            cloudName: source.CLOUDINARY_CLOUD_NAME || "",
+            apiKey: source.CLOUDINARY_API_KEY || "",
+            apiSecret: source.CLOUDINARY_API_SECRET || "",
+            folder: source.CLOUDINARY_PRODUCT_FOLDER || "pos-glasses/products"
         },
         ai: {
             enabled: parseBoolean(source.AI_ENABLED, false),
@@ -97,7 +118,7 @@ function createEnv(source = process.env) {
             analysisModel: source.GEMINI_ANALYSIS_MODEL || "gemini-3.5-flash",
             dailyBudgetUsd: Math.max(0, Number(source.AI_DAILY_BUDGET_USD || 5))
         },
-        publicAppUrl: String(source.PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "")
+        publicAppUrl
     };
 }
 

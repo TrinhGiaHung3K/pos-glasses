@@ -612,6 +612,7 @@
     const user = requireRole(["admin"]);
     let stream;
     let currentPublicId = null;
+    let pollTimer = null;
 
     function statusPillClass(status) {
         const s = String(status || "").toLowerCase();
@@ -645,6 +646,10 @@
             simulateBtn.innerHTML = '<i class="ph ph-check-circle"></i> Đã xác minh';
         }
         stream?.close();
+        if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
         loadOps();
     }
 
@@ -804,8 +809,9 @@
             }
 
             stream?.close();
+            if (pollTimer) clearInterval(pollTimer);
             stream = new EventSource(
-                `/api/staff/payment-intents/${encodeURIComponent(intent.public_id)}/stream?token=${encodeURIComponent(getAuthToken())}`
+                `/api/staff/payment-intents/${encodeURIComponent(intent.public_id)}/stream`
             );
             stream.onmessage = (event) => {
                 const data = JSON.parse(event.data || "{}");
@@ -815,8 +821,30 @@
                 }
             };
             stream.onerror = () => {
-                /* browser auto-reconnects EventSource; keep UI waiting */
+                setStatus("waiting", "Realtime gián đoạn; đang kiểm tra trạng thái định kỳ.");
             };
+            let checking = false;
+            const poll = async () => {
+                if (checking || !currentPublicId) return;
+                checking = true;
+                try {
+                    const current = await apiRequest(
+                        `/api/admin/payment-test-intents/${encodeURIComponent(currentPublicId)}`
+                    );
+                    if (current.status === "paid") markPaid();
+                    if (current.status === "expired") {
+                        setStatus("expired", "QR đã hết hạn. Tạo QR mới để thử lại.");
+                        clearInterval(pollTimer);
+                        pollTimer = null;
+                    }
+                } catch (error) {
+                    console.warn("Payment test polling failed", error);
+                } finally {
+                    checking = false;
+                }
+            };
+            poll();
+            pollTimer = setInterval(poll, 3000);
         } catch (error) {
             showToast(error.message, "error");
             if (document.getElementById("testCard")?.dataset.state === "idle" && createBtn) {

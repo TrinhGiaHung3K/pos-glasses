@@ -48,9 +48,10 @@ async function listMigrationFiles(dir) {
  */
 function splitStatements(sql) {
     return String(sql)
+        .replace(/^\s*--.*$/gm, "")
         .split(/;\s*[\r\n]+/)
         .map((part) => part.trim())
-        .filter((part) => part && !part.startsWith("--") && part !== ";");
+        .filter((part) => part && part !== ";");
 }
 
 async function runMigrations(db, options = {}) {
@@ -97,5 +98,6 @@ async function runMigrations(db, options = {}) {
 module.exports = {
     runMigrations,
     ensureMigrationsTable,
+    splitStatements,
     DEFAULT_DIR
 };

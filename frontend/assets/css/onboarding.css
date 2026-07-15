@@ -1,0 +1,26 @@
+.pos-onboarding-dialog.tg-dialog {
+    border: 1px solid rgba(15, 118, 110, 0.25);
+    border-radius: 14px;
+    box-shadow: 0 24px 70px rgba(5, 28, 24, 0.3);
+    font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+.pos-onboarding-dialog .tg-dialog-title {
+    color: #102a26;
+    font-weight: 800;
+}
+
+.pos-onboarding-dialog .tg-dialog-body {
+    color: #405b56;
+    line-height: 1.55;
+}
+
+.pos-onboarding-dialog .tg-dialog-btn-next,
+.pos-onboarding-dialog .tg-dialog-btn-finish {
+    background: #0f766e;
+    border-color: #0f766e;
+}
+
+.pos-tour-restart {
+    margin-bottom: 6px;
+}

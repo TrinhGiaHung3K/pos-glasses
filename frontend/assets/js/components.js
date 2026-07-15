@@ -287,6 +287,9 @@
                     <span class="role" id="roleLabel">${currentRoleLabel}</span>
                 </div>
             </div>
+            <button class="btn-logout pos-tour-restart" type="button" data-tour-restart>
+                <i class="ph ph-compass-tool"></i> <span>Hướng dẫn</span>
+            </button>
             <button class="btn-logout" type="button" onclick="logout()">
                 <i class="ph ph-sign-out"></i> <span>Đăng xuất</span>
             </button>
@@ -691,6 +694,56 @@
     function initializeSharedComponents() {
         renderAllAppMenus();
         enhanceCustomSelects();
+        ensureOnboardingAssets();
+    }
+
+    function ensureStylesheet(href) {
+        if (document.querySelector(`link[href="${href}"]`)) return;
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = href;
+        document.head.appendChild(link);
+    }
+
+    function loadScriptOnce(src) {
+        return new Promise((resolve, reject) => {
+            const existing = document.querySelector(`script[src="${src}"]`);
+            if (existing) {
+                if (existing.dataset.loaded === "1") resolve();
+                else existing.addEventListener("load", resolve, { once: true });
+                return;
+            }
+            const script = document.createElement("script");
+            script.src = src;
+            script.addEventListener("load", () => {
+                script.dataset.loaded = "1";
+                resolve();
+            }, { once: true });
+            script.addEventListener("error", reject, { once: true });
+            document.head.appendChild(script);
+        });
+    }
+
+    function ensureOnboardingAssets() {
+        if (typeof document.querySelector !== "function"
+            || typeof document.createElement !== "function"
+            || !document.head) return;
+        if (!document.querySelector("[data-menu-component]")) return;
+        ensureStylesheet("/vendor/tourguide/css/tour.min.css");
+        ensureStylesheet("/assets/css/onboarding.css");
+        const tourReady = (window.tourguide && window.tourguide.TourGuideClient)
+            ? Promise.resolve()
+            : loadScriptOnce("/vendor/tourguide/tour.js");
+        // Keep a shared promise so "Hướng dẫn" can wait for assets if needed.
+        window.__posOnboardingAssetsReady = tourReady
+            .then(() => loadScriptOnce("/assets/js/onboarding.js"))
+            .catch((error) => {
+                // Onboarding must never block core POS actions.
+                if (typeof console !== "undefined" && console.warn) {
+                    console.warn("[onboarding] failed to load TourGuide assets", error);
+                }
+            });
+        return window.__posOnboardingAssetsReady;
     }
 
     if (typeof document.addEventListener === "function") {
@@ -703,6 +756,7 @@
 
     renderAllAppMenus();
     enhanceCustomSelects();
+    ensureOnboardingAssets();
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", initializeSharedComponents);
     }

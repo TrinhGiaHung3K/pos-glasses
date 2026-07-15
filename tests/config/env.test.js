@@ -18,6 +18,8 @@ test("createEnv uses safe defaults and supplied database credentials", () => {
     assert.equal(env.security.allowPublicRegister, false);
     assert.equal(env.payment.testMode, false);
     assert.equal(env.payment.testAmount, 2900);
+    assert.equal(env.payment.intentTtlMinutes, 30);
+    assert.equal(env.cloudinary.enabled, false);
     assert.equal(env.ai.defaultModel, "gemini-3.1-flash-lite");
 });
 
@@ -91,4 +93,14 @@ test("createEnv parses payment and AI feature flags", () => {
     assert.equal(env.ai.enabled, true);
     assert.equal(env.ai.dailyBudgetUsd, 12.5);
     assert.equal(env.publicAppUrl, "https://pos.example.com");
+});
+
+test("production CORS defaults to the public app instead of reflecting every origin", () => {
+    const { createEnv } = require("../../src/config/env");
+    const env = createEnv({
+        NODE_ENV: "production",
+        JWT_SECRET: "super-secret-production-key",
+        PUBLIC_APP_URL: "https://pos.example.com"
+    });
+    assert.deepEqual(env.security.corsOrigins, ["https://pos.example.com"]);
 });
