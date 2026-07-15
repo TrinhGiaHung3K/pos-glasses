@@ -429,7 +429,7 @@
      */
     function productMediaHtml(imageSrc, options = {}) {
         const alt = options.alt || "Sản phẩm";
-        const fallback = options.fallback || "images/wayfarer.jpg";
+        const fallback = options.fallback || "https://res.cloudinary.com/pfv7jbgg/image/upload/pos-glasses/products/rbway.png";
         const className = options.className ? ` ${options.className}` : "";
         const src = imageSrc || fallback;
         const escape = typeof window.escapeHtml === "function"

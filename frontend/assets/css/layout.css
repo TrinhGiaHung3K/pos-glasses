@@ -65,6 +65,38 @@
     gap: 2px;
 }
 
+/* Utility actions pinned under destinations (help/tour). */
+.pos-nav-utilities {
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.pos-nav-utilities .pos-tour-restart {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    color: rgba(125, 211, 196, 0.92);
+}
+
+.pos-nav-utilities .pos-tour-restart:hover,
+.pos-nav-utilities .pos-tour-restart:focus-visible {
+    color: #ffffff;
+    background: rgba(15, 118, 110, 0.28);
+    outline: none;
+}
+
+.pos-nav-utilities .pos-tour-restart .nav-icon {
+    color: inherit;
+}
+
 .pos-nav-item {
     display: flex;
     align-items: center;
@@ -478,6 +510,7 @@
     .pos-nav-item span:not(.nav-icon),
     .pos-mega-trigger .nav-label,
     .pos-mega-caret,
+    .pos-nav-utilities .pos-tour-restart .nav-label,
     .pos-sidebar-footer .user-details,
     .pos-sidebar-footer .btn-logout span {
         display: none;
@@ -493,9 +526,15 @@
         transform: translateX(-20px);
     }
     .pos-nav-item,
-    .pos-mega-trigger {
+    .pos-mega-trigger,
+    .pos-nav-utilities .pos-tour-restart {
         justify-content: center;
         padding: 9px;
+    }
+
+    .pos-nav-utilities {
+        margin-top: 6px;
+        padding-top: 6px;
     }
     .pos-mega-trigger {
         min-height: 38px;
@@ -554,8 +593,18 @@
         width: 100%;
     }
 
+    .pos-nav-utilities {
+        display: flex;
+        flex-direction: row;
+        margin-top: 0;
+        padding-top: 0;
+        border-top: 0;
+        flex: 0 0 auto;
+    }
+
     .pos-nav-item,
-    .pos-mega-group {
+    .pos-mega-group,
+    .pos-nav-utilities .pos-tour-restart {
         flex: 0 0 auto;
     }
 

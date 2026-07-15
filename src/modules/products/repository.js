@@ -3,13 +3,19 @@ function buildInClause(values) {
 }
 
 /** Whitelist only — never interpolate raw client sort into SQL. */
+function commercialPriceExpr() {
+    // Prefer original (commercial) price for filters/sort when dual-price is enabled.
+    return "COALESCE(NULLIF(original_price, 0), price)";
+}
+
 function resolveProductOrder(sort) {
+    const priceExpr = commercialPriceExpr();
     switch (String(sort || "").toLowerCase()) {
         case "price_asc":
         case "price":
-            return "price ASC, id ASC";
+            return `${priceExpr} ASC, id ASC`;
         case "price_desc":
-            return "price DESC, id DESC";
+            return `${priceExpr} DESC, id DESC`;
         case "name_asc":
         case "name":
             return "name ASC, id ASC";
@@ -72,11 +78,11 @@ function createProductsRepository(db) {
                 where.push("quantity > 0 AND quantity <= 5");
             }
             if (filters.min_price != null && Number.isFinite(Number(filters.min_price))) {
-                where.push("price >= ?");
+                where.push(`${commercialPriceExpr()} >= ?`);
                 params.push(Number(filters.min_price));
             }
             if (filters.max_price != null && Number.isFinite(Number(filters.max_price))) {
-                where.push("price <= ?");
+                where.push(`${commercialPriceExpr()} <= ?`);
                 params.push(Number(filters.max_price));
             }
 
@@ -121,15 +127,19 @@ function createProductsRepository(db) {
             try {
                 const [result] = await db.execute(
                     `INSERT INTO products
-                    (category_id, name, brand, sku, price, cost_price, quantity, image)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    (category_id, name, brand, sku, price, original_price, cost_price, original_cost_price, quantity, image)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         product.category_id,
                         product.name,
                         product.brand || null,
                         product.sku,
                         product.price,
+                        product.original_price != null ? product.original_price : product.price,
                         product.cost_price != null ? product.cost_price : 0,
+                        product.original_cost_price != null
+                            ? product.original_cost_price
+                            : (product.cost_price != null ? product.cost_price : 0),
                         product.quantity,
                         product.image || null
                     ]
@@ -145,8 +155,10 @@ function createProductsRepository(db) {
                             product.category_id,
                             product.name,
                             product.sku,
-                            product.price,
-                            product.cost_price != null ? product.cost_price : 0,
+                            product.original_price != null ? product.original_price : product.price,
+                            product.original_cost_price != null
+                                ? product.original_cost_price
+                                : (product.cost_price != null ? product.cost_price : 0),
                             product.quantity,
                             product.image || null
                         ]
@@ -166,7 +178,9 @@ function createProductsRepository(db) {
                         brand = ?,
                         sku = ?,
                         price = ?,
+                        original_price = ?,
                         cost_price = ?,
+                        original_cost_price = ?,
                         quantity = ?,
                         image = COALESCE(?, image)
                     WHERE id = ?`,
@@ -176,7 +190,11 @@ function createProductsRepository(db) {
                         product.brand || null,
                         product.sku,
                         product.price,
+                        product.original_price != null ? product.original_price : product.price,
                         product.cost_price != null ? product.cost_price : 0,
+                        product.original_cost_price != null
+                            ? product.original_cost_price
+                            : (product.cost_price != null ? product.cost_price : 0),
                         product.quantity,
                         product.image || null,
                         id
@@ -199,8 +217,10 @@ function createProductsRepository(db) {
                             product.category_id,
                             product.name,
                             product.sku,
-                            product.price,
-                            product.cost_price != null ? product.cost_price : 0,
+                            product.original_price != null ? product.original_price : product.price,
+                            product.original_cost_price != null
+                                ? product.original_cost_price
+                                : (product.cost_price != null ? product.cost_price : 0),
                             product.quantity,
                             product.image || null,
                             id

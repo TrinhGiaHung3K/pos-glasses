@@ -86,12 +86,13 @@ function normalizeSort(value) {
 }
 
 function mapProductRow(p) {
+    const { commercialUnitPrice } = require("../products/pricing");
     return {
         id: p.id,
         name: p.name,
         brand: p.brand,
         sku: p.sku,
-        price: Number(p.price),
+        price: commercialUnitPrice(p),
         quantity: Number(p.quantity)
     };
 }

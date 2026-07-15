@@ -27,9 +27,8 @@ build/
 .eslintcache
 *.tsbuildinfo
 
-# Application-generated product uploads
-frontend/images/products/*
-!frontend/images/products/.gitkeep
+# Local product image cache (production uses Cloudinary; local fallback only when disabled)
+frontend/images/
 
 # Local AI/tool sessions and generated artifacts
 .superpowers/

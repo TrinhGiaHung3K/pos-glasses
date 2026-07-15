@@ -68,10 +68,11 @@ function createTableOrdersService(repository) {
             const orderItems = items.map((item) => {
                 const product = productsById.get(item.product_id);
 
+                const { commercialUnitPrice } = require("../products/pricing");
                 return {
                     product_id: item.product_id,
                     quantity: item.quantity,
-                    unit_price_snapshot: Number(product.price),
+                    unit_price_snapshot: commercialUnitPrice(product),
                     product_name_snapshot: product.name
                 };
             });

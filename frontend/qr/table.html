@@ -65,8 +65,9 @@
         };
 
         function productImage(src) {
-            if (!src) return "../images/wayfarer.jpg";
-            if (src.startsWith("http") || src.startsWith("/")) return src;
+            const fallback = "https://res.cloudinary.com/pfv7jbgg/image/upload/pos-glasses/products/rbway.png";
+            if (!src) return fallback;
+            if (/^https?:\/\//i.test(src) || src.startsWith("/")) return src;
             return `../${src}`;
         }
 

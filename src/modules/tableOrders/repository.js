@@ -52,7 +52,7 @@ function createTableOrdersRepository(db) {
             }
 
             const [rows] = await db.execute(
-                `SELECT id, name, price, quantity, cost_price
+                `SELECT id, name, price, original_price, quantity, cost_price, original_cost_price
                 FROM products
                 WHERE id IN (${buildInClause(ids)})`,
                 ids

@@ -1,8 +1,14 @@
+/* TourGuide dialog — POS Glasses branding */
 .pos-onboarding-dialog.tg-dialog {
     border: 1px solid rgba(15, 118, 110, 0.25);
     border-radius: 14px;
     box-shadow: 0 24px 70px rgba(5, 28, 24, 0.3);
     font-family: "Plus Jakarta Sans", sans-serif;
+    z-index: 10050 !important;
+}
+
+.tg-backdrop {
+    z-index: 10040 !important;
 }
 
 .pos-onboarding-dialog .tg-dialog-title {
@@ -15,12 +21,30 @@
     line-height: 1.55;
 }
 
-.pos-onboarding-dialog .tg-dialog-btn-next,
-.pos-onboarding-dialog .tg-dialog-btn-finish {
-    background: #0f766e;
-    border-color: #0f766e;
+/* Library uses #tg-dialog-next-btn with class tg-dialog-btn (not tg-dialog-btn-next). */
+.pos-onboarding-dialog .tg-dialog-btn {
+    border-radius: 10px;
+    font-weight: 700;
 }
 
-.pos-tour-restart {
-    margin-bottom: 6px;
+.pos-onboarding-dialog #tg-dialog-next-btn {
+    background: #0f766e;
+    border-color: #0f766e;
+    color: #ffffff;
+}
+
+.pos-onboarding-dialog #tg-dialog-next-btn:hover {
+    background: #0d9488;
+    border-color: #0d9488;
+}
+
+.pos-onboarding-dialog #tg-dialog-prev-btn.disabled,
+.pos-onboarding-dialog #tg-dialog-prev-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Help entry point lives in the nav utilities block. */
+.pos-nav-utilities .pos-tour-restart {
+    letter-spacing: 0.01em;
 }

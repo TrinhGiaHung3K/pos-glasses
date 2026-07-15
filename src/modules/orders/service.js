@@ -5,6 +5,12 @@ const {
     redeemValueVnd,
     maxRedeemablePoints
 } = require("../loyalty/policy");
+const {
+    commercialUnitPrice,
+    commercialUnitCost,
+    chargeUnitPrice,
+    scaleAbsoluteDiscount
+} = require("../products/pricing");
 
 const PAYMENT_METHODS = new Set(["cash", "bank_transfer", "card"]);
 const MANUAL_DISCOUNT_TYPES = new Set(["percent", "amount"]);
@@ -373,13 +379,20 @@ function createOrdersService(repository, options = {}) {
                     product_id: item.product_id,
                     variant_id: item.variant_id || null,
                     quantity: item.quantity,
-                    price: Number(product.price),
-                    cost_price: Number(product.cost_price) || 0
+                    // Invoice / reports / dashboard always snapshot commercial prices.
+                    price: commercialUnitPrice(product),
+                    cost_price: commercialUnitCost(product),
+                    // Demo/test bank-transfer charge uses products.price (scaled).
+                    charge_price: chargeUnitPrice(product, { testMode: true })
                 });
             }
 
             const subtotal = checkoutItems.reduce(
                 (sum, item) => sum + item.quantity * item.price,
+                0
+            );
+            const chargeSubtotal = checkoutItems.reduce(
+                (sum, item) => sum + item.quantity * Number(item.charge_price || item.price),
                 0
             );
 
@@ -438,6 +451,24 @@ function createOrdersService(repository, options = {}) {
             await enforceStaffDiscountCap(repository, user, subtotal, manualDiscountAmount);
 
             const total = subtotal - discountAmount;
+            // Mirror commercial discounts onto the test charge total so QR amount
+            // stays proportional when PAYMENT_TEST_MODE uses products.price.
+            const chargeCouponDiscount = couponDiscountPercent > 0
+                ? Math.round(chargeSubtotal * couponDiscountPercent / 100)
+                : scaleAbsoluteDiscount(couponDiscount, subtotal, chargeSubtotal);
+            const chargeManualDiscount = manualDiscount.type === "percent"
+                ? calculateManualDiscount(chargeSubtotal, manualDiscount)
+                : scaleAbsoluteDiscount(manualDiscountAmount, subtotal, chargeSubtotal);
+            const chargePointsDiscount = scaleAbsoluteDiscount(
+                pointsDiscountAmount,
+                subtotal,
+                chargeSubtotal
+            );
+            const chargeDiscountAmount = Math.min(
+                chargeSubtotal,
+                chargeCouponDiscount + chargeManualDiscount + chargePointsDiscount
+            );
+            const chargeTotal = Math.max(0, chargeSubtotal - chargeDiscountAmount);
             const pointsEarned = customerId ? earnPointsFromTotal(total) : 0;
 
             const amountPaid = deferPayment ? 0 : payment.method === "cash"
@@ -485,6 +516,9 @@ function createOrdersService(repository, options = {}) {
                 subtotal_amount: subtotal,
                 discount_amount: discountAmount,
                 total_amount: total,
+                // Used only by bank-transfer payment intents in PAYMENT_TEST_MODE.
+                charge_amount: chargeTotal,
+                charge_subtotal_amount: chargeSubtotal,
                 payment_method: payment.method,
                 amount_paid: amountPaid,
                 change_amount: changeAmount,

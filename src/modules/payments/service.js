@@ -73,13 +73,23 @@ function createPaymentsService(repository, options = {}) {
                 ...meta,
                 deferPayment: true
             });
+            // Invoice/order totals always use commercial (original_price) amounts.
+            // In PAYMENT_TEST_MODE, QR/SePay charge uses products.price (demo) via charge_amount.
+            const commercialTotal = Math.max(0, Number(pendingOrder.total_amount) || 0);
+            const chargeTotal = Math.max(0, Number(pendingOrder.charge_amount != null
+                ? pendingOrder.charge_amount
+                : commercialTotal) || 0);
+            const expectedAmount = config.testMode
+                ? Math.max(1, chargeTotal || commercialTotal)
+                : Math.max(1, commercialTotal);
             const intent = {
                 public_id: crypto.randomUUID().replace(/-/g, ""),
                 order_id: pendingOrder.order_id,
                 provider: provider.name,
                 purpose: "order",
+                // Keep is_test=false so webhook still finalizes the order.
                 is_test: false,
-                expected_amount: Number(pendingOrder.total_amount),
+                expected_amount: expectedAmount,
                 transfer_content: `PG${Number(pendingOrder.order_id).toString(36).toUpperCase()}${crypto.randomBytes(3).toString("hex").toUpperCase()}`,
                 bank_code: config.bankCode,
                 account_number_masked: maskAccount(config.accountNumber),
@@ -88,7 +98,13 @@ function createPaymentsService(repository, options = {}) {
             };
             try {
                 const created = await repository.createIntent(intent);
-                return { ...publicIntent(created, provider.createQr(created)), order_id: pendingOrder.order_id };
+                return {
+                    ...publicIntent(created, provider.createQr(created)),
+                    order_id: pendingOrder.order_id,
+                    order_total_amount: commercialTotal,
+                    charge_amount: expectedAmount,
+                    is_test_charge: Boolean(config.testMode)
+                };
             } catch (error) {
                 await ordersService.cancelPendingPayment(pendingOrder.order_id, "Không tạo được payment intent");
                 throw error;

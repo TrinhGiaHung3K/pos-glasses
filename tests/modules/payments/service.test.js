@@ -169,7 +169,13 @@ test("real order intent reserves through orders service and finalizes only after
     const ordersService = {
         async checkout(payload, user, meta) {
             calls.push(["checkout", payload, user, meta]);
-            return { order_id: 55, total_amount: 3200000, payment_status: "pending" };
+            // Commercial invoice total vs demo charge amount (products.price).
+            return {
+                order_id: 55,
+                total_amount: 3200000,
+                charge_amount: 3200,
+                payment_status: "pending"
+            };
         },
         async finalizePendingPayment(orderId) {
             calls.push(["finalize", orderId]);
@@ -179,12 +185,15 @@ test("real order intent reserves through orders service and finalizes only after
             calls.push(["cancel", orderId, reason]);
         }
     };
+    // harness defaults to PAYMENT_TEST_MODE=true → QR uses charge_amount
     const { service, intents } = harness({ ordersService });
     const intent = await service.createOrderIntent({
         items: [{ product_id: 7, quantity: 1 }]
     }, { id: 2, role: "staff" });
     assert.equal(intent.order_id, 55);
-    assert.equal(intent.expected_amount, 3200000);
+    assert.equal(intent.expected_amount, 3200);
+    assert.equal(intent.order_total_amount, 3200000);
+    assert.equal(intent.is_test_charge, true);
     assert.equal(calls[0][3].deferPayment, true);
     assert.equal(calls.some((call) => call[0] === "finalize"), false);
 
@@ -192,12 +201,31 @@ test("real order intent reserves through orders service and finalizes only after
         id: 9010,
         accountNumber: "123456789",
         transferType: "in",
-        transferAmount: 3200000,
+        transferAmount: 3200,
         content: intent.transfer_content
     };
     await service.handleWebhook({}, JSON.stringify(payload), payload);
     assert.deepEqual(calls.find((call) => call[0] === "finalize"), ["finalize", 55]);
     assert.equal(intents[0].status, "paid");
+});
+
+test("order intent uses commercial total when payment test mode is off", async () => {
+    const ordersService = {
+        async checkout() {
+            return { order_id: 57, total_amount: 3200000, charge_amount: 3200, payment_status: "pending" };
+        },
+        async finalizePendingPayment() {},
+        async cancelPendingPayment() {}
+    };
+    const { service } = harness({
+        config: { testMode: false },
+        ordersService
+    });
+    const intent = await service.createOrderIntent({
+        items: [{ product_id: 7, quantity: 1 }]
+    }, { id: 2, role: "staff" });
+    assert.equal(intent.expected_amount, 3200000);
+    assert.equal(intent.is_test_charge, false);
 });
 
 test("fake provider can simulate a pending payment outside production", async () => {

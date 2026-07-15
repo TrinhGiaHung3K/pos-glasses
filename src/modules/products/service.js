@@ -1,6 +1,7 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createHttpError } = require("../../middleware/httpError");
+const { presentProductPricing, presentProductsPricing } = require("./pricing");
 
 // Matches products.price DECIMAL(12,2): up to 10 digits before decimal.
 const MAX_PRODUCT_PRICE = 9999999999.99;
@@ -100,15 +101,42 @@ function normalizeBrand(value, productName) {
     return first ? first.slice(0, 80) : null;
 }
 
+function deriveChargePrice(commercialPrice, explicitCharge) {
+    if (explicitCharge != null && explicitCharge !== "") {
+        return normalizeProductPrice(explicitCharge);
+    }
+    // Keep dual-price model for bank-transfer test charges: store demo amount
+    // in products.price while commercial amount lives in original_price.
+    if (commercialPrice >= 100000) {
+        return Math.max(1000, Math.round(commercialPrice / 1000));
+    }
+    return commercialPrice;
+}
+
 function normalizeProductPayload(payload = {}) {
     const name = normalizeProductName(payload.name);
+    const commercialPrice = normalizeProductPrice(payload.price);
+    const commercialCost = normalizeProductCost(payload.cost_price);
+    const chargePrice = deriveChargePrice(
+        commercialPrice,
+        payload.charge_price != null ? payload.charge_price : payload.demo_price
+    );
+    let chargeCost = commercialCost;
+    if (payload.charge_cost_price != null && payload.charge_cost_price !== "") {
+        chargeCost = normalizeProductCost(payload.charge_cost_price);
+    } else if (commercialCost >= 100000) {
+        chargeCost = Math.max(0, Math.round(commercialCost / 1000));
+    }
     return {
         category_id: Number(payload.category_id || 1) || 1,
         name,
         brand: normalizeBrand(payload.brand, name),
         sku: normalizeProductSku(payload.sku),
-        price: normalizeProductPrice(payload.price),
-        cost_price: normalizeProductCost(payload.cost_price),
+        // DB: price = charge/demo, original_price = commercial catalog sell price
+        price: chargePrice,
+        original_price: commercialPrice,
+        cost_price: chargeCost,
+        original_cost_price: commercialCost,
         quantity: normalizeProductQuantity(payload.quantity),
         image: payload.image ? String(payload.image).trim() || null : null
     };
@@ -162,7 +190,8 @@ async function ensureProductImageDir() {
 
 /**
  * Persist a client-processed product image (transparent PNG preferred).
- * Returns a web path under /images/products suitable for products.image.
+ * Returns Cloudinary secure URL when image storage is enabled; otherwise a local
+ * web path under images/products (dev fallback only).
  */
 async function saveProcessedProductImage(payload = {}, imageStorage = null) {
     const dataUrl = payload.dataUrl || payload.data_url || payload.image;
@@ -215,8 +244,9 @@ function createProductsService(repository, options = {}) {
     }
 
     return {
-        findAll() {
-            return repository.findAll();
+        async findAll() {
+            const rows = await repository.findAll();
+            return presentProductsPricing(rows);
         },
 
         async list(query = {}) {
@@ -241,7 +271,7 @@ function createProductsService(repository, options = {}) {
                 offset: pageInfo.offset,
                 paginate: pageInfo.paginate
             });
-            return listResponse(result.items, {
+            return listResponse(presentProductsPricing(result.items), {
                 ...pageInfo,
                 total: result.total
             });
@@ -254,7 +284,7 @@ function createProductsService(repository, options = {}) {
                 throw createHttpError(404, "Product not found");
             }
 
-            return product;
+            return presentProductPricing(product);
         },
 
         async create(payload, meta = {}) {

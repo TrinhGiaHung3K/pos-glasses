@@ -266,6 +266,10 @@
             })
             .join("");
 
+        // Hướng dẫn lives in the nav rail (not the logout footer):
+        // - Scannable with other destinations
+        // - Still visible on mobile bottom bar (footer is hidden ≤720px)
+        // - Not confused with the destructive logout control
         return `
         <div class="pos-logo">
             <img
@@ -277,6 +281,17 @@
 
         <nav class="pos-nav pos-nav--mega" aria-label="Menu chính">
             ${navHtml}
+            <div class="pos-nav-utilities" aria-label="Tiện ích">
+                <button
+                    type="button"
+                    class="pos-nav-item pos-tour-restart"
+                    data-tour-restart
+                    title="Chạy hướng dẫn sử dụng"
+                >
+                    <span class="nav-icon"><i class="ph ph-compass-tool" aria-hidden="true"></i></span>
+                    <span class="nav-label">Hướng dẫn</span>
+                </button>
+            </div>
         </nav>
 
         <div class="pos-sidebar-footer">
@@ -287,9 +302,6 @@
                     <span class="role" id="roleLabel">${currentRoleLabel}</span>
                 </div>
             </div>
-            <button class="btn-logout pos-tour-restart" type="button" data-tour-restart>
-                <i class="ph ph-compass-tool"></i> <span>Hướng dẫn</span>
-            </button>
             <button class="btn-logout" type="button" onclick="logout()">
                 <i class="ph ph-sign-out"></i> <span>Đăng xuất</span>
             </button>

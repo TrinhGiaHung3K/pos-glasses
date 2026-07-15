@@ -2,7 +2,7 @@ function createProductQrRepository(db) {
     return {
         async findProduct(productId) {
             const [rows] = await db.execute(
-                "SELECT id, name, brand, sku, image, price, quantity FROM products WHERE id = ?", [productId]
+                "SELECT id, name, brand, sku, image, price, original_price, quantity FROM products WHERE id = ?", [productId]
             );
             return rows[0] || null;
         },
@@ -49,7 +49,7 @@ function createProductQrRepository(db) {
         },
         async findPublicByCode(code) {
             const [rows] = await db.execute(
-                `SELECT p.id, p.name, p.brand, p.sku, p.image, p.price, p.quantity,
+                `SELECT p.id, p.name, p.brand, p.sku, p.image, p.price, p.original_price, p.quantity,
                         q.public_code, q.version
                  FROM product_qr_codes q
                  JOIN products p ON p.id = q.product_id

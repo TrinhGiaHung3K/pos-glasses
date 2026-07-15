@@ -32,10 +32,11 @@ function createTablesService(repository) {
             }
 
             const products = await repository.findAvailableProducts();
+            const { presentProductsPricing } = require("../products/pricing");
 
             return {
                 table: sanitizeTable(table),
-                products
+                products: presentProductsPricing(products)
             };
         },
 

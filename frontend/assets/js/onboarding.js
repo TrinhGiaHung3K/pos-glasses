@@ -49,7 +49,6 @@
         const existing = resolveTourGuideClient();
         if (existing) return existing;
 
-        // Kick asset loading if components.js exposed a loader promise.
         if (window.__posOnboardingAssetsReady && typeof window.__posOnboardingAssetsReady.then === "function") {
             try {
                 await Promise.race([
@@ -57,7 +56,7 @@
                     new Promise((resolve) => setTimeout(resolve, timeoutMs))
                 ]);
             } catch (error) {
-                // continue to poll below
+                // continue polling below
             }
             const afterAssets = resolveTourGuideClient();
             if (afterAssets) return afterAssets;
@@ -116,7 +115,7 @@
                     group,
                     order: 5,
                     title: "Bắt đầu bán hàng",
-                    content: "Mở quầy POS từ nút Bán hàng. Bạn có thể chạy lại hướng dẫn bất cứ lúc nào ở cuối menu.",
+                    content: "Mở quầy POS từ nút Bán hàng. Chạy lại hướng dẫn bất cứ lúc nào từ mục Hướng dẫn trong menu trái.",
                     target: ".pos-topbar-actions .btn-primary"
                 }
             ];
@@ -162,34 +161,94 @@
                 group,
                 order: 6,
                 title: "Hoàn tất",
-                content: "Nhấn Thanh toán hoặc dùng F4. Nút Hướng dẫn ở cuối menu cho phép mở lại tour này.",
+                content: "Nhấn Thanh toán hoặc dùng F4. Chạy lại hướng dẫn từ mục Hướng dẫn trong menu trái.",
                 target: "#checkoutButton"
             }
         ];
     }
 
     function availableSteps(user) {
-        return stepsFor(user).filter((step) => {
-            if (!step.target) return true;
-            try {
-                return Boolean(document.querySelector(step.target));
-            } catch (error) {
-                return false;
-            }
-        });
+        // Always return fresh step objects so target selectors stay strings
+        // (TourGuide mutates step.target to Element references on first run).
+        return stepsFor(user)
+            .map((step) => ({ ...step }))
+            .filter((step) => {
+                if (!step.target) return true;
+                try {
+                    return Boolean(document.querySelector(step.target));
+                } catch (error) {
+                    return false;
+                }
+            });
     }
 
-    async function stopActiveTour() {
-        const active = window.posOnboardingTour;
-        if (!active) return;
-        try {
-            if (active.isVisible && typeof active.exit === "function") {
-                await active.exit();
+    /**
+     * TourGuideClient appends dialog/backdrop with fixed IDs (tg-dialog-next-btn…).
+     * Creating a second client without removing the first breaks getElementById
+     * lookups and leaves "Tiếp" bound to a hidden orphan dialog.
+     */
+    async function destroyTourInstance(client) {
+        if (client) {
+            try {
+                // Unstick library state before tearing down listeners/DOM.
+                client._promiseWaiting = false;
+                client.isVisible = false;
+                client.activeStep = 0;
+            } catch (error) {
+                // ignore
             }
-        } catch (error) {
-            // Ignore exit races; a new tour will replace the instance.
+
+            try {
+                if (typeof client.destroyListeners === "function") {
+                    await client.destroyListeners();
+                }
+            } catch (error) {
+                // ignore
+            }
+
+            try {
+                if (client.dialog && typeof client.dialog.remove === "function") {
+                    client.dialog.remove();
+                } else if (client.dialog?.parentNode) {
+                    client.dialog.parentNode.removeChild(client.dialog);
+                }
+            } catch (error) {
+                // ignore
+            }
+
+            try {
+                if (client.backdrop && typeof client.backdrop.remove === "function") {
+                    client.backdrop.remove();
+                } else if (client.backdrop?.parentNode) {
+                    client.backdrop.parentNode.removeChild(client.backdrop);
+                }
+            } catch (error) {
+                // ignore
+            }
         }
-        window.posOnboardingTour = null;
+
+        // Sweep any orphaned nodes from previous broken restarts.
+        try {
+            document.querySelectorAll(".tg-dialog, .tg-backdrop").forEach((node) => {
+                try {
+                    node.remove();
+                } catch (error) {
+                    if (node.parentNode) node.parentNode.removeChild(node);
+                }
+            });
+        } catch (error) {
+            // ignore
+        }
+
+        try {
+            document.body?.classList?.remove("tg-no-interaction");
+        } catch (error) {
+            // ignore
+        }
+
+        if (window.posOnboardingTour === client) {
+            window.posOnboardingTour = null;
+        }
     }
 
     async function startTour(options = {}) {
@@ -231,11 +290,9 @@
                 return;
             }
 
-            await stopActiveTour();
+            // Always tear down previous instance before creating a new one.
+            await destroyTourInstance(window.posOnboardingTour);
 
-            // Important: TourGuideClient.start(group) FILTERS steps by step.group.
-            // Never pass the localStorage key as the group — that removed every step.
-            // Also clear library completion so manual "Hướng dẫn" can re-run.
             const client = new Client({
                 steps,
                 nextLabel: "Tiếp",
@@ -249,6 +306,7 @@
                 autoScrollSmooth: true,
                 showStepProgress: true,
                 targetPadding: 12,
+                dialogZ: 10050,
                 dialogClass: "pos-onboarding-dialog",
                 backdropColor: "rgba(5, 20, 18, 0.78)",
                 completeOnFinish: true,
@@ -276,13 +334,17 @@
                 history.replaceState({}, "", landing);
             }
         } catch (error) {
+            await destroyTourInstance(window.posOnboardingTour);
             if (!manual) markTourSeen(user);
             const message = error && typeof error === "string"
                 ? error
                 : (error?.message || "Không thể mở hướng dẫn.");
-            notify(message === "Tour already active"
-                ? "Hướng dẫn đang chạy. Đóng tour hiện tại rồi thử lại."
-                : `Không thể mở hướng dẫn: ${message}`, "error");
+            notify(
+                message === "Tour already active"
+                    ? "Hướng dẫn đang chạy. Đóng tour hiện tại rồi thử lại."
+                    : `Không thể mở hướng dẫn: ${message}`,
+                "error"
+            );
             if (typeof console !== "undefined" && console.error) {
                 console.error("[onboarding]", error);
             }
@@ -299,6 +361,7 @@
             const trigger = event.target?.closest?.("[data-tour-restart]");
             if (!trigger) return;
             event.preventDefault();
+            event.stopPropagation();
             startTour({ manual: true });
         });
     }
@@ -311,19 +374,19 @@
 
         const manual = new URLSearchParams(window.location.search).get("tour") === "1";
         if (manual) {
-            // Arrived via explicit restart redirect (or manual ?tour=1).
             setTimeout(() => startTour({ manual: true }), 400);
             return;
         }
 
-        // First-use: only auto-start on the role landing page — never bounce
-        // users away from products/inventory/etc.
+        // First-use: only auto-start on the role landing page.
         if (!localStorage.getItem(storageKey(user)) && isOnLanding(user)) {
             setTimeout(() => startTour({ manual: false }), 700);
         }
     }
 
     window.startPosOnboardingTour = startTour;
+    window.stopPosOnboardingTour = () => destroyTourInstance(window.posOnboardingTour);
+
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", initialize, { once: true });
     } else {

@@ -1,6 +1,7 @@
 const crypto = require("node:crypto");
 const QRCode = require("qrcode");
 const { createHttpError } = require("../../middleware/httpError");
+const { commercialUnitPrice, presentProductPricing } = require("../products/pricing");
 
 function validCode(value) {
     const code = String(value || "").trim();
@@ -27,14 +28,14 @@ function createProductQrService(repository, options = {}) {
                     created_by: user?.id
                 });
             }
-            return present(record, product);
+            return present(record, presentProductPricing(product));
         },
         async rotate(productId, user) {
             const id = Number(productId);
             const product = await repository.findProduct(id);
             if (!product) throw createHttpError(404, "Sản phẩm không tồn tại");
             const record = await repository.rotate(id, crypto.randomBytes(24).toString("base64url"), user?.id);
-            return present(record, product);
+            return present(record, presentProductPricing(product));
         },
         async resolve(codeValue) {
             const code = validCode(codeValue);
@@ -46,7 +47,7 @@ function createProductQrService(repository, options = {}) {
                 brand: product.brand || null,
                 sku: product.sku,
                 image: product.image || null,
-                price: Number(product.price),
+                price: commercialUnitPrice(product),
                 availability: Number(product.quantity) > 0 ? "in_stock" : "out_of_stock",
                 public_code: product.public_code
             };
@@ -60,7 +61,7 @@ function createProductQrService(repository, options = {}) {
                 id: Number(product.id),
                 name: product.name,
                 sku: product.sku,
-                price: Number(product.price),
+                price: commercialUnitPrice(product),
                 quantity: Number(product.quantity),
                 public_code: product.public_code
             };

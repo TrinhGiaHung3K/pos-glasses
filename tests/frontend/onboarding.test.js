@@ -6,6 +6,7 @@ const test = require("node:test");
 const root = path.resolve(__dirname, "..", "..");
 const onboarding = fs.readFileSync(path.join(root, "frontend", "assets", "js", "onboarding.js"), "utf8");
 const components = fs.readFileSync(path.join(root, "frontend", "assets", "js", "components.js"), "utf8");
+const layoutCss = fs.readFileSync(path.join(root, "frontend", "assets", "css", "layout.css"), "utf8");
 
 test("first-use tour has separate admin and staff landing flows", () => {
     assert.match(onboarding, /role === "admin" \? "\/dashboard\.html" : "\/orders\.html"/);
@@ -21,6 +22,17 @@ test("shared menu exposes restart and self-hosts TourGuide JS", () => {
     assert.match(components, /\/vendor\/tourguide\/css\/tour\.min\.css/);
 });
 
+test("Hướng dẫn is placed in nav utilities, not the logout footer", () => {
+    // Accurate placement: scannable with destinations, visible on mobile nav bar.
+    assert.match(components, /pos-nav-utilities/);
+    assert.match(components, /class="pos-nav-item pos-tour-restart"/);
+    assert.match(components, /data-tour-restart/);
+    assert.match(layoutCss, /\.pos-nav-utilities/);
+    // Must not sit on the destructive logout control.
+    assert.doesNotMatch(components, /btn-logout pos-tour-restart/);
+    assert.doesNotMatch(components, /btn-logout[^>]*data-tour-restart/);
+});
+
 test("auto first-use tour never redirects away from non-landing pages", () => {
     assert.match(onboarding, /Auto first-use must never hijack navigation/);
     assert.match(onboarding, /only auto-start on the role landing page/);
@@ -29,13 +41,19 @@ test("auto first-use tour never redirects away from non-landing pages", () => {
 });
 
 test("tour start uses a stable group, not the localStorage key", () => {
-    // Regression: client.start(storageKey) filtered out every step because
-    // TourGuideClient.start(group) keeps only steps with matching step.group.
     assert.match(onboarding, /const TOUR_GROUP = "pos-glasses-onboarding"/);
     assert.match(onboarding, /await client\.start\(TOUR_GROUP\)/);
     assert.doesNotMatch(onboarding, /client\.start\(storageKey/);
     assert.doesNotMatch(onboarding, /client\.start\(key\)/);
-    assert.match(onboarding, /Never pass the localStorage key as the group/);
+});
+
+test("second start destroys previous TourGuide DOM to keep Tiếp working", () => {
+    // Regression: duplicate tg-dialog nodes share IDs; getElementById binds the first (hidden) Next button.
+    assert.match(onboarding, /destroyTourInstance/);
+    assert.match(onboarding, /\.tg-dialog, \.tg-backdrop/);
+    assert.match(onboarding, /Always tear down previous instance before creating a new one/);
+    assert.match(onboarding, /client\._promiseWaiting = false/);
+    assert.match(onboarding, /\.map\(\(step\) => \(\{ \.\.\.step \}\)\)/);
 });
 
 test("Hướng dẫn restart uses event delegation so re-rendered menus keep working", () => {

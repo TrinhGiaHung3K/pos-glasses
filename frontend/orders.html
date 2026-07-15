@@ -2161,8 +2161,12 @@
                         ${visual}
                         <div class="payment-wait-summary">
                             <div>
-                                <p class="payment-wait-label">Số tiền cần nhận</p>
+                                <p class="payment-wait-label">${intent.is_test_charge ? "Số tiền chuyển khoản (test)" : "Số tiền cần nhận"}</p>
                                 <div class="payment-wait-amount pos-money">${formatCurrency(intent.expected_amount)}</div>
+                                ${intent.is_test_charge && intent.order_total_amount != null && Number(intent.order_total_amount) !== Number(intent.expected_amount)
+                                    ? `<p class="payment-wait-label" style="margin-top:8px;">Giá trị hóa đơn (gốc)</p>
+                                       <div class="pos-money" style="font-weight:700;font-size:1rem;">${formatCurrency(intent.order_total_amount)}</div>`
+                                    : ""}
                             </div>
                             <div>
                                 <p class="payment-wait-label">Nội dung chuyển khoản</p>

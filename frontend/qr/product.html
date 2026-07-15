@@ -35,7 +35,12 @@
             const response = await fetch(`/api/public/products/by-qr/${encodeURIComponent(code)}`);
             if (!response.ok) throw new Error("Mã QR không còn hiệu lực hoặc sản phẩm không tồn tại.");
             const product = await response.json();
-            const image = product.image ? `../${String(product.image).replace(/^\//, "")}` : "../assets/images/pos-glasses-optic-bridge-logo.png";
+            const rawImage = product.image ? String(product.image).trim() : "";
+            const image = !rawImage
+                ? "../assets/images/pos-glasses-optic-bridge-logo.png"
+                : (/^https?:\/\//i.test(rawImage) || rawImage.startsWith("/"))
+                    ? rawImage
+                    : `../${rawImage.replace(/^\//, "")}`;
             const inStock = product.availability === "in_stock";
             content.innerHTML = `
                 <div class="product-image"><img src="${escapeText(image)}" alt="${escapeText(product.name)}"></div>

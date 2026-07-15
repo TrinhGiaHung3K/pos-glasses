@@ -2,9 +2,26 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 
 function createRepository(overrides = {}) {
+    // Dual-price: price = demo/charge, original_price = commercial catalog.
     const products = [
-        { id: 7, name: "RayBan Aviator Classic", price: "3200000.00", quantity: 5, cost_price: 1000000 },
-        { id: 8, name: "Oakley Holbrook", price: "2800000.00", quantity: 3, cost_price: 900000 }
+        {
+            id: 7,
+            name: "RayBan Aviator Classic",
+            price: "3200.00",
+            original_price: "3200000.00",
+            quantity: 5,
+            cost_price: 1000,
+            original_cost_price: 1000000
+        },
+        {
+            id: 8,
+            name: "Oakley Holbrook",
+            price: "2800.00",
+            original_price: "2800000.00",
+            quantity: 3,
+            cost_price: 900,
+            original_cost_price: 900000
+        }
     ];
 
     return {
@@ -124,14 +141,48 @@ test("checkout combines duplicate product lines and calculates totals", async ()
     assert.equal(result.subtotal_amount, 12400000);
     assert.equal(result.discount_amount, 1290000);
     assert.equal(result.total_amount, 11110000);
+    assert.equal(result.charge_amount, 11110);
     assert.equal(result.amount_paid, 12000000);
     assert.equal(result.change_amount, 890000);
     assert.deepEqual(calls[0].items, [
-        { product_id: 7, variant_id: null, quantity: 3, price: 3200000, cost_price: 1000000 },
-        { product_id: 8, variant_id: null, quantity: 1, price: 2800000, cost_price: 900000 }
+        {
+            product_id: 7,
+            variant_id: null,
+            quantity: 3,
+            price: 3200000,
+            cost_price: 1000000,
+            charge_price: 3200
+        },
+        {
+            product_id: 8,
+            variant_id: null,
+            quantity: 1,
+            price: 2800000,
+            cost_price: 900000,
+            charge_price: 2800
+        }
     ]);
     assert.equal(calls[0].points_earned, 0);
     assert.equal(calls[0].user_id, 2);
+});
+
+test("checkout snapshots original_price even when demo price is smaller", async () => {
+    const { createOrdersService } = require("../../../src/modules/orders/service");
+    const calls = [];
+    const service = createOrdersService(createRepository({
+        checkout: async (request) => {
+            calls.push(request);
+            return { orderId: 99 };
+        }
+    }));
+    const result = await service.checkout({
+        items: [{ product_id: 7, quantity: 1 }],
+        payment: { method: "cash", amount_paid: 3200000 }
+    }, { id: 2, role: "staff" });
+    assert.equal(result.total_amount, 3200000);
+    assert.equal(result.charge_amount, 3200);
+    assert.equal(calls[0].items[0].price, 3200000);
+    assert.equal(calls[0].items[0].charge_price, 3200);
 });
 
 test("checkout rejects manual discounts greater than subtotal", async () => {

@@ -21,7 +21,7 @@ function createTablesRepository(db) {
 
         async findAvailableProducts() {
             const [rows] = await db.execute(
-                `SELECT id, category_id, name, sku, price, quantity, image
+                `SELECT id, category_id, name, sku, price, original_price, quantity, image
                 FROM products
                 WHERE quantity > 0
                 ORDER BY name`
