@@ -25,34 +25,6 @@ function createOrdersRepository(db) {
             return loyaltyRepo.getCustomerLoyalty(customerId);
         },
 
-        async createOrder(order) {
-            const [result] = await db.execute(
-                `INSERT INTO orders
-                (customer_id, user_id, table_id, table_order_id, source, status, total_amount, coupon_code, discount_percent)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [
-                    order.customer_id,
-                    order.user_id,
-                    order.table_id,
-                    order.table_order_id,
-                    order.source,
-                    order.status,
-                    order.total_amount,
-                    order.coupon_code,
-                    order.discount_percent
-                ]
-            );
-            return result;
-        },
-
-        async findProductStockById(productId) {
-            const [rows] = await db.execute(
-                "SELECT quantity FROM products WHERE id = ?",
-                [productId]
-            );
-            return rows[0] || null;
-        },
-
         async findProductsByIds(ids) {
             if (!ids.length) {
                 return [];
@@ -142,70 +114,6 @@ function createOrdersRepository(db) {
             }
         },
 
-        async createOrderDetailWithStockUpdate(detail) {
-            const connection = await db.getConnection();
-
-            try {
-                await connection.beginTransaction();
-
-                const [productRows] = await connection.execute(
-                    `SELECT id, name, price, quantity, cost_price
-                    FROM products
-                    WHERE id = ?
-                    FOR UPDATE`,
-                    [detail.product_id]
-                );
-                const product = productRows[0];
-                if (!product) {
-                    const error = new Error("Không tìm thấy sản phẩm");
-                    error.status = 404;
-                    throw error;
-                }
-                if (Number(product.quantity) < Number(detail.quantity)) {
-                    const error = new Error(`Sản phẩm ${product.name} không đủ tồn kho`);
-                    error.status = 400;
-                    throw error;
-                }
-
-                const unitPrice = detail.price != null ? detail.price : product.price;
-                const unitCost = detail.cost_price != null
-                    ? detail.cost_price
-                    : (Number(product.cost_price) || 0);
-
-                const [insertResult] = await connection.execute(
-                    `INSERT INTO order_details
-                    (order_id, product_id, quantity, price, cost_price)
-                    VALUES (?, ?, ?, ?, ?)`,
-                    [
-                        detail.order_id,
-                        detail.product_id,
-                        detail.quantity,
-                        unitPrice,
-                        unitCost
-                    ]
-                );
-
-                await applyMovementOnConnection(connection, {
-                    product_id: detail.product_id,
-                    type: STOCK_TYPES.SALE,
-                    qty: detail.quantity,
-                    unit_cost: unitCost,
-                    ref_type: "order",
-                    ref_id: detail.order_id,
-                    note: "Legacy order detail",
-                    created_by: detail.user_id || null
-                });
-
-                await connection.commit();
-                return insertResult;
-            } catch (error) {
-                await connection.rollback();
-                throw error;
-            } finally {
-                connection.release();
-            }
-        },
-
         async checkout(request) {
             const connection = await db.getConnection();
 
@@ -288,13 +196,13 @@ function createOrdersRepository(db) {
                 try {
                     [orderResult] = await connection.execute(
                         `INSERT INTO orders
-                        (customer_id, user_id, shift_id, table_id, table_order_id, source, status,
+                        (customer_id, user_id, shift_id, source, status,
                             subtotal_amount, discount_amount, total_amount,
                             coupon_code, discount_percent,
                             manual_discount_type, manual_discount_value,
                             payment_method, payment_status, amount_paid, change_amount,
                             points_earned, points_redeemed, points_discount_amount)
-                        VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                         [
                             request.customer_id,
                             request.user_id,
@@ -322,12 +230,12 @@ function createOrdersRepository(db) {
                     if (error && (error.code === "ER_BAD_FIELD_ERROR" || error.errno === 1054)) {
                         [orderResult] = await connection.execute(
                             `INSERT INTO orders
-                            (customer_id, user_id, table_id, table_order_id, source, status,
+                            (customer_id, user_id, source, status,
                                 subtotal_amount, discount_amount, total_amount,
                                 coupon_code, discount_percent,
                                 manual_discount_type, manual_discount_value,
                                 payment_method, amount_paid, change_amount)
-                            VALUES (?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                             [
                                 request.customer_id,
                                 request.user_id,
@@ -768,8 +676,6 @@ function createOrdersRepository(db) {
                     c.phone AS customer_phone,
                     c.email AS customer_email,
                     u.username,
-                    st.code AS table_code,
-                    st.name AS table_name,
                     o.source,
                     o.status,
                     o.coupon_code,
@@ -797,7 +703,6 @@ function createOrdersRepository(db) {
                 FROM orders o
                 LEFT JOIN customers c ON o.customer_id = c.id
                 LEFT JOIN users u ON o.user_id = u.id
-                LEFT JOIN store_tables st ON o.table_id = st.id
                 JOIN order_details od ON o.id = od.order_id
                 LEFT JOIN products p ON od.product_id = p.id
                 WHERE o.id = ?`,
@@ -841,8 +746,6 @@ function createOrdersRepository(db) {
                     o.id,
                     COALESCE(c.name, 'Khách lẻ') AS customer_name,
                     u.username,
-                    st.code AS table_code,
-                    st.name AS table_name,
                     o.source,
                     o.status,
                     o.payment_method,
@@ -852,7 +755,6 @@ function createOrdersRepository(db) {
                 FROM orders o
                 LEFT JOIN customers c ON o.customer_id = c.id
                 LEFT JOIN users u ON o.user_id = u.id
-                LEFT JOIN store_tables st ON o.table_id = st.id
                 ${whereSql}
                 ORDER BY o.id DESC`;
 
@@ -1005,8 +907,6 @@ function createOrdersRepository(db) {
                     o.id,
                     COALESCE(c.name, 'Khách lẻ') AS customer_name,
                     u.username,
-                    st.code AS table_code,
-                    st.name AS table_name,
                     o.source,
                     o.status,
                     o.total_amount,
@@ -1014,7 +914,6 @@ function createOrdersRepository(db) {
                 FROM orders o
                 LEFT JOIN customers c ON o.customer_id = c.id
                 LEFT JOIN users u ON o.user_id = u.id
-                LEFT JOIN store_tables st ON o.table_id = st.id
                 ORDER BY o.id DESC
                 LIMIT ${safeLimit}`
             );

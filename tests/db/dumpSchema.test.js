@@ -18,11 +18,8 @@ test("fresh dump bootstraps a portable MySQL database with all application table
         "customers",
         "products",
         "promotions",
-        "store_tables",
         "orders",
-        "table_orders",
-        "order_details",
-        "table_order_items"
+        "order_details"
     ];
 
     assert.match(
@@ -38,6 +35,10 @@ test("fresh dump bootstraps a portable MySQL database with all application table
         assert.match(dump, new RegExp(`DROP TABLE IF EXISTS \`${table}\``, "i"));
         assert.match(dump, new RegExp(`CREATE TABLE \`${table}\``, "i"));
     }
+
+    assert.doesNotMatch(dump, /CREATE TABLE `(?:store_tables|table_orders|table_order_items)`/i);
+    assert.doesNotMatch(dump, /'123456'/);
+    assert.match(dump, /BOOTSTRAP_ADMIN_USERNAME/);
 });
 
 test("fresh dump includes customer member barcode schema and backfilled data", () => {

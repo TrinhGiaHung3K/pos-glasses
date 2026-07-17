@@ -98,30 +98,47 @@ test("GET /latest-orders returns recent orders through route wiring", async () =
     assert.equal(response.body[0].limit, 5);
 });
 
-test("GET /api/public/tables/:token/menu does not require auth", async () => {
+test("retired table-ordering APIs return gone", async () => {
     const { createApp } = require("../src/app");
-
-    const app = createApp({
-        services: {
-            tables: {
-                getPublicMenu: async (token) => ({
-                    table: {
-                        id: 1,
-                        code: "T01",
-                        name: "Bàn tư vấn 01",
-                        token
-                    },
-                    products: [{ id: 7, name: "RayBan Aviator Classic" }]
-                })
-            }
-        }
-    });
-
+    const app = createApp();
     const response = await request(app, "/api/public/tables/table-t01/menu");
 
-    assert.equal(response.status, 200);
-    assert.equal(response.body.table.code, "T01");
-    assert.equal(response.body.products[0].id, 7);
+    assert.equal(response.status, 410);
+    assert.match(response.body.message, /đã được loại/);
+});
+
+test("protected HTML pages redirect unauthenticated browsers", async () => {
+    const { createApp } = require("../src/app");
+    const app = createApp();
+    const response = await request(app, "/dashboard.html", { redirect: "manual" });
+
+    assert.equal(response.status, 302);
+    assert.match(response.headers.get("location"), /^\/login\.html\?next=/);
+});
+
+test("admin HTML pages reject staff before static content is served", async () => {
+    const { createApp } = require("../src/app");
+    const app = createApp();
+    const response = await request(app, "/users.html", {
+        redirect: "manual",
+        headers: authHeaders("staff")
+    });
+
+    assert.equal(response.status, 302);
+    assert.equal(response.headers.get("location"), "/orders.html");
+});
+
+test("legacy client-authored order mutations are unavailable", async () => {
+    const { createApp } = require("../src/app");
+    const app = createApp();
+    const response = await request(app, "/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders("staff") },
+        body: JSON.stringify({ user_id: 1, total_amount: 1 })
+    });
+
+    assert.equal(response.status, 410);
+    assert.match(response.body.message, /pos\/checkout/);
 });
 
 test("POST /api/staff/pos/checkout requires auth", async () => {

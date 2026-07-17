@@ -60,8 +60,7 @@ function createDashboardRepository(db) {
                 `SELECT
                     (SELECT COUNT(*) FROM products) AS totalProducts,
                     (SELECT COUNT(*) FROM customers) AS totalCustomers,
-                    (SELECT COUNT(*) FROM products WHERE quantity <= 5) AS lowStockCount,
-                    (SELECT COUNT(*) FROM table_orders WHERE status = 'pending') AS pendingQrCount`
+                    (SELECT COUNT(*) FROM products WHERE quantity <= 5) AS lowStockCount`
             );
 
             const [[period]] = await db.execute(
@@ -176,7 +175,6 @@ function createDashboardRepository(db) {
                     : 0,
                 new_members: Number(members.newMembers || 0),
                 low_stock_count: Number(catalog.lowStockCount || 0),
-                pending_qr_count: Number(catalog.pendingQrCount || 0),
                 previous: {
                     revenue: prevRevenue,
                     order_count: prevOrders,

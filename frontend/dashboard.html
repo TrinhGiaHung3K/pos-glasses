@@ -598,7 +598,7 @@
                             </div>
                             <span class="dashboard-kpi-icon"><i class="ph ph-chart-pie-slice"></i></span>
                         </div>
-                        <p class="dashboard-kpi-note">Margin: <span id="kpiMargin">0%</span> · QR chờ: <span id="kpiPendingQr">0</span></p>
+                        <p class="dashboard-kpi-note">Biên lợi nhuận gộp: <span id="kpiMargin">0%</span></p>
                     </article>
 
                     <article class="dashboard-kpi-card">
@@ -679,14 +679,14 @@
                     <div class="dashboard-chart-card">
                         <div class="dashboard-card-header">
                             <div>
-                                <h4 class="dashboard-card-title"><i class="ph ph-git-branch"></i> Nguồn đơn hàng</h4>
-                                <p class="dashboard-card-subtitle">Tỷ trọng POS, QR và đơn nhập thủ công.</p>
+                                <h4 class="dashboard-card-title"><i class="ph ph-credit-card"></i> Phương thức thanh toán</h4>
+                                <p class="dashboard-card-subtitle">Tỷ trọng tiền mặt, thẻ và chuyển khoản.</p>
                             </div>
                         </div>
                         <div class="dashboard-chart-container compact">
                             <canvas id="orderSourceChart"></canvas>
                         </div>
-                        <div class="chart-legend" id="orderSourceLegend" aria-label="Chú giải nguồn đơn hàng"></div>
+                        <div class="chart-legend" id="orderSourceLegend" aria-label="Chú giải phương thức thanh toán"></div>
                     </div>
                 </section>
 
@@ -723,7 +723,7 @@
                         <div class="dashboard-card-header">
                             <div>
                                 <h4 class="dashboard-card-title"><i class="ph ph-receipt"></i> Hóa đơn gần đây</h4>
-                                <p class="dashboard-card-subtitle">Các giao dịch mới nhất tại quầy hoặc QR.</p>
+                                <p class="dashboard-card-subtitle">Các giao dịch mới nhất được ghi nhận tại quầy.</p>
                             </div>
                         </div>
                         <div class="table-responsive">
@@ -820,7 +820,7 @@
     }
 
     if (window.Chart) {
-        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+        Chart.defaults.font.family = "'Segoe UI Variable', 'Segoe UI', sans-serif";
         Chart.defaults.color = dashboardPalette.muted;
 
         // Tooltip styling consistent with current UI (dark sidebar bg + proper gaps)
@@ -905,15 +905,14 @@
         });
     }
 
-    function sourceLabel(source) {
+    function paymentMethodLabel(method) {
         const labels = {
-            pos: "POS tại quầy",
-            staff: "Nhân viên nhập",
-            table: "QR tại bàn",
-            qr: "QR tại bàn"
+            cash: "Tiền mặt",
+            card: "Thẻ",
+            bank_transfer: "Chuyển khoản"
         };
 
-        return labels[source] || "Khác";
+        return labels[String(method || "cash").toLowerCase()] || "Khác";
     }
 
     function makeLastDays(count) {
@@ -984,7 +983,7 @@
         );
         const dailyKeys = makeLastDays(14);
         const dailyGroups = groupBy(completedOrders, (order) => dateKey(order.created_at || new Date()));
-        const sourceGroups = groupBy(completedOrders, (order) => sourceLabel(order.source || "staff"));
+        const sourceGroups = groupBy(completedOrders, (order) => paymentMethodLabel(order.payment_method));
         const staffGroups = groupBy(completedOrders, (order) => order.username || "Chưa gán nhân viên");
         const customerGroups = groupBy(
             completedOrders.filter((order) => (order.customer_name || "").trim() && order.customer_name !== "Khách lẻ"),
@@ -1233,7 +1232,7 @@
             ctx.stroke();
             ctx.setLineDash([]);
             ctx.fillStyle = pluginOptions.labelColor || dashboardPalette.muted;
-            ctx.font = "800 11px 'Plus Jakarta Sans', sans-serif";
+            ctx.font = "800 11px 'Segoe UI', sans-serif";
             ctx.textAlign = "right";
             ctx.fillText(pluginOptions.label || "Trung bình", right - 4, y - 8);
             ctx.restore();
@@ -1253,7 +1252,7 @@
 
             ctx.save();
             ctx.fillStyle = pluginOptions?.color || dashboardPalette.text;
-            ctx.font = "800 11px 'Plus Jakarta Sans', sans-serif";
+            ctx.font = "800 11px 'Segoe UI', sans-serif";
             ctx.textBaseline = "middle";
 
             chart.data.datasets.forEach((dataset, datasetIndex) => {
@@ -1301,10 +1300,10 @@
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillStyle = dashboardPalette.text;
-            ctx.font = "900 22px 'Plus Jakarta Sans', sans-serif";
+            ctx.font = "900 22px 'Segoe UI', sans-serif";
             ctx.fillText(pluginOptions.text, centerX, centerY - 8);
             ctx.fillStyle = dashboardPalette.muted;
-            ctx.font = "800 11px 'Plus Jakarta Sans', sans-serif";
+            ctx.font = "800 11px 'Segoe UI', sans-serif";
             ctx.fillText(pluginOptions.subtext || "", centerX, centerY + 16);
             ctx.restore();
         }
@@ -1881,10 +1880,6 @@
                 const marginEl = document.getElementById("kpiMargin");
                 if (marginEl) {
                     marginEl.textContent = `${Number(summary.margin_percent || 0)}%`;
-                }
-                const pendingQrEl = document.getElementById("kpiPendingQr");
-                if (pendingQrEl) {
-                    pendingQrEl.textContent = String(summary.pending_qr_count || 0);
                 }
                 const lowStockCountEl = document.getElementById("lowStockCount");
                 if (lowStockCountEl && summary.low_stock_count != null) {

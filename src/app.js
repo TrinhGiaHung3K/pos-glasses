@@ -8,6 +8,7 @@ const requestId = require("./middleware/requestId");
 const securityHeaders = require("./middleware/securityHeaders");
 const authMiddleware = require("./middleware/authMiddleware");
 const csrfProtection = require("./middleware/csrfProtection");
+const { createPageAccessMiddleware } = require("./middleware/pageAccess");
 const errorHandler = require("./middleware/errorHandler");
 const notFoundHandler = require("./middleware/notFoundHandler");
 const { requireRole } = require("./middleware/requireRole");
@@ -51,15 +52,6 @@ const { createStaffPerformanceService } = require("./modules/staffPerformance/se
 const { createStockRepository } = require("./modules/stock/repository");
 const { createStockRouter } = require("./modules/stock/routes");
 const { createStockService } = require("./modules/stock/service");
-const { createTableOrdersRepository } = require("./modules/tableOrders/repository");
-const {
-    createPublicTableOrdersRouter,
-    createStaffTableOrdersRouter
-} = require("./modules/tableOrders/routes");
-const { createTableOrdersService } = require("./modules/tableOrders/service");
-const { createTablesRepository } = require("./modules/tables/repository");
-const { createAdminTablesRouter, createPublicTablesRouter } = require("./modules/tables/routes");
-const { createTablesService } = require("./modules/tables/service");
 const { createVariantsRepository } = require("./modules/variants/repository");
 const { createVariantsRouter } = require("./modules/variants/routes");
 const { createVariantsService } = require("./modules/variants/service");
@@ -98,8 +90,6 @@ function createDefaultRepositories(db) {
         promotions: createPromotionsRepository(db),
         dashboard: createDashboardRepository(db),
         staffPerformance: createStaffPerformanceRepository(db),
-        tables: createTablesRepository(db),
-        tableOrders: createTableOrdersRepository(db),
         stock: createStockRepository(db),
         audit: createAuditRepository(db),
         categories: createCategoriesRepository(db),
@@ -135,8 +125,6 @@ function createDefaultServices(repositories) {
             getAiService: () => services.ai
         }),
         staffPerformance: createStaffPerformanceService(repositories.staffPerformance),
-        tables: createTablesService(repositories.tables),
-        tableOrders: createTableOrdersService(repositories.tableOrders),
         stock: createStockService(repositories.stock),
         audit,
         categories: createCategoriesService(repositories.categories),
@@ -180,14 +168,15 @@ function createApp(options = {}) {
     };
     app.locals.services = services;
 
-    app.set("trust proxy", 1);
+    app.set("trust proxy", env.security.trustProxy);
     app.use(requestId);
     app.use(securityHeaders);
     app.use(cors((req, callback) => {
         const origin = String(req.headers.origin || "");
         let sameOrigin = false;
         try {
-            sameOrigin = Boolean(origin) && new URL(origin).host.toLowerCase() === String(req.headers.host || "").toLowerCase();
+            const requestOrigin = `${req.protocol}://${String(req.headers.host || "").toLowerCase()}`;
+            sameOrigin = Boolean(origin) && new URL(origin).origin.toLowerCase() === requestOrigin;
         } catch {
             sameOrigin = false;
         }
@@ -221,15 +210,22 @@ function createApp(options = {}) {
         }
     }));
 
-    if (env.isDev) {
-        app.use(requestLogger);
-    }
-    app.use("/vendor/bootstrap", express.static(path.join(__dirname, "..", "node_modules", "bootstrap", "dist")));
-    app.use("/vendor/phosphor", express.static(path.join(__dirname, "..", "node_modules", "@phosphor-icons", "web", "src")));
-    app.use("/vendor/jsbarcode", express.static(path.join(__dirname, "..", "node_modules", "jsbarcode", "dist")));
-    app.use("/vendor/tourguide", express.static(path.join(__dirname, "..", "node_modules", "@sjmc11", "tourguidejs", "dist")));
-    app.use("/vendor/chartjs", express.static(path.join(__dirname, "..", "node_modules", "chart.js", "dist")));
-    app.use(express.static(path.join(__dirname, "..", "frontend")));
+    app.use(requestLogger);
+    const frontendRoot = path.join(__dirname, "..", "frontend");
+    const staticOptions = {
+        etag: true,
+        fallthrough: true,
+        index: false,
+        maxAge: env.isProd ? "1h" : 0
+    };
+    app.use("/vendor/bootstrap", express.static(path.join(__dirname, "..", "node_modules", "bootstrap", "dist"), staticOptions));
+    app.use("/vendor/phosphor", express.static(path.join(__dirname, "..", "node_modules", "@phosphor-icons", "web", "src"), staticOptions));
+    app.use("/vendor/jsbarcode", express.static(path.join(__dirname, "..", "node_modules", "jsbarcode", "dist"), staticOptions));
+    app.use("/vendor/tourguide", express.static(path.join(__dirname, "..", "node_modules", "@sjmc11", "tourguidejs", "dist"), staticOptions));
+    app.use("/vendor/chartjs", express.static(path.join(__dirname, "..", "node_modules", "chart.js", "dist"), staticOptions));
+    app.use("/assets", express.static(path.join(frontendRoot, "assets"), staticOptions));
+    app.use(createPageAccessMiddleware());
+    app.use(express.static(frontendRoot, staticOptions));
 
     app.get("/", (req, res) => {
         res.redirect(302, "/login.html");
@@ -239,31 +235,52 @@ function createApp(options = {}) {
     // never falls through to JWT auth and pollutes logs with a false 401.
     app.get("/favicon.ico", (req, res) => res.status(204).end());
 
-    app.get("/health", async (req, res) => {
+    app.get("/health/live", (req, res) => {
+        res.json({ ok: true, service: "pos-glasses", request_id: req.requestId });
+    });
+
+    async function readiness(req, res) {
         try {
             await db.query("SELECT 1");
             res.json({ ok: true, db: true, request_id: req.requestId });
         } catch {
             res.status(503).json({ ok: false, db: false, request_id: req.requestId });
         }
-    });
+    }
+
+    app.get("/health", readiness);
+    app.get("/health/ready", readiness);
 
     app.use(createAuthRouter(services.auth));
-    app.use(createPublicTablesRouter(services.tables));
-    app.use(createPublicTableOrdersRouter(services.tableOrders));
     app.use(createPublicPaymentsRouter(services.payments, env.payment.provider));
     app.use(createPublicProductQrRouter(services.productQr));
+
+    app.all("/register", (req, res) => {
+        res.status(410).json({ message: "Đăng ký công khai không còn được hỗ trợ" });
+    });
+    app.use([
+        "/api/public/tables",
+        "/api/public/table-orders",
+        "/api/staff/table-orders",
+        "/api/admin/tables"
+    ], (req, res) => {
+        res.status(410).json({ message: "Luồng đặt hàng theo bàn đã được loại khỏi POS mắt kính" });
+    });
 
     app.use(authMiddleware);
     app.use(csrfProtection);
     app.use(requireRole("admin", "staff"));
+    app.post(["/orders", "/order-details"], (req, res) => {
+        res.status(410).json({
+            message: "API tạo đơn từng phần đã ngừng hỗ trợ. Sử dụng /api/staff/pos/checkout."
+        });
+    });
     app.use(createProductsRouter(services.products));
     app.use(createCustomersRouter(services.customers));
     app.use(createOrdersRouter(services.orders));
     app.use(createDashboardRouter(services.dashboard));
     app.use(createPromotionsRouter(services.promotions));
     app.use(createStaffPerformanceRouter(services.staffPerformance));
-    app.use(createStaffTableOrdersRouter(services.tableOrders));
     app.use(createStockRouter(services.stock));
     app.use(createCategoriesRouter(services.categories));
     app.use(createVariantsRouter(services.variants));
@@ -278,7 +295,6 @@ function createApp(options = {}) {
     app.use(requireRole("admin"));
     app.use(createAdminAuthRouter(services.auth));
     app.use(createAdminStaffPerformanceRouter(services.staffPerformance));
-    app.use(createAdminTablesRouter(services.tables));
     app.use(createAdminPromotionsRouter(services.promotions));
     app.use(createAdminAuditRouter(services.audit));
     app.use(createAdminCategoriesRouter(services.categories));

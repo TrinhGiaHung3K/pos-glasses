@@ -268,53 +268,6 @@ function createOrdersService(repository, options = {}) {
     }
 
     return {
-        async createOrder(payload) {
-            const result = await repository.createOrder({
-                customer_id: toNumber(payload.customer_id),
-                user_id: toNumber(payload.user_id),
-                table_id: payload.table_id ? toNumber(payload.table_id) : null,
-                table_order_id: payload.table_order_id ? toNumber(payload.table_order_id) : null,
-                source: payload.source || "staff",
-                status: payload.status || "completed",
-                total_amount: toNumber(payload.total_amount),
-                coupon_code: payload.coupon_code || null,
-                discount_percent: toNumber(payload.discount_percent)
-            });
-
-            return {
-                message: "Order created successfully",
-                id: result.insertId
-            };
-        },
-
-        async addOrderDetail(payload) {
-            const detail = {
-                order_id: toNumber(payload.order_id),
-                product_id: toNumber(payload.product_id),
-                quantity: toNumber(payload.quantity),
-                price: toNumber(payload.price),
-                cost_price: toNumber(payload.cost_price),
-                user_id: payload.user_id != null ? toNumber(payload.user_id) : null
-            };
-
-            const stock = await repository.findProductStockById(detail.product_id);
-
-            if (!stock) {
-                throw createHttpError(404, "Product not found");
-            }
-
-            if (Number(stock.quantity) < detail.quantity) {
-                throw createHttpError(400, "Not enough stock");
-            }
-
-            const result = await repository.createOrderDetailWithStockUpdate(detail);
-
-            return {
-                message: "Order detail added and stock updated",
-                id: result.insertId
-            };
-        },
-
         async checkout(payload, user, meta = {}) {
             if (!user || !user.id) {
                 throw createHttpError(401, "Vui lòng đăng nhập để tiếp tục");

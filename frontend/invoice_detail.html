@@ -537,26 +537,6 @@
             margin-top: 2px;
         }
 
-        .receipt-qr {
-            margin-top: 12px;
-            text-align: center;
-        }
-
-        .receipt-qr img {
-            background: #fff;
-            border: 1px solid #ddd;
-            display: inline-block;
-            height: 84px;
-            image-rendering: pixelated;
-            width: 84px;
-        }
-
-        .receipt-qr-caption {
-            color: #555;
-            font-size: 9.5px;
-            margin-top: 4px;
-        }
-
         .receipt-footer {
             font-size: 11px;
             line-height: 1.4;
@@ -666,10 +646,6 @@
             font-size: 11.5px;
             margin-top: 4px;
             padding-top: 4px;
-        }
-
-        .receipt-paper-card.print-compact .receipt-qr {
-            display: none !important;
         }
 
         .receipt-paper-card.print-compact .receipt-footer {
@@ -803,10 +779,6 @@
                 font-size: 11px !important;
                 margin-top: 4px !important;
                 padding-top: 4px !important;
-            }
-
-            .receipt-paper-card.print-compact .receipt-qr {
-                display: none !important;
             }
 
             .receipt-paper-card.print-compact .receipt-footer {
@@ -993,9 +965,6 @@
                         <div class="receipt-section receipt-totals" id="infoTotals"></div>
                         <div class="receipt-section receipt-payment" id="infoPayment"></div>
 
-                        <!-- QR (full only) -->
-                        <div class="receipt-qr" id="receiptQR" hidden></div>
-
                         <hr class="receipt-divider" id="dividerBeforeFooter" hidden>
 
                         <footer class="receipt-footer" id="receiptFooterBlock" hidden>
@@ -1165,17 +1134,12 @@
         const totalsEl = document.getElementById("infoTotals");
         const paymentEl = document.getElementById("infoPayment");
         const tableBody = document.getElementById("detailTable");
-        const qrEl = document.getElementById("receiptQR");
 
         metaEl.innerHTML = `<p class="receipt-empty">Đang tải...</p>`;
         totalsEl.innerHTML = "";
         paymentEl.innerHTML = "";
         tableBody.innerHTML = "";
         setReceiptBodyVisible(false);
-        if (qrEl) {
-            qrEl.hidden = true;
-            qrEl.innerHTML = "";
-        }
         clearSummary();
         setLoadStatus("loading", "Đang tải #" + id + "...");
 
@@ -1199,7 +1163,6 @@
             const orderId = first.order_id || first.id;
             const created = first.created_at ? formatDate(first.created_at) : "-";
             const phone = first.customer_phone ? " · " + escapeHtml(first.customer_phone) : "";
-            const tableLabel = first.table_name || first.table_code || "";
             const sourceLabel = sourceLabelText(first.source);
             const hasDiscount = Number(first.discount_amount || 0) > 0
                 || Number(first.discount_percent || 0) > 0
@@ -1224,11 +1187,6 @@
                     <span class="receipt-info-label">NV:</span>
                     <span class="receipt-info-value">${escapeHtml(first.username || "-")}</span>
                 </div>
-                ${tableLabel ? `
-                <div class="receipt-info-row" data-key="table">
-                    <span class="receipt-info-label">BÀN:</span>
-                    <span class="receipt-info-value">${escapeHtml(tableLabel)}</span>
-                </div>` : ""}
                 <div class="receipt-info-row" data-key="source">
                     <span class="receipt-info-label">NGUỒN:</span>
                     <span class="receipt-info-value">${sourceLabel}</span>
@@ -1303,7 +1261,6 @@
                 </div>
             `;
 
-            updateReceiptQR(orderId);
             setReceiptBodyVisible(true);
             renderSummary(first);
             setLoadStatus("ok", "Hóa đơn #" + orderId);
@@ -1327,25 +1284,9 @@
         if (!source) return "Bán hàng";
         const map = {
             pos: "POS quầy",
-            staff: "Nhân viên",
-            qr: "QR bàn",
-            "table-order": "Yêu cầu QR",
-            table: "Bàn"
+            staff: "Nhân viên"
         };
-        return map[source] || source;
-    }
-
-    function updateReceiptQR(orderId) {
-        const container = document.getElementById("receiptQR");
-        if (!container) return;
-
-        const url = `${window.location.origin}/invoice_detail.html?id=${orderId}`;
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=84x84&data=${encodeURIComponent(url)}`;
-        container.hidden = false;
-        container.innerHTML = `
-            <img src="${qrUrl}" alt="QR hóa đơn #${escapeHtml(String(orderId))}" width="84" height="84">
-            <div class="receipt-qr-caption">Quét để xem biên nhận</div>
-        `;
+        return map[source] || "Khác";
     }
 
     /* ───────── Helpers ───────── */

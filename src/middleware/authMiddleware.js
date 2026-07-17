@@ -15,8 +15,6 @@ function readCookie(req, name) {
 
 async function authMiddleware(req, res, next) {
     const authHeader = req.headers.authorization;
-    // EventSource cannot set Authorization — allow ?token= for SSE streams only
-    const queryToken = req.query?.token ? String(req.query.token).trim() : "";
     const cookieToken = readCookie(req, env.security.sessionCookieName);
     let token = null;
 
@@ -26,12 +24,6 @@ async function authMiddleware(req, res, next) {
     } else if (authHeader && authHeader.startsWith("Bearer ")) {
         token = authHeader.split(" ")[1];
         req.authSource = "bearer";
-    } else if (queryToken && String(req.path || "").includes("/stream")) {
-        token = queryToken;
-        req.authSource = "query";
-    } else if (queryToken && String(req.originalUrl || "").includes("/stream")) {
-        token = queryToken;
-        req.authSource = "query";
     }
 
     if (!token) {

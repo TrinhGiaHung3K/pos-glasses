@@ -1,13 +1,5 @@
 function createOrdersController(service) {
     return {
-        async create(req, res) {
-            res.json(await service.createOrder(req.body));
-        },
-
-        async addDetail(req, res) {
-            res.json(await service.addOrderDetail(req.body));
-        },
-
         async checkout(req, res) {
             const idempotencyKey = req.get("Idempotency-Key") || req.get("idempotency-key") || "";
             res.status(201).json(await service.checkout(req.body, req.user, {

@@ -11,7 +11,7 @@
 
     /** Flat list kept for path lookup + tests; mega groups reference the same keys. */
     const APP_MENU_ITEMS = [
-        { key: "dashboard", href: "/dashboard.html", icon: "ph-squares-four", label: "Tổng quan", hint: "KPI & xu hướng" },
+        { key: "dashboard", href: "/dashboard.html", icon: "ph-squares-four", label: "Tổng quan", hint: "KPI & xu hướng", roles: ["admin"] },
         { key: "orders", href: "/orders.html", icon: "ph-cash-register", label: "Bán hàng", hint: "Quầy POS" },
         { key: "shifts", href: "/shifts.html", icon: "ph-clock-countdown", label: "Ca làm việc", hint: "Mở / đóng ca" },
         { key: "products", href: "/products.html", icon: "ph-eyeglasses", label: "Sản phẩm", hint: "Catalog kính" },
@@ -22,13 +22,10 @@
         { key: "inventory", href: "/inventory.html", icon: "ph-warehouse", label: "Kho hàng", hint: "Tồn & điều chỉnh" },
         { key: "suppliers", href: "/suppliers.html", icon: "ph-truck", label: "NCC / PO", hint: "Nhập hàng" },
         { key: "promotions", href: "/promotions.html", icon: "ph-ticket", label: "Khuyến mãi", hint: "Mã giảm giá" },
-        { key: "reports", href: "/reports.html", icon: "ph-chart-line-up", label: "Báo cáo", hint: "Doanh thu" },
+        { key: "reports", href: "/reports.html", icon: "ph-chart-line-up", label: "Báo cáo", hint: "Doanh thu", roles: ["admin"] },
         { key: "invoice-detail", href: "/invoice_detail.html", icon: "ph-printer", label: "In hóa đơn", hint: "In / xem HĐ" },
-        { key: "qr-orders", href: "/staff/qr-orders.html", icon: "ph-qr-code", label: "Yêu cầu QR", hint: "Xác nhận bàn" },
-        { key: "tables", href: "/admin/tables.html", icon: "ph-desk", label: "Bàn QR", hint: "Quản lý bàn", roles: ["admin"] },
         { key: "users", href: "/users.html", icon: "ph-user-gear", label: "Người dùng", hint: "Tài khoản NV", roles: ["admin"] },
-        { key: "audit", href: "/audit.html", icon: "ph-notebook", label: "Nhật ký", hint: "Audit log", roles: ["admin"] },
-        { key: "payment-test", href: "/payment-test.html", icon: "ph-qr-code", label: "Test chuyển khoản", hint: "Xác minh 2.900đ", roles: ["admin"] }
+        { key: "audit", href: "/audit.html", icon: "ph-notebook", label: "Nhật ký", hint: "Audit log", roles: ["admin"] }
     ];
 
     /**
@@ -70,13 +67,6 @@
             itemKeys: ["inventory", "suppliers"]
         },
         {
-            id: "qr",
-            type: "mega",
-            label: "Bàn QR",
-            icon: "ph-qr-code",
-            itemKeys: ["qr-orders", "tables"]
-        },
-        {
             id: "analytics",
             type: "link",
             itemKey: "reports"
@@ -86,7 +76,7 @@
             type: "mega",
             label: "Hệ thống",
             icon: "ph-gear-six",
-            itemKeys: ["users", "audit", "payment-test"],
+            itemKeys: ["users", "audit"],
             roles: ["admin"]
         }
     ];
@@ -105,11 +95,8 @@
         "/promotions.html": "promotions",
         "/reports.html": "reports",
         "/invoice_detail.html": "invoice-detail",
-        "/staff/qr-orders.html": "qr-orders",
-        "/admin/tables.html": "tables",
         "/users.html": "users",
-        "/audit.html": "audit",
-        "/payment-test.html": "payment-test"
+        "/audit.html": "audit"
     };
 
     function escapeHtml(value) {

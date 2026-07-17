@@ -474,7 +474,7 @@
                 <section class="pos-page-intro">
                     <div>
                         <h2>Báo cáo hiệu suất giao dịch</h2>
-                        <p>Lọc, xem, in và xuất báo cáo doanh thu theo thời gian, nguồn đơn, nhân viên và khách hàng.</p>
+                        <p>Lọc, xem, in và xuất báo cáo doanh thu theo thời gian, thanh toán, nhân viên và khách hàng.</p>
                     </div>
                     <div class="reports-actions">
                         <span class="report-status" id="reportStatus">
@@ -512,9 +512,9 @@
                         </select>
                     </div>
                     <div class="report-filter-field">
-                        <label for="reportSourceFilter">Nguồn đơn</label>
+                        <label for="reportSourceFilter">Thanh toán</label>
                         <select class="form-select" id="reportSourceFilter">
-                            <option value="all">Tất cả nguồn</option>
+                            <option value="all">Mọi hình thức</option>
                         </select>
                     </div>
                     <div class="report-filter-actions">
@@ -609,14 +609,14 @@
                     <div class="report-chart-card">
                         <div class="report-card-header">
                             <div>
-                                <h4 class="report-card-title"><i class="ph ph-git-branch"></i> Doanh thu theo nguồn đơn</h4>
-                                <p class="report-card-subtitle">So sánh POS, QR và đơn nhân viên nhập.</p>
+                                <h4 class="report-card-title"><i class="ph ph-credit-card"></i> Doanh thu theo thanh toán</h4>
+                                <p class="report-card-subtitle">So sánh tiền mặt, thẻ và chuyển khoản.</p>
                             </div>
                         </div>
                         <div class="report-chart-wrapper compact">
                             <canvas id="reportSourceChart"></canvas>
                         </div>
-                        <div class="chart-legend" id="reportSourceLegend" aria-label="Chú giải doanh thu theo nguồn đơn"></div>
+                        <div class="chart-legend" id="reportSourceLegend" aria-label="Chú giải doanh thu theo phương thức thanh toán"></div>
                     </div>
 
                     <div class="report-chart-card">
@@ -648,7 +648,7 @@
                                     <th>Thời gian</th>
                                     <th>Khách hàng</th>
                                     <th>Nhân viên</th>
-                                    <th>Nguồn</th>
+                                    <th>Thanh toán</th>
                                     <th>Trạng thái</th>
                                     <th>Tổng tiền</th>
                                 </tr>
@@ -694,7 +694,7 @@
     }
 
     if (window.Chart) {
-        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+        Chart.defaults.font.family = "'Segoe UI Variable', 'Segoe UI', sans-serif";
         Chart.defaults.color = reportPalette.muted;
 
         // Tooltip styling consistent with current UI (dark sidebar bg + proper gaps)
@@ -777,15 +777,14 @@
         });
     }
 
-    function sourceLabel(source) {
+    function paymentMethodLabel(method) {
         const labels = {
-            pos: "POS tại quầy",
-            staff: "Nhân viên nhập",
-            table: "QR tại bàn",
-            qr: "QR tại bàn"
+            cash: "Tiền mặt",
+            card: "Thẻ",
+            bank_transfer: "Chuyển khoản"
         };
 
-        return labels[source] || "Khác";
+        return labels[String(method || "cash").toLowerCase()] || "Khác";
     }
 
     function statusLabel(status) {
@@ -904,7 +903,7 @@
         const totalRevenue = sumBy(revenueOrders, orderNetRevenue);
         const totalOrders = revenueOrders.length;
         const dailyGroups = groupBy(revenueOrders, (order) => dateKey(order.created_at || new Date()));
-        const sourceGroups = groupBy(revenueOrders, (order) => sourceLabel(order.source || "staff"));
+        const sourceGroups = groupBy(revenueOrders, (order) => paymentMethodLabel(order.payment_method));
         const staffGroups = groupBy(revenueOrders, (order) => order.username || "Chưa gán nhân viên");
         const memberOrders = revenueOrders.filter((order) => order.customer_name && order.customer_name !== "Khách lẻ").length;
         const daily = daysBetween(from, to, revenueOrders).map((key) => ({
@@ -954,12 +953,12 @@
         const staffSelect = document.getElementById("reportStaffFilter");
         const sourceSelect = document.getElementById("reportSourceFilter");
         const staff = [...new Set(orders.map((order) => order.username || "Chưa gán nhân viên"))].sort();
-        const sources = [...new Set(orders.map((order) => sourceLabel(order.source || "staff")))].sort();
+        const sources = [...new Set(orders.map((order) => paymentMethodLabel(order.payment_method)))].sort();
 
         staffSelect.innerHTML = `<option value="all">Tất cả nhân viên</option>` + staff
             .map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`)
             .join("");
-        sourceSelect.innerHTML = `<option value="all">Tất cả nguồn</option>` + sources
+        sourceSelect.innerHTML = `<option value="all">Mọi hình thức</option>` + sources
             .map((source) => `<option value="${escapeHtml(source)}">${escapeHtml(source)}</option>`)
             .join("");
 
@@ -977,7 +976,7 @@
         reportState.filteredOrders = reportState.orders.filter((order) => {
             const createdAt = order.created_at ? new Date(order.created_at) : new Date();
             const orderStaff = order.username || "Chưa gán nhân viên";
-            const orderSource = sourceLabel(order.source || "staff");
+            const orderSource = paymentMethodLabel(order.payment_method);
             const inRange = (!from || createdAt >= from) && (!to || createdAt <= to);
             const staffMatched = staff === "all" || orderStaff === staff;
             const sourceMatched = source === "all" || orderSource === source;
@@ -1006,8 +1005,8 @@
             ? `Ngày tốt nhất: ${analytics.bestDay.label} với ${safeFormatCurrency(analytics.bestDay.revenue)}.`
             : "Không có doanh thu trong bộ lọc hiện tại.");
         setText("reportOrderNote", analytics.topSource
-            ? `Nguồn mạnh nhất: ${analytics.topSource.label}, ${compactNumber(analytics.topSource.orders)} hóa đơn.`
-            : "Chưa có nguồn đơn nổi bật.");
+            ? `Thanh toán phổ biến: ${analytics.topSource.label}, ${compactNumber(analytics.topSource.orders)} hóa đơn.`
+            : "Chưa có phương thức thanh toán nổi bật.");
         setText("reportMemberNote", `${analytics.memberRatio}% hóa đơn có hồ sơ khách hàng.`);
     }
 
@@ -1020,7 +1019,7 @@
             : "Chưa có nhân viên phát sinh doanh thu";
         const topSource = analytics.topSource
             ? `${escapeHtml(analytics.topSource.label)} chiếm ${safeFormatCurrency(analytics.topSource.revenue)}`
-            : "Chưa có nguồn đơn phát sinh doanh thu";
+            : "Chưa có phương thức thanh toán phát sinh doanh thu";
 
         target.innerHTML = `
             <div class="report-preview-item">
@@ -1040,7 +1039,7 @@
                 <span>${topStaff}</span>
             </div>
             <div class="report-preview-item">
-                <strong>Nguồn đơn nổi bật</strong>
+                <strong>Thanh toán nổi bật</strong>
                 <span>${topSource}</span>
             </div>
         `;
@@ -1211,7 +1210,7 @@
             ctx.stroke();
             ctx.setLineDash([]);
             ctx.fillStyle = pluginOptions.labelColor || reportPalette.muted;
-            ctx.font = "800 11px 'Plus Jakarta Sans', sans-serif";
+            ctx.font = "800 11px 'Segoe UI', sans-serif";
             ctx.textAlign = "right";
             ctx.fillText(pluginOptions.label || "Trung bình", right - 4, y - 8);
             ctx.restore();
@@ -1231,7 +1230,7 @@
 
             ctx.save();
             ctx.fillStyle = pluginOptions?.color || reportPalette.text;
-            ctx.font = "800 11px 'Plus Jakarta Sans', sans-serif";
+            ctx.font = "800 11px 'Segoe UI', sans-serif";
             ctx.textBaseline = "middle";
 
             chart.data.datasets.forEach((dataset, datasetIndex) => {
@@ -1580,7 +1579,7 @@
                 <td>${formatDateTime(order.created_at)}</td>
                 <td>${escapeHtml(order.customer_name || "Khách lẻ")}</td>
                 <td>${escapeHtml(order.username || "Chưa gán")}</td>
-                <td><span class="report-source-chip">${escapeHtml(sourceLabel(order.source || "staff"))}</span></td>
+                <td><span class="report-source-chip">${escapeHtml(paymentMethodLabel(order.payment_method))}</span></td>
                 <td>${escapeHtml(statusLabel(order.status || "completed"))}</td>
                 <td style="color: var(--accent-color); font-weight: 850;">${safeFormatCurrency(order.total_amount)}</td>
             </tr>
@@ -1588,13 +1587,13 @@
     }
 
     function exportReportCsv() {
-        const headers = ["Ma hoa don", "Thoi gian", "Khach hang", "Nhan vien", "Nguon", "Trang thai", "Tong tien"];
+        const headers = ["Ma hoa don", "Thoi gian", "Khach hang", "Nhan vien", "Thanh toan", "Trang thai", "Tong tien"];
         const rows = reportState.filteredOrders.map((order) => [
             `#${order.id}`,
             formatDateTime(order.created_at),
             order.customer_name || "Khach le",
             order.username || "Chua gan",
-            sourceLabel(order.source || "staff"),
+            paymentMethodLabel(order.payment_method),
             statusLabel(order.status || "completed"),
             numberValue(order.total_amount)
         ]);

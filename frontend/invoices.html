@@ -443,14 +443,6 @@
             color: var(--info-color);
         }
 
-        .invoices-source-badge.qr,
-        .invoices-source-badge.table,
-        .invoices-source-badge.table-order {
-            background: #f5f3ff;
-            border-color: rgba(124, 58, 237, 0.14);
-            color: #6d28d9;
-        }
-
         .invoices-source-badge.other {
             background: var(--bg-muted);
             border-color: var(--border-color);
@@ -1027,17 +1019,13 @@
         const raw = String(source || "staff").toLowerCase();
         if (raw === "pos") return "pos";
         if (raw === "staff") return "staff";
-        if (raw === "qr" || raw === "table" || raw === "table-order") return "qr";
         return "other";
     }
 
     function sourceLabel(source) {
         const map = {
             pos: "POS quầy",
-            staff: "Nhân viên",
-            qr: "QR bàn",
-            table: "QR bàn",
-            "table-order": "Yêu cầu QR"
+            staff: "Nhân viên"
         };
         return map[String(source || "").toLowerCase()] || (source ? String(source) : "Khác");
     }
@@ -1045,7 +1033,6 @@
     function sourceIcon(source) {
         const key = sourceKey(source);
         if (key === "pos") return "ph-cash-register";
-        if (key === "qr") return "ph-qr-code";
         if (key === "staff") return "ph-user";
         return "ph-circles-three";
     }
@@ -1175,7 +1162,7 @@
     }
 
     function buildSourceCounts(orders) {
-        const counts = { all: orders.length, pos: 0, staff: 0, qr: 0, other: 0 };
+        const counts = { all: orders.length, pos: 0, staff: 0, other: 0 };
         orders.forEach((order) => {
             counts[sourceKey(order.source)] += 1;
         });
@@ -1188,7 +1175,6 @@
             { key: "all", label: "Mọi nguồn", count: counts.all },
             { key: "pos", label: "POS quầy", count: counts.pos },
             { key: "staff", label: "Nhân viên", count: counts.staff },
-            { key: "qr", label: "QR bàn", count: counts.qr },
             { key: "other", label: "Khác", count: counts.other }
         ].filter((item) => item.key === "all" || item.count > 0 || item.key === activeSource);
 
@@ -1340,8 +1326,6 @@
                 customerDisplayName(order),
                 order.customer_name,
                 order.username,
-                order.table_code,
-                order.table_name,
                 sourceLabel(order.source),
                 order.status,
                 order.payment_method
@@ -1471,7 +1455,6 @@
             const canVoid = status.raw === "completed";
             const canRefund = status.raw === "completed" || status.raw === "partial_refund";
             const dateParts = formatDateParts(order.created_at);
-            const tableLabel = order.table_code || order.table_name || "";
             const walkIn = isWalkInCustomer(order);
 
             return `
@@ -1484,7 +1467,6 @@
                             <p class="invoices-customer-name" title="${escapeHtml(customer)}">${escapeHtml(customer)}</p>
                             <span class="invoices-customer-meta">
                                 ${walkIn ? "Không gắn hội viên" : "Khách có hồ sơ"}
-                                ${tableLabel ? ` · Bàn ${escapeHtml(tableLabel)}` : ""}
                             </span>
                         </div>
                     </td>

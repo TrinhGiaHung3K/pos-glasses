@@ -6,37 +6,32 @@ function read(path) {
     return readFileSync(path, "utf8");
 }
 
-test("staff menu keeps POS selling first and excludes the customer QR page", () => {
+test("staff menu keeps POS selling first and excludes table-ordering surfaces", () => {
     const source = read("frontend/assets/js/components.js");
 
     assert.match(source, /key:\s*"orders"[\s\S]*label:\s*"Bán hàng"/);
     assert.match(source, /key:\s*"products"[\s\S]*label:\s*"Sản phẩm"/);
-    assert.match(source, /key:\s*"qr-orders"[\s\S]*label:\s*"Yêu cầu QR"/);
     assert.match(source, /APP_MENU_GROUPS/);
     assert.match(source, /type:\s*"mega"/);
     assert.match(source, /id:\s*"pos"/);
     assert.doesNotMatch(source, /href:\s*"\/qr\/table\.html"/);
+    assert.doesNotMatch(source, /staff\/qr-orders|admin\/tables|Bàn QR|Yêu cầu QR/);
 });
 
 test("Optic Bridge logo is used across all brand surfaces", () => {
     const menu = read("frontend/assets/js/components.js");
     const layout = read("frontend/assets/css/layout.css");
     const login = read("frontend/login.html");
-    const register = read("frontend/register.html");
-    const qr = read("frontend/qr/table.html");
-    const qrCss = read("frontend/assets/css/qr.css");
+    const productQr = read("frontend/qr/product.html");
     const invoice = read("frontend/invoice_detail.html");
 
     assert.match(menu, /class="pos-logo-image"[\s\S]*src="\/assets\/images\/pos-glasses-optic-bridge-logo\.png"/);
     assert.doesNotMatch(menu, /ph-sunglasses/);
     assert.match(layout, /\.pos-logo-image/);
     assert.match(login, /class="auth-logo-image"[\s\S]*src="\/assets\/images\/pos-glasses-optic-bridge-logo\.png"/);
-    assert.match(register, /class="auth-logo-image"[\s\S]*src="\/assets\/images\/pos-glasses-optic-bridge-logo\.png"/);
     assert.match(login, /class="auth-brand-logo"[\s\S]*src="\/assets\/images\/pos-glasses-optic-bridge-logo\.png"/);
-    assert.match(register, /class="auth-brand-logo"[\s\S]*src="\/assets\/images\/pos-glasses-optic-bridge-logo\.png"/);
     assert.doesNotMatch(login, /ph-sunglasses/);
-    assert.match(qr, /class="qr-brand-logo"[\s\S]*src="\.\.\/assets\/images\/pos-glasses-optic-bridge-logo\.png"/);
-    assert.match(qrCss, /\.qr-brand-logo/);
+    assert.match(productQr, /class="product-brand"[\s\S]*pos-glasses-optic-bridge-logo\.png/);
     assert.match(invoice, /class="receipt-store-logo"[\s\S]*src="\/assets\/images\/pos-glasses-optic-bridge-logo\.png"/);
 });
 

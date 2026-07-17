@@ -264,28 +264,30 @@
                 <p>Đăng nhập vào hệ thống quản lý POS Glasses</p>
             </div>
 
-            <div class="input-group">
-                <label for="loginUsername">Tài khoản</label>
-                <div class="input-wrapper">
-                    <i class="ph ph-user input-icon"></i>
-                    <input type="text" id="loginUsername" placeholder="Nhập tên đăng nhập" autocomplete="username">
+            <form id="loginForm" novalidate>
+                <div class="input-group">
+                    <label for="loginUsername">Tài khoản</label>
+                    <div class="input-wrapper">
+                        <i class="ph ph-user input-icon" aria-hidden="true"></i>
+                        <input type="text" id="loginUsername" placeholder="Nhập tên đăng nhập" autocomplete="username" required autofocus>
+                    </div>
                 </div>
-            </div>
 
-            <div class="input-group">
-                <label for="loginPassword">Mật khẩu</label>
-                <div class="input-wrapper">
-                    <i class="ph ph-lock input-icon"></i>
-                    <input type="password" id="loginPassword" placeholder="Nhập mật khẩu" autocomplete="current-password">
+                <div class="input-group">
+                    <label for="loginPassword">Mật khẩu</label>
+                    <div class="input-wrapper">
+                        <i class="ph ph-lock input-icon" aria-hidden="true"></i>
+                        <input type="password" id="loginPassword" placeholder="Nhập mật khẩu" autocomplete="current-password" required>
+                    </div>
                 </div>
-            </div>
 
-            <button class="auth-btn" id="loginBtn" onclick="handleLogin()">
-                <span>Đăng nhập</span>
-                <i class="ph ph-arrow-right"></i>
-            </button>
+                <button class="auth-btn" id="loginBtn" type="submit">
+                    <span>Đăng nhập</span>
+                    <i class="ph ph-arrow-right" aria-hidden="true"></i>
+                </button>
 
-            <p id="loginResult" class="result-msg"></p>
+                <p id="loginResult" class="result-msg" aria-live="polite"></p>
+            </form>
 
             <div class="auth-switch">
                 Cần tài khoản mới? Liên hệ quản trị viên hệ thống.
@@ -313,7 +315,8 @@
 <script src="assets/js/api.js"></script>
 <script src="assets/js/auth.js"></script>
 <script>
-    async function handleLogin() {
+    async function handleLogin(event) {
+        event?.preventDefault();
         const username = document.getElementById("loginUsername").value.trim();
         const password = document.getElementById("loginPassword").value;
         const resultEl = document.getElementById("loginResult");
@@ -351,16 +354,13 @@
         }
     }
 
-    document.addEventListener("keypress", function(e) {
-        if (e.key === "Enter") handleLogin();
-    });
+    document.getElementById("loginForm").addEventListener("submit", handleLogin);
 
-    // Restore an existing HttpOnly-cookie session without exposing its JWT.
+    // Restore only after the server confirms the HttpOnly cookie session.
+    // Never trust localStorage markers alone — stale user/auth_session data
+    // with an expired cookie caused a login ↔ protected-page redirect loop
+    // (looks like the page auto-refreshes forever).
     (async function restoreSession() {
-        if (getCurrentUser() && getAuthToken()) {
-            redirectAfterLogin(getCurrentUser());
-            return;
-        }
         try {
             const session = await apiRequest("/api/auth/session");
             if (session?.authenticated) {
@@ -368,7 +368,10 @@
                 redirectAfterLogin(session.user);
             }
         } catch {
-            // No active session: stay on the login form.
+            // No active session (or expired cookie). Clear client markers and stay.
+            localStorage.removeItem("user");
+            localStorage.removeItem("auth_token");
+            localStorage.removeItem("auth_session");
         }
     })();
 </script>

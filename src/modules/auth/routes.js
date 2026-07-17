@@ -14,9 +14,6 @@ function createAuthRouter(service) {
     router.get("/api/auth/session", authMiddleware, asyncHandler(controller.session));
     router.post("/logout", asyncHandler(controller.logout));
 
-    // Public register only when enabled; still exposed so FE gets clear 403
-    router.post("/register", asyncHandler(controller.register));
-
     return router;
 }
 

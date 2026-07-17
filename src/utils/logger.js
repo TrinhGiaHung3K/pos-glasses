@@ -70,10 +70,6 @@ const logger = {
     },
 
     request(method, url, statusCode, durationMs, ip, requestId) {
-        if (!env.isDev) {
-            return;
-        }
-
         const status = String(statusCode);
         const duration = `${durationMs.toFixed(1)}ms`;
         const rid = requestId ? ` req=${requestId}` : "";

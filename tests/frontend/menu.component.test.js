@@ -141,9 +141,7 @@ test("authenticated pages mount the shared menu instead of copying sidebar marku
         ["frontend/invoices.html", "invoices"],
         ["frontend/inventory.html", "inventory"],
         ["frontend/reports.html", "reports"],
-        ["frontend/invoice_detail.html", "invoice-detail"],
-        ["frontend/admin/tables.html", "tables"],
-        ["frontend/staff/qr-orders.html", "qr-orders"]
+        ["frontend/invoice_detail.html", "invoice-detail"]
     ];
 
     for (const [file, active] of pages) {

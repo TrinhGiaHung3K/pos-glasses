@@ -74,8 +74,25 @@
         return "/orders.html";
     }
 
+    function isSafePostLoginPath(next) {
+        if (!next || typeof next !== "string") {
+            return false;
+        }
+        // Same-origin relative path only; block protocol-relative and login self-loops.
+        if (!next.startsWith("/") || next.startsWith("//")) {
+            return false;
+        }
+        const path = next.split(/[?#]/)[0].toLowerCase();
+        if (path === "/login.html" || path === "/login") {
+            return false;
+        }
+        return true;
+    }
+
     function redirectAfterLogin(user = getCurrentUser()) {
-        window.location.href = getLandingForUser(user);
+        const next = new URLSearchParams(window.location.search).get("next") || "";
+        const safeNext = isSafePostLoginPath(next) ? next : "";
+        window.location.href = safeNext || getLandingForUser(user);
     }
 
     window.getCurrentUser = getCurrentUser;
@@ -85,5 +102,6 @@
     window.saveAuth = saveAuth;
     window.logout = logout;
     window.getLandingForUser = getLandingForUser;
+    window.isSafePostLoginPath = isSafePostLoginPath;
     window.redirectAfterLogin = redirectAfterLogin;
 })(window);

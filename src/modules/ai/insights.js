@@ -51,7 +51,6 @@ function buildInsightSnapshot(summary = {}) {
         margin_percent: num(summary.margin_percent),
         new_members: num(summary.new_members),
         low_stock_count: num(summary.low_stock_count),
-        pending_qr_count: num(summary.pending_qr_count),
         total_products: num(summary.totalProducts),
         total_customers: num(summary.totalCustomers),
         previous: {
@@ -115,7 +114,7 @@ function buildHeuristicInsight(snapshot, surface = "dashboard") {
         highlights.push({
             type: "product",
             title: "Sản phẩm dẫn dắt",
-            detail: `${topProduct.name} (\`${topProduct.sku || "—"}\`) · ${formatVnd(topProduct.revenue)} · ${topProduct.qty_sold} sp`,
+            detail: `${topProduct.name} (\`${topProduct.sku || "-"}\`) · ${formatVnd(topProduct.revenue)} · ${topProduct.qty_sold} sp`,
             direction: "up"
         });
     }
@@ -134,7 +133,7 @@ function buildHeuristicInsight(snapshot, surface = "dashboard") {
         actions.push({
             priority: "high",
             title: "Kích hoạt đơn còn thiếu",
-            detail: "Rà đơn QR pending, follow-up khách bỏ giỏ và ưu tiên gợi ý top SP đang bán chạy."
+            detail: "Rà các hóa đơn giảm, khung giờ vắng và ưu tiên gợi ý sản phẩm đang bán tốt."
         });
         actions.push({
             priority: "medium",
@@ -163,20 +162,12 @@ function buildHeuristicInsight(snapshot, surface = "dashboard") {
         });
     }
 
-    if (num(snapshot.pending_qr_count) > 0) {
-        actions.push({
-            priority: "medium",
-            title: "Đóng đơn QR treo",
-            detail: `${snapshot.pending_qr_count} đơn QR pending có thể chuyển thành doanh thu nếu staff chốt nhanh.`
-        });
-    }
-
     const risks = [];
     if (sentiment === "down") {
-        risks.push("Nếu giảm kéo dài > 2 kỳ, cần tách kênh staff vs QR để tìm điểm rơi.");
+        risks.push("Nếu giảm kéo dài trên 2 kỳ, cần tách theo ca và nhân viên để tìm điểm rơi.");
     }
     if (num(snapshot.margin_percent) < 20 && num(snapshot.revenue) > 0) {
-        risks.push(`Biên lợi nhuận ${snapshot.margin_percent}% thấp — kiểm tra giá vốn / hoàn tiền.`);
+        risks.push(`Biên lợi nhuận ${snapshot.margin_percent}% thấp, cần kiểm tra giá vốn và hoàn tiền.`);
     }
     if (num(snapshot.low_stock_count) >= 5) {
         risks.push("Tồn thấp diện rộng có thể làm mất doanh thu những ngày tới.");
@@ -293,7 +284,7 @@ function buildInsightSystemInstruction(surface) {
             actions: [{ priority: "high|medium|low", title: "string", detail: "string hành động cụ thể cho chủ shop/quầy" }],
             risks: ["string"]
         }, null, 2),
-        "Ưu tiên gợi ý hành động thực dụng: tồn thấp, đơn QR pending, AOV, top SP, top NV, promotion có kiểm soát.",
+        "Ưu tiên gợi ý hành động thực dụng: tồn thấp, AOV, top SP, top NV và promotion có kiểm soát.",
         "Không chẩn đoán y khoa. Không bảo staff tự xác nhận chuyển khoản."
     ].join("\n");
 }

@@ -9,16 +9,16 @@ function csrfProtection(req, res, next) {
     }
 
     const origin = String(req.headers.origin || "");
-    const requestHost = String(req.headers.host || "").toLowerCase();
+    const requestOrigin = `${req.protocol}://${String(req.headers.host || "").toLowerCase()}`;
     const fetchSite = String(req.headers["sec-fetch-site"] || "").toLowerCase();
-    let originHost = "";
+    let normalizedOrigin = "";
     try {
-        originHost = origin ? new URL(origin).host.toLowerCase() : "";
+        normalizedOrigin = origin ? new URL(origin).origin.toLowerCase() : "";
     } catch {
         throw createHttpError(403, "Nguồn yêu cầu không hợp lệ");
     }
 
-    if ((originHost && originHost === requestHost) || (!origin && fetchSite === "same-origin")) {
+    if ((normalizedOrigin && normalizedOrigin === requestOrigin) || (!origin && fetchSite === "same-origin")) {
         next();
         return;
     }

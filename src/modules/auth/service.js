@@ -88,13 +88,14 @@ function createAuthService(repository, options = {}) {
                 throw createHttpError(403, "Tài khoản đã bị vô hiệu hóa");
             }
 
-            const isBcryptHash = user.password.startsWith("$2b$") || user.password.startsWith("$2a$");
+            const isBcryptHash = String(user.password || "").startsWith("$2");
             let isPasswordValid = false;
 
             if (isBcryptHash) {
                 isPasswordValid = await bcrypt.compare(password, user.password);
-            } else {
-                // Legacy plain-text seed → migrate on success
+            } else if (!env.isProd) {
+                // Development-only compatibility for old local dumps. Production
+                // startup rejects legacy plaintext accounts before listening.
                 isPasswordValid = password === user.password;
                 if (isPasswordValid) {
                     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
@@ -129,20 +130,6 @@ function createAuthService(repository, options = {}) {
                 token,
                 user: publicUser(user)
             };
-        },
-
-        /**
-         * Public register — only when ALLOW_PUBLIC_REGISTER=true.
-         * Always creates role=staff.
-         */
-        async register(payload) {
-            if (!env.security.allowPublicRegister) {
-                throw createHttpError(
-                    403,
-                    "Đăng ký công khai đã tắt. Liên hệ quản trị để tạo tài khoản."
-                );
-            }
-            return this.createUser(payload, { role: "staff", allowToken: true });
         },
 
         /**

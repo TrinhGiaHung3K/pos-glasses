@@ -9,6 +9,8 @@ const { ensurePhase3Schema } = require("./db/phase3Schema");
 const { ensurePaymentSchema } = require("./db/paymentSchema");
 const { ensureProductQrSchema } = require("./db/productQrSchema");
 const { ensureAiSchema } = require("./db/aiSchema");
+const { ensureBootstrapAdmin } = require("./db/bootstrapAdmin");
+const { ensureRetailOnlySchema } = require("./db/retailSchema");
 const { runMigrations } = require("./db/migrationRunner");
 const { getPool } = require("./db/pool");
 const logger = require("./utils/logger");
@@ -33,9 +35,13 @@ async function startServer(options = {}) {
         const phase1SchemaResult = await ensurePhase1Schema(db);
         const phase2SchemaResult = await ensurePhase2Schema(db);
         const phase3SchemaResult = await ensurePhase3Schema(db);
+        const retailSchemaResult = await ensureRetailOnlySchema(db);
         const paymentSchemaResult = await ensurePaymentSchema(db);
         await ensureProductQrSchema(db);
         await ensureAiSchema(db);
+        const bootstrapAdminResult = await ensureBootstrapAdmin(db, env.bootstrapAdmin, {
+            isProd: env.isProd
+        });
 
         try {
             const migrationResult = await runMigrations(db);
@@ -46,9 +52,18 @@ async function startServer(options = {}) {
             }
         } catch (migrationError) {
             logger.error("SQL migrations failed", migrationError);
+            if (env.isProd) throw migrationError;
         }
 
         logger.info("MySQL connected");
+
+        if (bootstrapAdminResult.created || bootstrapAdminResult.migrated) {
+            logger.info("Bootstrap administrator prepared", {
+                created: Boolean(bootstrapAdminResult.created),
+                migrated: Boolean(bootstrapAdminResult.migrated),
+                username: bootstrapAdminResult.username
+            });
+        }
 
         if (orderSchemaResult.addedColumns.length) {
             logger.info("Checkout schema updated", {
@@ -103,6 +118,15 @@ async function startServer(options = {}) {
             logger.info("Phase 3 schema updated", phase3SchemaResult);
         }
 
+        if (
+            retailSchemaResult.droppedTables.length
+            || retailSchemaResult.droppedColumns.length
+            || retailSchemaResult.droppedIndexes.length
+            || retailSchemaResult.droppedForeignKeys.length
+        ) {
+            logger.info("Retired table-ordering schema removed", retailSchemaResult);
+        }
+
         if (paymentSchemaResult.orderColumns.length) {
             logger.info("Payment schema updated", paymentSchemaResult);
         }
@@ -111,7 +135,7 @@ async function startServer(options = {}) {
             logger.warn("JWT_SECRET is using the built-in default — set JWT_SECRET in production");
         }
     } catch (error) {
-        logger.error("MySQL connection failed", error);
+        logger.error("Database startup preparation failed", error);
         if (env.isProd) {
             throw error;
         }

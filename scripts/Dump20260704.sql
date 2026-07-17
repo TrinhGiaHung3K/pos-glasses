@@ -14,11 +14,12 @@
 --   7. Added timestamps (created_at, updated_at) to products/customers
 --   8. Added email to customers, description/dates to promotions
 --   9. Complete order_details for all 6 orders
---  10. All changes backward-compatible with server.js
---  11. Added fixed table QR ordering schema for POS two-lane flow
+--  10. All changes compatible with the current application schema bootstrap
+--  11. Removed restaurant table/QR ordering objects from the retail schema
 --  12. Added customer member barcode schema/data for POS scanning
 --  13. Switched to utf8mb4_unicode_ci for MySQL/MariaDB portability
 --  14. Removed LOCK TABLES/UNLOCK TABLES so imports do not need lock privilege
+--  15. Removed seeded login credentials; first admin is bootstrapped from env
 -- ============================================================
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -46,11 +47,8 @@ USE `pos_glasses`;
 -- DROP TABLES in reverse-dependency order (children first)
 -- ============================================================
 
-DROP TABLE IF EXISTS `table_order_items`;
-DROP TABLE IF EXISTS `table_orders`;
 DROP TABLE IF EXISTS `order_details`;
 DROP TABLE IF EXISTS `orders`;
-DROP TABLE IF EXISTS `store_tables`;
 DROP TABLE IF EXISTS `products`;
 DROP TABLE IF EXISTS `promotions`;
 DROP TABLE IF EXISTS `customers`;
@@ -71,11 +69,8 @@ CREATE TABLE `users` (
   UNIQUE KEY `uq_users_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-/*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` (`id`, `username`, `password`, `role`) VALUES
-  (1, 'admin',  '123456', 'admin'),
-  (2, 'staff1', '123456', 'staff');
-/*!40000 ALTER TABLE `users` ENABLE KEYS */;
+-- Users are intentionally not seeded. The application creates the first
+-- administrator from BOOTSTRAP_ADMIN_USERNAME / BOOTSTRAP_ADMIN_PASSWORD.
 
 -- ============================================================
 -- 2. Table: categories (no FK dependencies)
@@ -240,39 +235,13 @@ INSERT INTO `promotions` (`id`, `code`, `discount_percent`, `description`, `star
 /*!40000 ALTER TABLE `promotions` ENABLE KEYS */;
 
 -- ============================================================
--- 6. Table: store_tables (fixed QR tables)
--- ============================================================
-
-CREATE TABLE `store_tables` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `code` varchar(20) NOT NULL,
-  `name` varchar(100) NOT NULL,
-  `qr_token` varchar(80) NOT NULL,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_store_tables_code` (`code`),
-  UNIQUE KEY `uq_store_tables_qr_token` (`qr_token`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-/*!40000 ALTER TABLE `store_tables` DISABLE KEYS */;
-INSERT INTO `store_tables` (`id`, `code`, `name`, `qr_token`, `is_active`) VALUES
-  (1, 'T01', 'Bàn tư vấn 01', 'table-t01-20260705-pos-glasses', 1),
-  (2, 'T02', 'Bàn tư vấn 02', 'table-t02-20260705-pos-glasses', 1),
-  (3, 'T03', 'Bàn tư vấn 03', 'table-t03-20260705-pos-glasses', 1);
-/*!40000 ALTER TABLE `store_tables` ENABLE KEYS */;
-
--- ============================================================
--- 7. Table: orders (FK → customers, users, store_tables)
+-- 6. Table: orders (FK → customers, users)
 -- ============================================================
 
 CREATE TABLE `orders` (
   `id` int NOT NULL AUTO_INCREMENT,
   `customer_id` int DEFAULT NULL,
   `user_id` int DEFAULT NULL,
-  `table_id` int DEFAULT NULL,
-  `table_order_id` int DEFAULT NULL,
   `source` varchar(20) NOT NULL DEFAULT 'staff',
   `status` varchar(20) NOT NULL DEFAULT 'completed',
   `subtotal_amount` decimal(12,2) NOT NULL DEFAULT 0,
@@ -289,52 +258,29 @@ CREATE TABLE `orders` (
   PRIMARY KEY (`id`),
   KEY `idx_orders_customer_id` (`customer_id`),
   KEY `idx_orders_user_id` (`user_id`),
-  KEY `idx_orders_table_id` (`table_id`),
-  KEY `idx_orders_table_order_id` (`table_order_id`),
   KEY `idx_orders_source_status` (`source`, `status`),
   CONSTRAINT `fk_orders_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `fk_orders_store_table` FOREIGN KEY (`table_id`) REFERENCES `store_tables` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+  CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 /*!40000 ALTER TABLE `orders` DISABLE KEYS */;
-INSERT INTO `orders` (`id`, `customer_id`, `user_id`, `table_id`, `table_order_id`, `source`, `status`, `subtotal_amount`, `discount_amount`, `total_amount`, `created_at`, `coupon_code`, `discount_percent`, `manual_discount_type`, `manual_discount_value`, `payment_method`, `amount_paid`, `change_amount`) VALUES
+INSERT INTO `orders` (`id`, `customer_id`, `user_id`, `source`, `status`, `subtotal_amount`, `discount_amount`, `total_amount`, `created_at`, `coupon_code`, `discount_percent`, `manual_discount_type`, `manual_discount_value`, `payment_method`, `amount_paid`, `change_amount`) VALUES
   -- Order 1: RB3025 x2 = 3,500,000 x 2 = 7,000,000 (no discount)
-  (1, 1, 1, NULL, NULL, 'staff', 'completed', 7000000.00, 0.00, 7000000.00,  '2026-06-16 22:54:19', NULL,     0, NULL, 0.00, 'cash', 7000000.00, 0.00),
+  (1, 1, NULL, 'staff', 'completed', 7000000.00, 0.00, 7000000.00,  '2026-06-16 22:54:19', NULL,     0, NULL, 0.00, 'cash', 7000000.00, 0.00),
   -- Order 2: Wayfarer(3,000,000) + Clubmaster(2,800,000) = 5,800,000 (no discount)
-  (2, 1, 1, NULL, NULL, 'staff', 'completed', 5800000.00, 0.00, 5800000.00,  '2026-06-24 23:50:35', NULL,     0, NULL, 0.00, 'cash', 5800000.00, 0.00),
+  (2, 1, NULL, 'staff', 'completed', 5800000.00, 0.00, 5800000.00,  '2026-06-24 23:50:35', NULL,     0, NULL, 0.00, 'cash', 5800000.00, 0.00),
   -- Order 3: Oakley Holbrook x2 = 3,800,000 x 2 = 7,600,000 (no discount)
-  (3, 2, 1, NULL, NULL, 'staff', 'completed', 7600000.00, 0.00, 7600000.00,  '2026-06-25 00:34:59', NULL,     0, NULL, 0.00, 'cash', 7600000.00, 0.00),
+  (3, 2, NULL, 'staff', 'completed', 7600000.00, 0.00, 7600000.00,  '2026-06-25 00:34:59', NULL,     0, NULL, 0.00, 'cash', 7600000.00, 0.00),
   -- Order 4: Dior So Real(8,500,000) + Police SPL872(2,200,000) = 10,700,000 (no discount)
-  (4, 2, 1, NULL, NULL, 'staff', 'completed', 10700000.00, 0.00, 10700000.00, '2026-06-25 00:36:16', NULL,     0, NULL, 0.00, 'cash', 10700000.00, 0.00),
+  (4, 2, NULL, 'staff', 'completed', 10700000.00, 0.00, 10700000.00, '2026-06-25 00:36:16', NULL,     0, NULL, 0.00, 'cash', 10700000.00, 0.00),
   -- Order 5: Gucci GG0748S(8,500,000) + Prada Symbole(7,000,000) = 15,500,000 x 80% = 12,400,000
-  (5, 1, 1, NULL, NULL, 'staff', 'completed', 15500000.00, 3100000.00, 12400000.00, '2026-06-25 07:44:33', 'SALE20', 20, NULL, 0.00, 'cash', 12400000.00, 0.00),
+  (5, 1, NULL, 'staff', 'completed', 15500000.00, 3100000.00, 12400000.00, '2026-06-25 07:44:33', 'SALE20', 20, NULL, 0.00, 'cash', 12400000.00, 0.00),
   -- Order 6: Police Origins(2,300,000) + Police SPLA28(2,500,000) = 4,800,000 x 90% = 4,320,000
-  (6, 5, 1, NULL, NULL, 'staff', 'completed', 4800000.00, 480000.00, 4320000.00,  '2026-06-25 07:51:31', 'SALE10', 10, NULL, 0.00, 'cash', 4320000.00, 0.00);
+  (6, 5, NULL, 'staff', 'completed', 4800000.00, 480000.00, 4320000.00,  '2026-06-25 07:51:31', 'SALE10', 10, NULL, 0.00, 'cash', 4320000.00, 0.00);
 /*!40000 ALTER TABLE `orders` ENABLE KEYS */;
 
 -- ============================================================
--- 8. Table: table_orders (public QR requests)
--- ============================================================
-
-CREATE TABLE `table_orders` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `table_id` int NOT NULL,
-  `status` varchar(20) NOT NULL DEFAULT 'pending',
-  `confirmed_order_id` int DEFAULT NULL,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `confirmed_at` datetime DEFAULT NULL,
-  `cancelled_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_table_orders_table_id` (`table_id`),
-  KEY `idx_table_orders_status` (`status`),
-  KEY `idx_table_orders_confirmed_order_id` (`confirmed_order_id`),
-  CONSTRAINT `fk_table_orders_table` FOREIGN KEY (`table_id`) REFERENCES `store_tables` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `fk_table_orders_confirmed_order` FOREIGN KEY (`confirmed_order_id`) REFERENCES `orders` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ============================================================
--- 9. Table: order_details (FK → orders, products)
+-- 7. Table: order_details (FK → orders, products)
 -- ============================================================
 
 CREATE TABLE `order_details` (
@@ -369,24 +315,6 @@ INSERT INTO `order_details` (`id`, `order_id`, `product_id`, `quantity`, `price`
   (9,  6, 62, 1, 2300000.00),
   (10, 6, 61, 1, 2500000.00);
 /*!40000 ALTER TABLE `order_details` ENABLE KEYS */;
-
--- ============================================================
--- 10. Table: table_order_items (public QR request lines)
--- ============================================================
-
-CREATE TABLE `table_order_items` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `table_order_id` int NOT NULL,
-  `product_id` int DEFAULT NULL,
-  `quantity` int NOT NULL DEFAULT 1,
-  `unit_price_snapshot` decimal(12,2) NOT NULL,
-  `product_name_snapshot` varchar(255) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_table_order_items_order_id` (`table_order_id`),
-  KEY `idx_table_order_items_product_id` (`product_id`),
-  CONSTRAINT `fk_table_order_items_order` FOREIGN KEY (`table_order_id`) REFERENCES `table_orders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_table_order_items_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
 -- Restore settings

@@ -45,10 +45,6 @@ function createAuthController(service) {
             res.status(204).end();
         },
 
-        async register(req, res) {
-            res.status(201).json(await service.register(req.body));
-        },
-
         async createUser(req, res) {
             res.status(201).json(await service.createUser(req.body, {
                 role: req.body?.role

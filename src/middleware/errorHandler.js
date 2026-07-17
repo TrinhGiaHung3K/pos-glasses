@@ -8,7 +8,8 @@ function errorHandler(error, req, res, next) {
 
     const status = error.status || 500;
     const payload = {
-        message: status >= 500 ? "Internal server error" : error.message
+        message: status >= 500 ? "Internal server error" : error.message,
+        request_id: req.requestId
     };
 
     if (error.details && status < 500) {

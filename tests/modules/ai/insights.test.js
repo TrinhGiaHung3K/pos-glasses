@@ -24,7 +24,6 @@ const sampleSummary = {
     margin_percent: 100,
     new_members: 3,
     low_stock_count: 2,
-    pending_qr_count: 1,
     totalProducts: 56,
     totalCustomers: 40,
     previous: {
