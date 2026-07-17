@@ -299,7 +299,7 @@
             font-size: 16px;
             font-weight: 900;
             letter-spacing: -0.01em;
-            color: #ffffff;
+            color: #f8fafc;
             background: linear-gradient(135deg, #0f766e, #0d9488);
             border: none;
             border-radius: var(--radius-sm);
@@ -592,13 +592,96 @@
             grid-template-columns: 1fr;
         }
 
+        .payment-success-dialog {
+            align-items: center;
+            background: var(--bg-surface);
+            border: 1px solid rgba(15, 118, 110, 0.18);
+            border-radius: var(--radius-xl);
+            box-shadow: 0 28px 70px -18px rgba(16, 32, 29, 0.34);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            margin: 0;
+            max-width: 420px;
+            overflow: hidden;
+            padding: 34px 28px 28px;
+            pointer-events: auto;
+            text-align: center;
+            width: min(100%, 420px);
+        }
+
+        .payment-success-icon {
+            align-items: center;
+            background: var(--accent-color);
+            border: 8px solid var(--accent-light);
+            border-radius: 50%;
+            color: #ffffff;
+            display: flex;
+            font-size: 44px;
+            height: 96px;
+            justify-content: center;
+            margin-bottom: 22px;
+            width: 96px;
+        }
+
+        .payment-success-icon i {
+            animation: paymentSuccessCheck 0.46s 0.2s var(--ease-spring) both;
+        }
+
+        .payment-success-title,
+        .payment-success-message,
+        .payment-success-action {
+            animation: paymentSuccessContent 0.46s var(--ease-out) both;
+        }
+
+        .payment-success-title {
+            animation-delay: 0.32s;
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: -0.035em;
+            line-height: 1.2;
+            margin: 0;
+        }
+
+        .payment-success-message {
+            animation-delay: 0.4s;
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.55;
+            margin: 9px 0 22px;
+        }
+
+        .payment-success-action {
+            animation-delay: 0.48s;
+            min-height: 42px;
+            width: 100%;
+        }
+
         @keyframes paymentPulse {
             0%, 100% { opacity: 0.55; transform: scale(0.88); }
             50% { opacity: 1; transform: scale(1); }
         }
 
+        @keyframes paymentSuccessCheck {
+            0% { opacity: 0; transform: scale(0.35) rotate(-18deg); }
+            70% { opacity: 1; transform: scale(1.14) rotate(3deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0); }
+        }
+
+        @keyframes paymentSuccessContent {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         @media (prefers-reduced-motion: reduce) {
-            .payment-wait-status-dot { animation: none; }
+            .payment-wait-status-dot,
+            .payment-success-icon i,
+            .payment-success-title,
+            .payment-success-message,
+            .payment-success-action {
+                animation: none;
+            }
         }
 
         @media (max-width: 680px) {
@@ -2027,6 +2110,10 @@
 
     function closePaymentWaiting() {
         document.getElementById("paymentWaitingOverlay")?.remove();
+        stopPaymentTracking();
+    }
+
+    function stopPaymentTracking() {
         if (state.paymentCountdownTimer) {
             clearInterval(state.paymentCountdownTimer);
             state.paymentCountdownTimer = null;
@@ -2081,14 +2168,55 @@
     function completeConfirmedBankPayment(orderId) {
         if (state.completedPaymentOrderId === Number(orderId)) return;
         state.completedPaymentOrderId = Number(orderId);
-        closePaymentWaiting();
+        stopPaymentTracking();
         localStorage.removeItem(HOLD_CART_KEY);
-        showToast(`Đã xác nhận chuyển khoản hóa đơn #${orderId}`, "success");
+        showBankPaymentSuccess(orderId);
         clearCartFully();
-        reloadPosData().then(() => {
-            focusSearch();
-            window.location.href = `/invoice_detail.html?id=${orderId}`;
-        });
+        reloadPosData();
+    }
+
+    function showBankPaymentSuccess(orderId) {
+        let overlay = document.getElementById("paymentWaitingOverlay");
+        const isNewOverlay = !overlay;
+        if (!overlay) {
+            overlay = document.createElement("div");
+            overlay.id = "paymentWaitingOverlay";
+            overlay.className = "modal-overlay";
+        }
+
+        const invoiceUrl = `/invoice_detail.html?id=${encodeURIComponent(orderId)}`;
+        overlay.innerHTML = `
+            <div class="modal-dialog payment-success-dialog" data-modal-panel role="dialog" aria-modal="true" aria-labelledby="paymentSuccessTitle" aria-describedby="paymentSuccessMessage">
+                <div class="payment-success-icon" aria-hidden="true">
+                    <i class="ph ph-check"></i>
+                </div>
+                <h2 class="payment-success-title" id="paymentSuccessTitle">Thanh toán thành công</h2>
+                <p class="payment-success-message" id="paymentSuccessMessage" role="status" aria-live="assertive">Đã xác nhận chuyển khoản cho hóa đơn <strong>#${escapeHtml(orderId)}</strong>.<br>Đang mở hóa đơn...</p>
+                <button class="btn btn-primary payment-success-action" id="paymentSuccessAction" type="button">
+                    <i class="ph ph-receipt"></i> Xem hóa đơn ngay
+                </button>
+            </div>`;
+
+        if (isNewOverlay) {
+            document.body.appendChild(overlay);
+            requestAnimationFrame(() => overlay.classList.add("modal-visible"));
+        } else {
+            overlay.classList.add("modal-visible");
+        }
+
+        const redirect = () => {
+            if (state.paymentRedirectTimer) {
+                clearTimeout(state.paymentRedirectTimer);
+                state.paymentRedirectTimer = null;
+            }
+            window.location.href = invoiceUrl;
+        };
+        const action = document.getElementById("paymentSuccessAction");
+        action?.addEventListener("click", redirect);
+        action?.focus({ preventScroll: true });
+
+        const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+        state.paymentRedirectTimer = setTimeout(redirect, reduceMotion ? 700 : 1600);
     }
 
     function handlePersistedPaymentStatus(intent, data) {
@@ -2288,6 +2416,11 @@
             if (isBankTransfer && result.payment_status !== "paid") {
                 openPaymentWaiting(result);
                 showToast("Đã tạo QR, đang chờ xác nhận từ ngân hàng", "info");
+                return;
+            }
+
+            if (isBankTransfer) {
+                completeConfirmedBankPayment(result.order_id);
                 return;
             }
 
