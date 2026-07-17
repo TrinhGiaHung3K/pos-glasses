@@ -56,6 +56,27 @@
     }
 
     async function logout() {
+        const user = getCurrentUser();
+        const roleKey = String(user?.role || "").toLowerCase();
+        const roleLabel = roleKey === "admin" ? "quản trị viên (Admin)" : "nhân viên";
+        const username = user?.username ? String(user.username) : "";
+
+        // Reuse system confirm modal (components.js → showConfirm)
+        if (typeof window.showConfirm === "function") {
+            const confirmed = await window.showConfirm({
+                title: "Xác nhận đăng xuất",
+                message: username
+                    ? `Tài khoản <strong>${escapeForConfirm(username)}</strong> đang đăng nhập với vai trò <strong>${roleLabel}</strong>. Bạn có chắc muốn đăng xuất?`
+                    : `Bạn đang đăng nhập với vai trò <strong>${roleLabel}</strong>. Bạn có chắc muốn đăng xuất?`,
+                confirmText: "Đăng xuất",
+                cancelText: "Ở lại",
+                type: "danger"
+            });
+            if (!confirmed) {
+                return;
+            }
+        }
+
         localStorage.removeItem("user");
         localStorage.removeItem("auth_token");
         localStorage.removeItem("auth_session");
@@ -64,6 +85,15 @@
         } finally {
             window.location.href = "/login.html";
         }
+    }
+
+    /** Minimal escape for names injected into showConfirm message HTML. */
+    function escapeForConfirm(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
     }
 
     function getLandingForUser(user = getCurrentUser()) {

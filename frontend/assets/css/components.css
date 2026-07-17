@@ -1344,19 +1344,19 @@
     border: 1px solid var(--border-color);
     max-width: 400px;
     width: 100%;
-    padding: 32px;
+    padding: 20px;
     text-align: center;
 }
 
 .modal-dialog-icon {
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
-    margin: 0 auto 18px;
+    font-size: 22px;
+    margin: 0 auto 12px;
 }
 
 .modal-icon-danger {
@@ -1378,13 +1378,13 @@
     font-size: 17px;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .modal-dialog-message {
     font-size: 13.5px;
     color: var(--text-secondary);
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     line-height: 1.5;
 }
 
