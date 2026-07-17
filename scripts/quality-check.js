@@ -118,10 +118,36 @@ function checkProductionHygiene() {
     }
 }
 
+function checkReverseProxyCsrf() {
+    const { createCsrfProtection } = require(path.join(root, "src", "middleware", "csrfProtection"));
+    const middleware = createCsrfProtection({
+        trustedOrigins: ["https://pos.example.com"]
+    });
+    let accepted = false;
+
+    middleware({
+        method: "POST",
+        authSource: "cookie",
+        protocol: "http",
+        headers: {
+            host: "pos.example.com",
+            origin: "https://pos.example.com",
+            "sec-fetch-site": "same-origin"
+        }
+    }, {}, () => {
+        accepted = true;
+    });
+
+    if (!accepted) {
+        failures.push("CSRF: HTTPS public origin không hoạt động sau reverse proxy");
+    }
+}
+
 checkJavaScriptSyntax();
 checkInlineScripts();
 checkLocalHtmlReferences();
 checkProductionHygiene();
+checkReverseProxyCsrf();
 
 if (failures.length) {
     console.error("Quality check thất bại:");

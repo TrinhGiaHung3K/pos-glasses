@@ -61,6 +61,8 @@ PAYMENT_BANK_CODE=<mã ngân hàng>
 PAYMENT_TEST_MODE=false
 ```
 
+Trên Render phải đặt `TRUST_PROXY=1`. `PUBLIC_APP_URL` và `CORS_ORIGINS` phải dùng URL HTTPS public, ví dụ `https://pos-glasses.onrender.com`.
+
 Các biến Cloudinary và Gemini trong [.env.example](./.env.example) là tùy chọn. Không commit `.env`, certificate, database dump chứa dữ liệu thật hoặc API secret.
 
 ## Triển khai
