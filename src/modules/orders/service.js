@@ -335,8 +335,8 @@ function createOrdersService(repository, options = {}) {
                     // Invoice / reports / dashboard always snapshot commercial prices.
                     price: commercialUnitPrice(product),
                     cost_price: commercialUnitCost(product),
-                    // Demo/test bank-transfer charge uses products.price (scaled).
-                    charge_price: chargeUnitPrice(product, { testMode: true })
+                    // Bank-transfer charge uses products.price (scaled for project demo).
+                    charge_price: chargeUnitPrice(product)
                 });
             }
 
@@ -404,8 +404,8 @@ function createOrdersService(repository, options = {}) {
             await enforceStaffDiscountCap(repository, user, subtotal, manualDiscountAmount);
 
             const total = subtotal - discountAmount;
-            // Mirror commercial discounts onto the test charge total so QR amount
-            // stays proportional when PAYMENT_TEST_MODE uses products.price.
+            // Mirror commercial discounts onto the demo charge total so the QR
+            // amount stays proportional while using products.price.
             const chargeCouponDiscount = couponDiscountPercent > 0
                 ? Math.round(chargeSubtotal * couponDiscountPercent / 100)
                 : scaleAbsoluteDiscount(couponDiscount, subtotal, chargeSubtotal);
@@ -469,7 +469,7 @@ function createOrdersService(repository, options = {}) {
                 subtotal_amount: subtotal,
                 discount_amount: discountAmount,
                 total_amount: total,
-                // Used only by bank-transfer payment intents in PAYMENT_TEST_MODE.
+                // Used only by bank-transfer payment intents.
                 charge_amount: chargeTotal,
                 charge_subtotal_amount: chargeSubtotal,
                 payment_method: payment.method,

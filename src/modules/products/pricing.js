@@ -2,7 +2,7 @@
  * Dual-price helpers for POS Glasses.
  *
  * - commercial: original_price / original_cost_price (invoice, reports, dashboard)
- * - charge: products.price (demo/test bank-transfer QR amount when PAYMENT_TEST_MODE)
+ * - charge: products.price (demo bank-transfer QR amount)
  */
 
 function toMoney(value) {
@@ -38,15 +38,13 @@ function commercialUnitCost(product = {}) {
 }
 
 /**
- * Bank-transfer charge unit when test mode is on (products.price demo amount).
- * Production charge uses commercial price.
+ * Bank-transfer charge unit from products.price.
+ * Falls back to the commercial price when the demo price is missing.
  */
-function chargeUnitPrice(product = {}, { testMode = false } = {}) {
-    if (testMode) {
-        const demo = Number(product.price);
-        if (Number.isFinite(demo) && demo > 0) {
-            return toMoney(demo);
-        }
+function chargeUnitPrice(product = {}) {
+    const demo = Number(product.price);
+    if (Number.isFinite(demo) && demo > 0) {
+        return toMoney(demo);
     }
     return commercialUnitPrice(product);
 }

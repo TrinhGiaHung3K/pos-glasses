@@ -286,6 +286,27 @@
             font-size: 15px;
         }
 
+        .pos-transfer-demo-note {
+            align-items: flex-start;
+            background: var(--accent-light);
+            border: 1px solid rgba(15, 118, 110, 0.14);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            display: grid;
+            font-size: 12px;
+            gap: 7px;
+            grid-template-columns: 16px 1fr;
+            line-height: 1.45;
+            margin-top: 10px;
+            padding: 9px 10px;
+        }
+
+        .pos-transfer-demo-note i {
+            color: var(--accent-color);
+            font-size: 15px;
+            margin-top: 1px;
+        }
+
         /* Large checkout button — POS terminal style */
         .pos-checkout-btn {
             display: flex;
@@ -1826,6 +1847,28 @@
         }, 0);
     }
 
+    function bankTransferUnitPrice(product) {
+        const demoPrice = Number(product?.charge_price ?? product?.demo_price);
+        if (Number.isFinite(demoPrice) && demoPrice > 0) {
+            return Math.round(demoPrice);
+        }
+        return Math.max(0, Math.round(Number(product?.price) || 0));
+    }
+
+    function bankTransferSubtotal() {
+        return [...state.cart.entries()].reduce((sum, [productId, quantity]) => {
+            const product = state.products.find((item) => Number(item.id) === Number(productId));
+            return sum + (product ? bankTransferUnitPrice(product) * quantity : 0);
+        }, 0);
+    }
+
+    function scaleTransferDiscount(discount, commercialSubtotal, transferSubtotal) {
+        const amount = Math.max(0, Math.round(Number(discount) || 0));
+        if (!amount || !transferSubtotal) return 0;
+        if (!commercialSubtotal) return Math.min(amount, transferSubtotal);
+        return Math.min(transferSubtotal, Math.round(amount * transferSubtotal / commercialSubtotal));
+    }
+
     /**
      * Apply coupon preview from API (percent or amount) against subtotal.
      */
@@ -1876,6 +1919,7 @@
 
     function provisionalTotals() {
         const subtotal = cartSubtotal();
+        const transferSubtotal = bankTransferSubtotal();
         const couponDiscount = couponDiscountAmount(state.couponPreview, subtotal);
         const manualType = document.getElementById("manualDiscountType").value;
         const manualRaw = document.getElementById("manualDiscountValue")?.value;
@@ -1893,6 +1937,25 @@
         const total = Math.max(0, subtotal - discount);
         const amountPaid = readMoneyInput("amountPaid");
         const paymentMethod = getPaymentMethod();
+        const couponIsPercent = String(state.couponPreview?.discount_type || "") === "percent";
+        const couponPercent = Number(
+            state.couponPreview?.discount_percent != null
+                ? state.couponPreview.discount_percent
+                : state.couponPreview?.discount_value
+        ) || 0;
+        const transferCouponDiscount = couponIsPercent
+            ? Math.round(transferSubtotal * couponPercent / 100)
+            : scaleTransferDiscount(couponDiscount, subtotal, transferSubtotal);
+        const transferManualDiscount = manualType === "percent"
+            ? Math.round(transferSubtotal * manualValue / 100)
+            : scaleTransferDiscount(manualDiscount, subtotal, transferSubtotal);
+        const transferPointsDiscount = scaleTransferDiscount(pointsDiscount, subtotal, transferSubtotal);
+        const transferDiscount = Math.min(
+            transferSubtotal,
+            transferCouponDiscount + transferManualDiscount + transferPointsDiscount
+        );
+        const transferTotal = Math.max(0, transferSubtotal - transferDiscount);
+        const usesTransferPrice = paymentMethod === "bank_transfer";
 
         return {
             subtotal,
@@ -1902,6 +1965,17 @@
             redeemPts,
             discount,
             total,
+            transferSubtotal,
+            transferCouponDiscount,
+            transferManualDiscount,
+            transferPointsDiscount,
+            transferDiscount,
+            transferTotal,
+            displaySubtotal: usesTransferPrice ? transferSubtotal : subtotal,
+            displayCouponDiscount: usesTransferPrice ? transferCouponDiscount : couponDiscount,
+            displayManualDiscount: usesTransferPrice ? transferManualDiscount : manualDiscount,
+            displayPointsDiscount: usesTransferPrice ? transferPointsDiscount : pointsDiscount,
+            displayTotal: usesTransferPrice ? transferTotal : total,
             amountPaid,
             change: paymentMethod === "cash" ? Math.max(0, amountPaid - total) : 0,
             invalidDiscount: discount > subtotal,
@@ -1928,11 +2002,13 @@
         container.innerHTML = [...state.cart.entries()].map(([productId, quantity]) => {
             const product = state.products.find((item) => Number(item.id) === Number(productId));
             if (!product) return "";
+            const usesTransferPrice = getPaymentMethod() === "bank_transfer";
+            const unitPrice = usesTransferPrice ? bankTransferUnitPrice(product) : Number(product.price);
             return `
                 <div class="pos-cart-line">
                     <div class="pos-cart-line-info">
                         <div class="pos-cart-line-name" title="${escapeHtml(product.name)}">${escapeHtml(product.name)}</div>
-                        <div class="pos-cart-line-sub"><span class="pos-money">${formatCurrency(product.price)}</span> · Kho ${Number(product.quantity || 0)}</div>
+                        <div class="pos-cart-line-sub"><span class="pos-money">${formatCurrency(unitPrice)}</span>${usesTransferPrice ? " · Giá demo CK" : ""} · Kho ${Number(product.quantity || 0)}</div>
                     </div>
                     <div class="pos-cart-line-controls">
                         <div class="pos-qty-control pos-qty-control--compact">
@@ -1944,7 +2020,7 @@
                                 <i class="ph ph-plus"></i>
                             </button>
                         </div>
-                        <strong class="pos-cart-line-total pos-money">${formatCurrency(Number(product.price) * quantity)}</strong>
+                        <strong class="pos-cart-line-total pos-money">${formatCurrency(unitPrice * quantity)}</strong>
                         <button class="pos-icon-button pos-icon-button--compact" onclick="removeFromCart(${productId})" title="Xóa">
                             <i class="ph ph-trash"></i>
                         </button>
@@ -1966,6 +2042,7 @@
     function renderSummary() {
         const summary = document.getElementById("summaryBox");
         const totals = provisionalTotals();
+        const usesTransferPrice = getPaymentMethod() === "bank_transfer";
         const warning = totals.invalidDiscount
             ? `<div class="status-message error" style="display:block;">Giảm giá đang lớn hơn tổng hàng.</div>`
             : "";
@@ -1975,24 +2052,24 @@
         summary.innerHTML = `
             <div class="pos-money-panel">
                 <div class="pos-summary-row">
-                    <span>Tạm tính</span>
-                    <strong class="pos-money">${formatCurrency(totals.subtotal)}</strong>
+                    <span>${usesTransferPrice ? "Tạm tính CK demo" : "Tạm tính"}</span>
+                    <strong class="pos-money">${formatCurrency(totals.displaySubtotal)}</strong>
                 </div>
                 <div class="pos-summary-row">
                     <span>Giảm coupon</span>
-                    <strong class="pos-money">${formatCurrency(totals.couponDiscount)}</strong>
+                    <strong class="pos-money">${formatCurrency(totals.displayCouponDiscount)}</strong>
                 </div>
                 <div class="pos-summary-row">
                     <span>Giảm thủ công</span>
-                    <strong class="pos-money">${formatCurrency(totals.manualDiscount)}</strong>
+                    <strong class="pos-money">${formatCurrency(totals.displayManualDiscount)}</strong>
                 </div>
                 <div class="pos-summary-row">
                     <span>Giảm điểm${totals.redeemPts ? ` (${totals.redeemPts}đ)` : ""}</span>
-                    <strong class="pos-money">${formatCurrency(totals.pointsDiscount || 0)}</strong>
+                    <strong class="pos-money">${formatCurrency(totals.displayPointsDiscount || 0)}</strong>
                 </div>
                 <div class="pos-summary-row pos-summary-total">
-                    <strong>Phải thu</strong>
-                    <span class="pos-money">${formatCurrency(totals.total)}</span>
+                    <strong>${usesTransferPrice ? "Phải chuyển" : "Phải thu"}</strong>
+                    <span class="pos-money">${formatCurrency(totals.displayTotal)}</span>
                 </div>
                 <div class="pos-summary-row">
                     <span>${paymentLabel(getPaymentMethod())}</span>
@@ -2003,6 +2080,11 @@
                     <strong class="pos-money">${formatCurrency(totals.change)}</strong>
                 </div>
             </div>
+            ${usesTransferPrice ? `
+                <div class="pos-transfer-demo-note">
+                    <i class="ph ph-info"></i>
+                    <span>Chuyển khoản dùng giá demo từ <strong>products.price</strong>. Hóa đơn vẫn lưu giá gốc.</span>
+                </div>` : ""}
             ${warning}
             ${staffWarning}
         `;
@@ -2024,7 +2106,7 @@
         }
 
         const totals = provisionalTotals();
-        writeMoneyInput("amountPaid", Math.max(0, totals.total));
+        writeMoneyInput("amountPaid", Math.max(0, totals.displayTotal));
         amountInput.disabled = true;
     }
 
