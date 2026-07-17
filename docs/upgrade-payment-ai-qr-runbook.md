@@ -20,10 +20,10 @@ PUBLIC_APP_URL=http://localhost:3000
 AI_ENABLED=false
 ```
 
-Khởi động và chạy test:
+Kiểm tra chất lượng và khởi động:
 
 ```powershell
-npm test
+npm run check
 npm run dev
 ```
 
@@ -121,8 +121,8 @@ Sau restart:
 RAG v1 nằm tại `src/modules/ai/knowledge/pos-policies.md`. Khi đổi policy:
 
 1. Cập nhật file và version heading.
-2. Bổ sung eval/unit test cho rule mới.
-3. Chạy `npm test`.
+2. Rà soát rule mới bằng bộ câu hỏi nghiệp vụ đại diện.
+3. Chạy `npm run check`.
 4. Deploy và theo dõi `ai_usage_logs` (latency/error/model/tool); không lưu prompt thô.
 
 Nếu Gemini lỗi/quá quota, API AI trả lỗi có kiểm soát; checkout/payment/QR không phụ thuộc AI và vẫn hoạt động.
@@ -142,4 +142,4 @@ Nếu Gemini lỗi/quá quota, API AI trả lỗi có kiểm soát; checkout/pay
 - Order pending được release sau TTL.
 - QR điện thoại mở đúng sản phẩm; POS scan thêm đúng một lần.
 - AI staff không xem doanh thu; AI admin nêu đúng kỳ dữ liệu.
-- Chạy toàn bộ `npm test` và lưu kết quả theo release.
+- Chạy `npm run verify` và lưu kết quả theo release.

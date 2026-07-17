@@ -18,6 +18,11 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # Test output
 coverage/
 .nyc_output/
+.coverage
+htmlcov/
+test-results/
+playwright-report/
+junit.xml
 
 # Build output and tool caches
 dist/
@@ -26,6 +31,11 @@ build/
 .parcel-cache/
 .eslintcache
 *.tsbuildinfo
+.npm/
+.pnpm-store/
+.yarn/
+__pycache__/
+*.py[cod]
 
 # Local product image cache (production uses Cloudinary; local fallback only when disabled)
 frontend/images/
@@ -34,6 +44,9 @@ frontend/images/
 .superpowers/
 artifacts/
 terminals/
+
+# Generated database exports
+scripts/pos_glasses_erd_schema.sql
 
 # Temporary files
 tmp/
@@ -62,6 +75,8 @@ temp/
 # IDE settings
 .idea/
 .vscode/
+.fleet/
+.history/
 *.suo
 *.ntvs*
 *.njsproj

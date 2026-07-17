@@ -33,7 +33,6 @@ Sau khi tài khoản quản trị được tạo, xóa hai secret bootstrap kh�
 
 ```bash
 npm run check
-npm test
 npm audit --omit=dev
 ```
 
@@ -92,7 +91,6 @@ src/app.js         HTTP app, middleware và route wiring
 src/modules/       Module nghiệp vụ
 src/db/            Bootstrap schema và migration runner
 scripts/           Dump, migrations và công cụ vận hành
-tests/             Unit, contract và route tests
 docs/              Phân tích và runbook chi tiết
 ```
 
