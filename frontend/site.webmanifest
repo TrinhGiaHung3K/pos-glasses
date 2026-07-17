@@ -1,0 +1,60 @@
+{
+  "id": "/",
+  "name": "POS GLASSES",
+  "short_name": "POS GLASSES",
+  "description": "Hệ thống POS bán lẻ và vận hành chuyên biệt cho cửa hàng mắt kính.",
+  "lang": "vi-VN",
+  "dir": "ltr",
+  "start_url": "/login.html",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f5f7f6",
+  "theme_color": "#0f766e",
+  "categories": ["business", "productivity", "shopping"],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Bán hàng",
+      "short_name": "Bán hàng",
+      "description": "Mở màn hình bán hàng tại quầy",
+      "url": "/orders.html",
+      "icons": [{ "src": "/assets/images/favicon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Sản phẩm",
+      "short_name": "Sản phẩm",
+      "description": "Mở danh mục sản phẩm mắt kính",
+      "url": "/products.html",
+      "icons": [{ "src": "/assets/images/favicon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Khách hàng",
+      "short_name": "Khách hàng",
+      "description": "Mở danh sách khách hàng hội viên",
+      "url": "/customers.html",
+      "icons": [{ "src": "/assets/images/favicon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "icons": [
+    {
+      "src": "/assets/images/favicon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/images/favicon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/images/favicon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

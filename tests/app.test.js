@@ -56,14 +56,59 @@ test("GET / redirects browsers to login", async () => {
     assert.equal(response.headers.get("location"), "/login.html");
 });
 
-test("GET /favicon.ico is public and does not fall through to auth", async () => {
+test("GET /favicon.ico serves the public POS GLASSES browser icon", async () => {
     const { createApp } = require("../src/app");
     const app = createApp();
     const server = http.createServer(app);
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
     try {
         const response = await fetch(`http://127.0.0.1:${server.address().port}/favicon.ico`);
-        assert.equal(response.status, 204);
+        assert.equal(response.status, 200);
+        assert.match(response.headers.get("content-type"), /image\/vnd\.microsoft\.icon/);
+        assert.ok((await response.arrayBuffer()).byteLength > 0);
+    } finally {
+        await new Promise((resolve) => server.close(resolve));
+    }
+});
+
+test("public HTML includes complete server-rendered POS GLASSES metadata", async () => {
+    const { createApp } = require("../src/app");
+    const app = createApp();
+    const response = await request(app, "/login.html");
+
+    assert.equal(response.status, 200);
+    assert.match(response.body, /<html lang="vi">/);
+    assert.match(response.body, /name="description" content="Đăng nhập an toàn/);
+    assert.match(response.body, /name="robots" content="noindex, nofollow/);
+    assert.match(response.body, /rel="manifest" href="\/site\.webmanifest"/);
+    assert.match(response.body, /rel="apple-touch-icon"/);
+    assert.ok(response.body.includes(
+        `property="og:image" content="${env.publicAppUrl}/assets/images/pos-glasses-social-card.png"`
+    ));
+    assert.match(response.body, /name="twitter:card" content="summary_large_image"/);
+    assert.match(response.body, /type="application\/ld\+json"/);
+    assert.match(response.body, /"applicationCategory":"BusinessApplication"/);
+});
+
+test("manifest, crawler policy, and metadata images are public", async () => {
+    const { createApp } = require("../src/app");
+    const app = createApp();
+    const server = http.createServer(app);
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const origin = `http://127.0.0.1:${server.address().port}`;
+
+    try {
+        const [manifest, robots, socialCard] = await Promise.all([
+            fetch(`${origin}/site.webmanifest`),
+            fetch(`${origin}/robots.txt`),
+            fetch(`${origin}/assets/images/pos-glasses-social-card.png`)
+        ]);
+        assert.equal(manifest.status, 200);
+        assert.equal((await manifest.json()).name, "POS GLASSES");
+        assert.equal(robots.status, 200);
+        assert.match(await robots.text(), /Disallow: \/$/m);
+        assert.equal(socialCard.status, 200);
+        assert.match(socialCard.headers.get("content-type"), /image\/png/);
     } finally {
         await new Promise((resolve) => server.close(resolve));
     }

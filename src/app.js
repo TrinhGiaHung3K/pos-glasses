@@ -9,6 +9,7 @@ const securityHeaders = require("./middleware/securityHeaders");
 const authMiddleware = require("./middleware/authMiddleware");
 const csrfProtection = require("./middleware/csrfProtection");
 const { createPageAccessMiddleware } = require("./middleware/pageAccess");
+const { createPageMetadataMiddleware } = require("./middleware/pageMetadata");
 const errorHandler = require("./middleware/errorHandler");
 const notFoundHandler = require("./middleware/notFoundHandler");
 const { requireRole } = require("./middleware/requireRole");
@@ -225,14 +226,15 @@ function createApp(options = {}) {
     app.use("/vendor/chartjs", express.static(path.join(__dirname, "..", "node_modules", "chart.js", "dist"), staticOptions));
     app.use("/assets", express.static(path.join(frontendRoot, "assets"), staticOptions));
     app.use(createPageAccessMiddleware());
+    app.use(createPageMetadataMiddleware({ frontendRoot, publicAppUrl: env.publicAppUrl }));
     app.use(express.static(frontendRoot, staticOptions));
 
     app.get("/", (req, res) => {
         res.redirect(302, "/login.html");
     });
 
-    // Browsers request this automatically. Keep it public so a missing icon
-    // never falls through to JWT auth and pollutes logs with a false 401.
+    // `frontend/favicon.ico` is normally served by the public static middleware.
+    // Keep this fallback public so a missing asset never falls through to JWT auth.
     app.get("/favicon.ico", (req, res) => res.status(204).end());
 
     app.get("/health/live", (req, res) => {
