@@ -225,6 +225,54 @@
 }
 .pos-ai-insights__chart-wrap.is-sm { height: 180px; }
 .pos-ai-insights__chart-wrap.is-lg { height: 220px; }
+.pos-ai-insights .chart-html-tooltip {
+    background: #10201d;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-sm, 8px);
+    box-shadow: var(--shadow-lg);
+    color: #f8fafc;
+    min-width: 190px;
+    opacity: 0;
+    padding: 10px 12px;
+    pointer-events: none;
+    position: absolute;
+    transform: translate(-50%, calc(-100% - 12px));
+    transition: opacity var(--transition-fast, 150ms ease);
+    z-index: 5;
+}
+.pos-ai-insights .chart-html-tooltip-title {
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 900;
+    margin-bottom: 7px;
+}
+.pos-ai-insights .chart-html-tooltip-row {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+}
+.pos-ai-insights .chart-html-tooltip-row + .chart-html-tooltip-row { margin-top: 6px; }
+.pos-ai-insights .chart-html-tooltip-name {
+    align-items: center;
+    color: #cbd5e1;
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 700;
+    gap: 7px;
+}
+.pos-ai-insights .chart-html-tooltip-value {
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+}
+.pos-ai-insights .chart-legend-swatch {
+    border-radius: 999px;
+    flex-shrink: 0;
+    height: 8px;
+    width: 8px;
+}
 .pos-ai-insights__chart-empty {
     display: grid;
     place-items: center;
@@ -448,16 +496,73 @@
         });
     }
 
+    function tooltipColor(point) {
+        const color = point.dataset.borderColor || point.dataset.backgroundColor;
+        if (Array.isArray(color)) return color[point.dataIndex] || PALETTE.accent;
+        return typeof color === "string" ? color : PALETTE.accent;
+    }
+
+    function tooltipValue(tooltip, point, index) {
+        const lines = tooltip.body?.[index]?.lines;
+        let value = Array.isArray(lines) ? lines.join(" ") : "";
+        const prefixes = [point.dataset.label, point.label]
+            .filter(Boolean)
+            .map((label) => `${label}:`);
+
+        for (const prefix of prefixes) {
+            if (value.startsWith(prefix)) {
+                value = value.slice(prefix.length).trim();
+                break;
+            }
+        }
+
+        if (value) return value;
+        const raw = point.parsed?.y ?? point.parsed?.x ?? point.parsed;
+        return point.dataset.unit === "currency"
+            ? formatCurrency(raw)
+            : Number(raw || 0).toLocaleString("vi-VN");
+    }
+
+    function externalTooltipHandler(context) {
+        const { chart, tooltip } = context;
+        let tooltipEl = chart.canvas.parentNode.querySelector(".chart-html-tooltip");
+
+        if (!tooltipEl) {
+            tooltipEl = document.createElement("div");
+            tooltipEl.className = "chart-html-tooltip";
+            tooltipEl.setAttribute("role", "tooltip");
+            chart.canvas.parentNode.appendChild(tooltipEl);
+        }
+
+        if (tooltip.opacity === 0) {
+            tooltipEl.style.opacity = 0;
+            return;
+        }
+
+        const title = tooltip.title?.[0] || "";
+        const rows = (tooltip.dataPoints || []).map((point, index) => `
+            <div class="chart-html-tooltip-row">
+                <span class="chart-html-tooltip-name">
+                    <span class="chart-legend-swatch" style="background:${escapeHtml(tooltipColor(point))}"></span>
+                    ${escapeHtml(point.dataset.label || point.label || "Giá trị")}
+                </span>
+                <span class="chart-html-tooltip-value">${escapeHtml(tooltipValue(tooltip, point, index))}</span>
+            </div>
+        `).join("");
+
+        tooltipEl.innerHTML = `
+            <div class="chart-html-tooltip-title">${escapeHtml(title)}</div>
+            ${rows}
+        `;
+        tooltipEl.style.opacity = 1;
+        tooltipEl.style.left = `${chart.canvas.offsetLeft + tooltip.caretX}px`;
+        tooltipEl.style.top = `${chart.canvas.offsetTop + tooltip.caretY}px`;
+    }
+
     function tooltipDefaults() {
         return {
-            backgroundColor: "#10201d",
-            titleColor: "#f8fafc",
-            bodyColor: "#e2e8f0",
-            borderColor: "rgba(255, 255, 255, 0.08)",
-            borderWidth: 1,
-            cornerRadius: 8,
-            padding: 10,
-            displayColors: true,
+            enabled: false,
+            external: externalTooltipHandler,
             callbacks: {
                 label(ctx) {
                     const label = ctx.dataset.label ? `${ctx.dataset.label}: ` : "";

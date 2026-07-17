@@ -56,6 +56,251 @@
             justify-content: flex-end;
         }
 
+        .report-date-range {
+            grid-column: span 2;
+            position: relative;
+        }
+
+        .report-date-trigger {
+            align-items: center;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xs);
+            color: var(--text-primary);
+            display: grid;
+            gap: 10px;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            height: 43px;
+            min-height: 43px;
+            padding: 4px 10px;
+            text-align: left;
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+            width: 100%;
+        }
+
+        .report-date-trigger:hover:not(:disabled) {
+            border-color: var(--border-hover);
+        }
+
+        .report-date-trigger:focus-visible,
+        .report-date-range.is-open .report-date-trigger {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            outline: none;
+        }
+
+        .report-date-trigger:disabled {
+            background: var(--bg-muted);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            opacity: 0.78;
+        }
+
+        .report-date-trigger > i:first-child {
+            color: var(--accent-color);
+            font-size: 17px;
+        }
+
+        .report-date-trigger-copy {
+            min-width: 0;
+        }
+
+        .report-date-trigger-value {
+            display: block;
+            font-size: 13px;
+            font-weight: 750;
+            line-height: 16px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .report-date-trigger-hint {
+            color: var(--text-muted);
+            display: block;
+            font-size: 10.5px;
+            font-weight: 650;
+            line-height: 12px;
+            margin-top: 1px;
+        }
+
+        .report-date-popover {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-lg);
+            display: grid;
+            gap: 12px;
+            left: 0;
+            min-width: 320px;
+            padding: 14px;
+            position: absolute;
+            top: calc(100% + 8px);
+            width: min(360px, calc(100vw - 32px));
+            z-index: 30;
+        }
+
+        .report-date-popover[hidden] {
+            display: none;
+        }
+
+        .report-date-summary {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .report-date-summary-item {
+            background: var(--bg-muted);
+            border: 1px solid transparent;
+            border-radius: var(--radius-xs);
+            padding: 7px 9px;
+        }
+
+        .report-date-summary-item.is-active {
+            background: var(--accent-subtle);
+            border-color: rgba(15, 118, 110, 0.16);
+        }
+
+        .report-date-summary-item span {
+            color: var(--text-muted);
+            display: block;
+            font-size: 10px;
+            font-weight: 800;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+
+        .report-date-summary-item strong {
+            color: var(--text-primary);
+            font-size: 12.5px;
+            font-weight: 800;
+        }
+
+        .report-calendar-head {
+            align-items: center;
+            display: grid;
+            grid-template-columns: 32px 1fr 32px;
+        }
+
+        .report-calendar-head strong {
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 850;
+            text-align: center;
+        }
+
+        .report-calendar-nav {
+            align-items: center;
+            background: transparent;
+            border: 0;
+            border-radius: var(--radius-xs);
+            color: var(--text-secondary);
+            display: inline-flex;
+            height: 32px;
+            justify-content: center;
+            padding: 0;
+            width: 32px;
+        }
+
+        .report-calendar-nav:hover:not(:disabled),
+        .report-calendar-nav:focus-visible {
+            background: var(--bg-muted);
+            color: var(--accent-color);
+            outline: none;
+        }
+
+        .report-calendar-nav:disabled {
+            color: var(--text-muted);
+            opacity: 0.35;
+        }
+
+        .report-calendar-weekdays,
+        .report-calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+        }
+
+        .report-calendar-weekdays span {
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 800;
+            padding: 3px 0 5px;
+            text-align: center;
+        }
+
+        .report-calendar-day {
+            aspect-ratio: 1;
+            background: transparent;
+            border: 0;
+            border-radius: var(--radius-xs);
+            color: var(--text-primary);
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+            padding: 0;
+            position: relative;
+        }
+
+        .report-calendar-day:hover:not(:disabled),
+        .report-calendar-day:focus-visible {
+            background: var(--accent-light);
+            color: var(--accent-color);
+            outline: none;
+        }
+
+        .report-calendar-day.is-outside {
+            color: var(--text-muted);
+            opacity: 0.52;
+        }
+
+        .report-calendar-day.is-in-range {
+            background: var(--accent-subtle);
+            border-radius: 0;
+            color: var(--accent-color);
+        }
+
+        .report-calendar-day.is-start,
+        .report-calendar-day.is-end {
+            background: var(--accent-color);
+            border-radius: var(--radius-xs);
+            color: #fff;
+        }
+
+        .report-calendar-day.is-today:not(.is-start):not(.is-end)::after {
+            background: var(--accent-color);
+            border-radius: 50%;
+            bottom: 3px;
+            content: "";
+            height: 3px;
+            left: 50%;
+            position: absolute;
+            transform: translateX(-50%);
+            width: 3px;
+        }
+
+        .report-calendar-day:disabled {
+            color: var(--text-muted);
+            cursor: not-allowed;
+            opacity: 0.28;
+        }
+
+        .report-date-error {
+            color: var(--danger-color);
+            font-size: 11px;
+            font-weight: 700;
+            min-height: 16px;
+        }
+
+        .report-date-footer {
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            padding-top: 10px;
+        }
+
         .report-status {
             align-items: center;
             background: var(--accent-subtle);
@@ -408,6 +653,15 @@
                 grid-template-columns: 1fr;
             }
 
+            .report-date-range {
+                grid-column: auto;
+            }
+
+            .report-date-popover {
+                min-width: 0;
+                width: min(100%, calc(100vw - 48px));
+            }
+
             .report-filter-actions {
                 display: grid;
                 grid-template-columns: 1fr;
@@ -497,13 +751,34 @@
                             <option value="custom">Tùy chọn ngày</option>
                         </select>
                     </div>
-                    <div class="report-filter-field">
-                        <label for="reportFromDate">Từ ngày</label>
-                        <input class="form-control" id="reportFromDate" type="date">
-                    </div>
-                    <div class="report-filter-field">
-                        <label for="reportToDate">Đến ngày</label>
-                        <input class="form-control" id="reportToDate" type="date">
+                    <div class="report-filter-field report-date-range" id="reportDateRange">
+                        <label id="reportDateRangeLabel">Khoảng ngày</label>
+                        <button
+                            class="report-date-trigger"
+                            id="reportDateTrigger"
+                            type="button"
+                            aria-expanded="false"
+                            aria-controls="reportDatePopover"
+                            aria-labelledby="reportDateRangeLabel reportDateValue"
+                            disabled
+                        >
+                            <i class="ph ph-calendar-blank" aria-hidden="true"></i>
+                            <span class="report-date-trigger-copy">
+                                <span class="report-date-trigger-value" id="reportDateValue">30 ngày gần nhất</span>
+                                <span class="report-date-trigger-hint">Chọn “Tùy chọn ngày” để thay đổi</span>
+                            </span>
+                            <i class="ph ph-caret-down" aria-hidden="true"></i>
+                        </button>
+                        <input id="reportFromDate" type="hidden">
+                        <input id="reportToDate" type="hidden">
+                        <div
+                            class="report-date-popover"
+                            id="reportDatePopover"
+                            role="dialog"
+                            aria-modal="false"
+                            aria-label="Chọn khoảng ngày báo cáo"
+                            hidden
+                        ></div>
                     </div>
                     <div class="report-filter-field">
                         <label for="reportStaffFilter">Nhân viên</label>
@@ -677,6 +952,7 @@
         filteredOrders: [],
         charts: {}
     };
+    let reportDatePicker = null;
     const reportPalette = {
         accent: "#0f766e",
         accentSoft: "rgba(15, 118, 110, 0.14)",
@@ -742,12 +1018,314 @@
             .replaceAll("'", "&#039;");
     }
 
+    function localDateKey(value) {
+        return dateKey(value);
+    }
+
+    function normalizeDateKey(value) {
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
+        if (!match) return "";
+        const year = Number(match[1]);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
+        const date = new Date(year, month - 1, day);
+        if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return "";
+        return `${match[1]}-${match[2]}-${match[3]}`;
+    }
+
+    function parseLocalDate(key, endOfDay = false) {
+        const normalized = normalizeDateKey(key);
+        if (!normalized) return null;
+        const [year, month, day] = normalized.split("-").map(Number);
+        return endOfDay
+            ? new Date(year, month - 1, day, 23, 59, 59, 999)
+            : new Date(year, month - 1, day, 0, 0, 0, 0);
+    }
+
+    function shiftDateKey(key, amount) {
+        const date = parseLocalDate(key);
+        if (!date) return "";
+        date.setDate(date.getDate() + amount);
+        return localDateKey(date);
+    }
+
+    function formatPickerDate(key) {
+        const date = parseLocalDate(key);
+        return date
+            ? date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })
+            : "Chưa chọn";
+    }
+
+    function presetDateKeys(range) {
+        const today = localDateKey(new Date());
+        if (range === "last7") return { from: shiftDateKey(today, -6), to: today };
+        if (range === "last30") return { from: shiftDateKey(today, -29), to: today };
+        if (range === "thisMonth") return { from: `${today.slice(0, 8)}01`, to: today };
+        return { from: "", to: "" };
+    }
+
+    function createReportDateRangePicker({ onApply } = {}) {
+        const root = document.getElementById("reportDateRange");
+        const trigger = document.getElementById("reportDateTrigger");
+        const valueEl = document.getElementById("reportDateValue");
+        const hintEl = trigger?.querySelector(".report-date-trigger-hint");
+        const popover = document.getElementById("reportDatePopover");
+        const fromInput = document.getElementById("reportFromDate");
+        const toInput = document.getElementById("reportToDate");
+        if (!root || !trigger || !valueEl || !hintEl || !popover || !fromInput || !toInput) return null;
+
+        const weekdays = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+        const todayKey = () => localDateKey(new Date());
+        let draftFrom = "";
+        let draftTo = "";
+        let viewMonth = new Date();
+        let isOpen = false;
+
+        function normalizedRange(from, to) {
+            let safeFrom = normalizeDateKey(from);
+            let safeTo = normalizeDateKey(to);
+            const max = todayKey();
+            if (safeFrom > max) safeFrom = max;
+            if (safeTo > max) safeTo = max;
+            if (!safeFrom && safeTo) safeFrom = safeTo;
+            if (safeFrom && !safeTo) safeTo = safeFrom;
+            if (safeFrom && safeTo && safeFrom > safeTo) [safeFrom, safeTo] = [safeTo, safeFrom];
+            return { from: safeFrom, to: safeTo };
+        }
+
+        function setValues(from, to) {
+            const safe = normalizedRange(from, to);
+            fromInput.value = safe.from;
+            toInput.value = safe.to;
+            return safe;
+        }
+
+        function setDisplay(label, hint) {
+            valueEl.textContent = label;
+            hintEl.textContent = hint;
+        }
+
+        function render() {
+            const monthStart = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1);
+            const gridStart = new Date(monthStart);
+            gridStart.setDate(monthStart.getDate() - ((monthStart.getDay() + 6) % 7));
+            const monthTitle = monthStart.toLocaleDateString("vi-VN", { month: "long", year: "numeric" });
+            const nextMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
+            const currentMonth = new Date();
+            currentMonth.setDate(1);
+            currentMonth.setHours(0, 0, 0, 0);
+            const days = [];
+
+            for (let index = 0; index < 42; index += 1) {
+                const date = new Date(gridStart);
+                date.setDate(gridStart.getDate() + index);
+                const key = localDateKey(date);
+                const classes = ["report-calendar-day"];
+                if (date.getMonth() !== monthStart.getMonth()) classes.push("is-outside");
+                if (key === todayKey()) classes.push("is-today");
+                if (draftFrom && draftTo && key > draftFrom && key < draftTo) classes.push("is-in-range");
+                if (key === draftFrom) classes.push("is-start");
+                if (key === draftTo) classes.push("is-end");
+                const disabled = key > todayKey();
+                const ariaLabel = date.toLocaleDateString("vi-VN", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric"
+                });
+                days.push(`
+                    <button
+                        class="${classes.join(" ")}"
+                        type="button"
+                        data-date="${key}"
+                        aria-label="${escapeHtml(ariaLabel)}"
+                        ${disabled ? "disabled" : ""}
+                    >${date.getDate()}</button>
+                `);
+            }
+
+            popover.innerHTML = `
+                <div class="report-date-summary">
+                    <div class="report-date-summary-item ${!draftFrom ? "is-active" : ""}">
+                        <span>Từ ngày</span>
+                        <strong>${escapeHtml(formatPickerDate(draftFrom))}</strong>
+                    </div>
+                    <div class="report-date-summary-item ${draftFrom && !draftTo ? "is-active" : ""}">
+                        <span>Đến ngày</span>
+                        <strong>${escapeHtml(formatPickerDate(draftTo))}</strong>
+                    </div>
+                </div>
+                <div class="report-calendar-head">
+                    <button class="report-calendar-nav" type="button" data-calendar-prev aria-label="Tháng trước">
+                        <i class="ph ph-caret-left"></i>
+                    </button>
+                    <strong>${escapeHtml(monthTitle)}</strong>
+                    <button class="report-calendar-nav" type="button" data-calendar-next aria-label="Tháng sau" ${nextMonth > currentMonth ? "disabled" : ""}>
+                        <i class="ph ph-caret-right"></i>
+                    </button>
+                </div>
+                <div class="report-calendar-weekdays" aria-hidden="true">
+                    ${weekdays.map((day) => `<span>${day}</span>`).join("")}
+                </div>
+                <div class="report-calendar-grid">${days.join("")}</div>
+                <div class="report-date-error" role="status">
+                    ${draftFrom && !draftTo ? "Chọn ngày kết thúc, hoặc áp dụng một ngày." : ""}
+                </div>
+                <div class="report-date-footer">
+                    <button class="btn btn-secondary btn-sm" type="button" data-calendar-today>Hôm nay</button>
+                    <button class="btn btn-secondary btn-sm" type="button" data-calendar-cancel>Hủy</button>
+                    <button class="btn btn-primary btn-sm" type="button" data-calendar-apply ${draftFrom ? "" : "disabled"}>Áp dụng</button>
+                </div>
+            `;
+        }
+
+        function open() {
+            if (trigger.disabled || isOpen) return;
+            const values = normalizedRange(fromInput.value, toInput.value);
+            draftFrom = values.from;
+            draftTo = values.to;
+            const anchor = parseLocalDate(draftFrom || todayKey()) || new Date();
+            viewMonth = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+            render();
+            popover.hidden = false;
+            root.classList.add("is-open");
+            trigger.setAttribute("aria-expanded", "true");
+            isOpen = true;
+            requestAnimationFrame(() => {
+                popover.querySelector(`[data-date="${draftFrom || todayKey()}"]`)?.focus();
+            });
+        }
+
+        function close({ restoreFocus = false } = {}) {
+            if (!isOpen) return;
+            popover.hidden = true;
+            root.classList.remove("is-open");
+            trigger.setAttribute("aria-expanded", "false");
+            isOpen = false;
+            if (restoreFocus) trigger.focus();
+        }
+
+        function selectDate(key) {
+            if (!draftFrom || draftTo) {
+                draftFrom = key;
+                draftTo = "";
+            } else if (key < draftFrom) {
+                draftTo = draftFrom;
+                draftFrom = key;
+            } else {
+                draftTo = key;
+            }
+            render();
+        }
+
+        // Toggle: second click on trigger closes (after open stopPropagation below).
+        trigger.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (isOpen) {
+                close({ restoreFocus: true });
+                return;
+            }
+            open();
+        });
+
+        popover.addEventListener("click", (event) => {
+            // Keep the same-click "outside" listener from seeing a re-rendered/detached target.
+            event.stopPropagation();
+
+            const dateButton = event.target.closest("[data-date]");
+            if (dateButton && !dateButton.disabled) {
+                const key = normalizeDateKey(dateButton.dataset.date);
+                if (key) selectDate(key);
+                return;
+            }
+            if (event.target.closest("[data-calendar-prev]")) {
+                viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1);
+                render();
+                return;
+            }
+            if (event.target.closest("[data-calendar-next]")) {
+                viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1);
+                render();
+                return;
+            }
+            if (event.target.closest("[data-calendar-today]")) {
+                draftFrom = todayKey();
+                draftTo = todayKey();
+                viewMonth = new Date();
+                render();
+                return;
+            }
+            if (event.target.closest("[data-calendar-cancel]")) {
+                close({ restoreFocus: true });
+                return;
+            }
+            if (event.target.closest("[data-calendar-apply]") && draftFrom) {
+                const values = setValues(draftFrom, draftTo || draftFrom);
+                setDisplay(`${formatPickerDate(values.from)} - ${formatPickerDate(values.to)}`, "Khoảng ngày tùy chọn");
+                close({ restoreFocus: true });
+                onApply?.(values);
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            if (!isOpen) return;
+            // root.contains(detachedNode) is false after calendar re-render replaces nodes
+            // in the same click. Only close for real outside targets still in the document.
+            const target = event.target;
+            if (!(target instanceof Node)) return;
+            if (root.contains(target)) return;
+            if (!document.documentElement.contains(target)) return;
+            close();
+        });
+        document.addEventListener("keydown", (event) => {
+            if (isOpen && event.key === "Escape") close({ restoreFocus: true });
+        });
+
+        return {
+            open,
+            close,
+            getValues() {
+                return normalizedRange(fromInput.value, toInput.value);
+            },
+            setValues,
+            setMode(range, { openPicker = false } = {}) {
+                const isCustom = range === "custom";
+                trigger.disabled = !isCustom;
+                if (range === "all") {
+                    setValues("", "");
+                    setDisplay("Toàn bộ dữ liệu", "Không giới hạn ngày");
+                    close();
+                } else if (!isCustom) {
+                    const values = presetDateKeys(range);
+                    setValues(values.from, values.to);
+                    const labels = {
+                        last7: "7 ngày gần nhất",
+                        last30: "30 ngày gần nhất",
+                        thisMonth: "Tháng này"
+                    };
+                    setDisplay(labels[range] || "Kỳ báo cáo", `${formatPickerDate(values.from)} - ${formatPickerDate(values.to)}`);
+                    close();
+                } else {
+                    let values = normalizedRange(fromInput.value, toInput.value);
+                    if (!values.from || !values.to) {
+                        const fallback = presetDateKeys("last30");
+                        values = setValues(fallback.from, fallback.to);
+                    }
+                    setDisplay(`${formatPickerDate(values.from)} - ${formatPickerDate(values.to)}`, "Nhấn để chọn khoảng ngày");
+                    if (openPicker) requestAnimationFrame(open);
+                }
+            }
+        };
+    }
+
     function csvCell(value) {
         return `"${String(value ?? "").replaceAll('"', '""')}"`;
     }
 
     function dateKey(value) {
-        const date = new Date(value);
+        const date = value instanceof Date ? new Date(value) : new Date(value);
+        if (Number.isNaN(date.getTime())) return "";
         date.setHours(0, 0, 0, 0);
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -830,35 +1408,16 @@
     }
 
     function getRangeDates(range) {
-        const today = new Date();
-        today.setHours(23, 59, 59, 999);
-        const from = new Date(today);
-        from.setHours(0, 0, 0, 0);
-
-        if (range === "last7") {
-            from.setDate(today.getDate() - 6);
-            return { from, to: today };
-        }
-
-        if (range === "last30") {
-            from.setDate(today.getDate() - 29);
-            return { from, to: today };
-        }
-
-        if (range === "thisMonth") {
-            from.setDate(1);
-            return { from, to: today };
-        }
-
-        if (range === "custom") {
-            const fromValue = document.getElementById("reportFromDate").value;
-            const toValue = document.getElementById("reportToDate").value;
-            const customFrom = fromValue ? new Date(`${fromValue}T00:00:00`) : null;
-            const customTo = toValue ? new Date(`${toValue}T23:59:59`) : null;
-            return { from: customFrom, to: customTo };
-        }
-
-        return { from: null, to: null };
+        const keys = range === "custom"
+            ? (reportDatePicker?.getValues() || {
+                from: normalizeDateKey(document.getElementById("reportFromDate")?.value),
+                to: normalizeDateKey(document.getElementById("reportToDate")?.value)
+            })
+            : presetDateKeys(range);
+        return {
+            from: parseLocalDate(keys.from),
+            to: parseLocalDate(keys.to, true)
+        };
     }
 
     function groupBy(items, getKey) {
@@ -974,10 +1533,12 @@
         const { from, to } = getRangeDates(range);
 
         reportState.filteredOrders = reportState.orders.filter((order) => {
-            const createdAt = order.created_at ? new Date(order.created_at) : new Date();
+            const createdAt = order.created_at ? new Date(order.created_at) : null;
             const orderStaff = order.username || "Chưa gán nhân viên";
             const orderSource = paymentMethodLabel(order.payment_method);
-            const inRange = (!from || createdAt >= from) && (!to || createdAt <= to);
+            const hasValidDate = createdAt && !Number.isNaN(createdAt.getTime());
+            const inRange = (!from && !to)
+                || (hasValidDate && (!from || createdAt >= from) && (!to || createdAt <= to));
             const staffMatched = staff === "all" || orderStaff === staff;
             const sourceMatched = source === "all" || orderSource === source;
 
@@ -1641,10 +2202,14 @@
         if (range === "last30") return { range: "30d" };
         if (range === "thisMonth") return { range: "thisMonth" };
         if (range === "custom") {
+            const values = reportDatePicker?.getValues() || {
+                from: normalizeDateKey(fromEl?.value),
+                to: normalizeDateKey(toEl?.value)
+            };
             return {
                 range: "custom",
-                from: fromEl?.value || undefined,
-                to: toEl?.value || undefined
+                from: values.from || undefined,
+                to: values.to || undefined
             };
         }
         // "all" → analyze last 30d as a practical AI window
@@ -1672,6 +2237,14 @@
         }
     }
 
+    reportDatePicker = createReportDateRangePicker({
+        onApply() {
+            applyFilters();
+            refreshReportsAiInsights();
+        }
+    });
+    reportDatePicker?.setMode(document.getElementById("reportRangeFilter").value);
+
     document.getElementById("viewReportButton").addEventListener("click", () => {
         applyFilters();
         refreshReportsAiInsights();
@@ -1683,25 +2256,13 @@
     document.getElementById("exportCsvButton").addEventListener("click", exportReportCsv);
     document.getElementById("printReportButton").addEventListener("click", () => window.print());
     document.getElementById("reportRangeFilter").addEventListener("change", () => {
-        const isCustom = document.getElementById("reportRangeFilter").value === "custom";
-        document.getElementById("reportFromDate").disabled = !isCustom;
-        document.getElementById("reportToDate").disabled = !isCustom;
+        const range = document.getElementById("reportRangeFilter").value;
+        reportDatePicker?.setMode(range, { openPicker: range === "custom" });
         applyFilters();
         refreshReportsAiInsights();
     });
     document.getElementById("reportStaffFilter").addEventListener("change", applyFilters);
     document.getElementById("reportSourceFilter").addEventListener("change", applyFilters);
-    document.getElementById("reportFromDate").addEventListener("change", () => {
-        applyFilters();
-        refreshReportsAiInsights();
-    });
-    document.getElementById("reportToDate").addEventListener("change", () => {
-        applyFilters();
-        refreshReportsAiInsights();
-    });
-
-    document.getElementById("reportFromDate").disabled = true;
-    document.getElementById("reportToDate").disabled = true;
 
     loadReport().then(() => {
         setTimeout(refreshReportsAiInsights, 300);
