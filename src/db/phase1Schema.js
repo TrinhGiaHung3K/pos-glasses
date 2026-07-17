@@ -89,9 +89,45 @@ async function ensureStockMovementsTable(db) {
     return { created: true };
 }
 
+async function indexExists(db, table, indexName) {
+    const [rows] = await db.execute(
+        `SELECT INDEX_NAME
+        FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = ?
+          AND INDEX_NAME = ?
+        LIMIT 1`,
+        [table, indexName]
+    );
+    return rows.length > 0;
+}
+
+/**
+ * List path filters by entity_type and sorts by id DESC.
+ * (entity_type, entity_id) does not cover that order well; add (entity_type, id).
+ */
+async function ensureAuditLogsIndexes(db) {
+    if (!(await tableExists(db, "audit_logs"))) {
+        return { added: [] };
+    }
+
+    const added = [];
+    const name = "idx_audit_logs_entity_id";
+    if (!(await indexExists(db, "audit_logs", name))) {
+        await db.execute(
+            `ALTER TABLE \`audit_logs\`
+            ADD INDEX \`idx_audit_logs_entity_id\` (\`entity_type\`, \`id\`)`
+        );
+        added.push(name);
+    }
+
+    return { added };
+}
+
 async function ensureAuditLogsTable(db) {
     if (await tableExists(db, "audit_logs")) {
-        return { created: false };
+        const indexes = await ensureAuditLogsIndexes(db);
+        return { created: false, indexesAdded: indexes.added };
     }
 
     await db.execute(
@@ -106,12 +142,13 @@ async function ensureAuditLogsTable(db) {
             \`created_at\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (\`id\`),
             KEY \`idx_audit_logs_entity\` (\`entity_type\`, \`entity_id\`),
+            KEY \`idx_audit_logs_entity_id\` (\`entity_type\`, \`id\`),
             KEY \`idx_audit_logs_actor\` (\`actor_id\`),
             KEY \`idx_audit_logs_created_at\` (\`created_at\`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
     );
 
-    return { created: true };
+    return { created: true, indexesAdded: [] };
 }
 
 async function ensureIdempotencyTable(db) {
@@ -225,6 +262,7 @@ async function ensurePhase1Schema(db) {
     return {
         stockMovementsCreated: stock.created,
         auditLogsCreated: audit.created,
+        auditIndexesAdded: audit.indexesAdded || [],
         idempotencyCreated: idempotency.created,
         productColumns,
         orderDetailColumns,

@@ -9,102 +9,596 @@
     <link rel="stylesheet" href="assets/css/base.css">
     <link rel="stylesheet" href="assets/css/layout.css">
     <link rel="stylesheet" href="assets/css/components.css">
+    <style>
+        /* Minimal audit page — quiet list, one accent, no cockpit chrome */
+        .audit-filters {
+            align-items: end;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .audit-filters .form-label {
+            margin-bottom: 4px;
+        }
+
+        .audit-filters .form-select {
+            min-width: 160px;
+        }
+
+        .audit-table-wrap {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .audit-table-wrap .table {
+            margin-bottom: 0;
+        }
+
+        .audit-table-wrap thead th {
+            background: var(--bg-muted);
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            padding: 12px 16px !important;
+            white-space: nowrap;
+        }
+
+        .audit-table-wrap tbody td {
+            border-color: var(--border-color);
+            color: var(--text-primary);
+            font-size: 13.5px;
+            padding: 14px 16px !important;
+            vertical-align: middle;
+        }
+
+        .audit-table-wrap tbody tr {
+            transition: background-color var(--transition-fast);
+        }
+
+        .audit-table-wrap tbody tr:hover {
+            background: rgba(15, 118, 110, 0.03);
+        }
+
+        .audit-table-wrap tbody tr.is-open {
+            background: var(--accent-subtle);
+        }
+
+        .audit-action {
+            align-items: flex-start;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .audit-action strong {
+            font-size: 13.5px;
+            font-weight: 750;
+            letter-spacing: -0.01em;
+        }
+
+        .audit-action-sub {
+            color: var(--text-secondary);
+            font-size: 12.5px;
+            line-height: 1.4;
+        }
+
+        .audit-tag {
+            background: var(--accent-light);
+            border-radius: var(--radius-xs);
+            color: var(--accent-color);
+            display: inline-block;
+            font-size: 11.5px;
+            font-weight: 750;
+            line-height: 1.2;
+            padding: 3px 8px;
+            white-space: nowrap;
+        }
+
+        .audit-tag.is-warn {
+            background: var(--warning-light);
+            color: #b45309;
+        }
+
+        .audit-tag.is-danger {
+            background: var(--danger-light);
+            color: var(--danger-color);
+        }
+
+        .audit-tag.is-muted {
+            background: var(--bg-muted);
+            color: var(--text-secondary);
+        }
+
+        .audit-meta {
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .audit-meta small {
+            color: var(--text-muted);
+            display: block;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .audit-detail-row td {
+            background: var(--bg-muted);
+            padding: 0 16px 14px !important;
+        }
+
+        .audit-detail {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--bg-surface);
+            margin-top: 2px;
+            padding: 12px 14px;
+        }
+
+        .audit-detail-grid {
+            display: grid;
+            gap: 10px 20px;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            margin-bottom: 10px;
+        }
+
+        .audit-detail-grid span {
+            color: var(--text-muted);
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .audit-detail-grid strong {
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 650;
+            word-break: break-word;
+        }
+
+        .audit-payload {
+            background: var(--bg-muted);
+            border-radius: var(--radius-xs);
+            color: var(--text-secondary);
+            font-family: ui-monospace, "Cascadia Code", "Roboto Mono", monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            margin: 0;
+            max-height: 160px;
+            overflow: auto;
+            padding: 10px 12px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .audit-footer {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+            margin-top: 12px;
+        }
+
+        .audit-footer p {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin: 0;
+        }
+
+        .audit-footer .btn {
+            min-height: 36px;
+            padding: 6px 12px;
+        }
+
+        .audit-empty {
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .audit-empty i {
+            color: var(--text-muted);
+            display: block;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .audit-filters {
+                width: 100%;
+            }
+
+            .audit-filters .form-select {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .audit-col-ip {
+                display: none;
+            }
+        }
+    </style>
 </head>
 <body>
 <div class="pos-container">
     <aside data-menu-component data-active-menu="audit"></aside>
     <main class="pos-main">
         <header class="pos-topbar">
-            <div><h2 class="pos-topbar-title">Nhật ký hệ thống</h2></div>
+            <div>
+                <h2 class="pos-topbar-title">Nhật ký</h2>
+            </div>
             <div class="pos-topbar-actions">
-                <button class="btn btn-secondary" type="button" id="refreshAudit"><i class="ph ph-arrow-clockwise"></i> Làm mới</button>
+                <button class="btn btn-secondary" type="button" id="refreshAudit">
+                    <i class="ph ph-arrow-clockwise"></i> Làm mới
+                </button>
             </div>
         </header>
+
         <div class="pos-content">
             <section class="pos-page-intro">
                 <div>
-                    <h2>Audit log</h2>
-                    <p>Theo dõi đăng nhập, checkout, void/refund, thay đổi sản phẩm (Phase 0).</p>
+                    <h2>Hoạt động gần đây</h2>
+                    <p>Đăng nhập, bán hàng, hủy/hoàn, chỉnh sản phẩm và ca làm.</p>
                 </div>
-                <div class="d-flex gap-2 align-items-end flex-wrap">
+                <div class="audit-filters">
                     <div>
-                        <label class="form-label" for="entityFilter">Loại</label>
+                        <label class="form-label" for="entityFilter">Đối tượng</label>
                         <select class="form-select" id="entityFilter">
                             <option value="">Tất cả</option>
-                            <option value="user">user</option>
-                            <option value="order">order</option>
-                            <option value="product">product</option>
+                            <option value="order">Đơn hàng</option>
+                            <option value="user">Tài khoản</option>
+                            <option value="product">Sản phẩm</option>
+                            <option value="shift">Ca làm</option>
                         </select>
                     </div>
-                    <button class="btn btn-primary" type="button" id="applyFilter">Lọc</button>
+                    <button class="btn btn-primary" type="button" id="applyFilter">
+                        Lọc
+                    </button>
                 </div>
             </section>
-            <div class="table-responsive" style="background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-sm);">
-                <table class="table align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Thời gian</th>
-                            <th>Actor</th>
-                            <th>Action</th>
-                            <th>Entity</th>
-                            <th>IP</th>
-                            <th>Payload</th>
-                        </tr>
-                    </thead>
-                    <tbody id="auditBody"><tr><td colspan="7">Đang tải…</td></tr></tbody>
-                </table>
+
+            <div class="audit-table-wrap">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Thời gian</th>
+                                <th>Sự kiện</th>
+                                <th>Đối tượng</th>
+                                <th>Người thao tác</th>
+                                <th class="audit-col-ip">IP</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditBody">
+                            <tr>
+                                <td colspan="6" class="audit-empty">Đang tải…</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <p class="text-muted mt-2" id="auditMeta"></p>
+
+            <div class="audit-footer">
+                <p id="auditMeta"></p>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-secondary btn-sm" type="button" id="prevPage" disabled>
+                        <i class="ph ph-caret-left"></i> Trước
+                    </button>
+                    <button class="btn btn-secondary btn-sm" type="button" id="nextPage" disabled>
+                        Sau <i class="ph ph-caret-right"></i>
+                    </button>
+                </div>
+            </div>
         </div>
     </main>
 </div>
+
 <script src="assets/js/api.js"></script>
 <script src="assets/js/auth.js"></script>
 <script src="assets/js/format.js"></script>
 <script src="assets/js/ui.js"></script>
 <script src="assets/js/components.js"></script>
 <script>
+(function auditPage() {
+    const PAGE_SIZE = 50;
     const user = requireRole(["admin"]);
-    let page = 1;
 
-    async function loadAudit() {
-        const body = document.getElementById("auditBody");
-        const entity = document.getElementById("entityFilter")?.value || "";
-        const qs = new URLSearchParams({ page: String(page), limit: "50" });
-        if (entity) qs.set("entity_type", entity);
+    let page = 1;
+    let total = null;
+    let hasMore = false;
+    let openId = null;
+
+    const bodyEl = document.getElementById("auditBody");
+    const metaEl = document.getElementById("auditMeta");
+    const entityEl = document.getElementById("entityFilter");
+    const prevBtn = document.getElementById("prevPage");
+    const nextBtn = document.getElementById("nextPage");
+
+    const ENTITY = {
+        user: "Tài khoản",
+        order: "Đơn hàng",
+        product: "Sản phẩm",
+        shift: "Ca làm"
+    };
+
+    const ACTIONS = {
+        "auth.login_success": { label: "Đăng nhập thành công", tone: "" },
+        "auth.login_failed": { label: "Đăng nhập thất bại", tone: "is-danger" },
+        "order.checkout": { label: "Thanh toán đơn", tone: "" },
+        "order.void": { label: "Hủy đơn", tone: "is-warn" },
+        "order.refund": { label: "Hoàn tiền", tone: "is-warn" },
+        "product.create": { label: "Tạo sản phẩm", tone: "" },
+        "product.update": { label: "Cập nhật sản phẩm", tone: "" },
+        "product.delete": { label: "Xóa sản phẩm", tone: "is-danger" },
+        "product.image_update": { label: "Cập nhật ảnh SP", tone: "is-muted" },
+        "shift.open": { label: "Mở ca", tone: "is-muted" },
+        "shift.close": { label: "Đóng ca", tone: "is-muted" }
+    };
+
+    function actionMeta(action) {
+        const key = String(action || "");
+        return ACTIONS[key] || { label: key || "Sự kiện khác", tone: "is-muted" };
+    }
+
+    function entityLabel(type) {
+        return ENTITY[type] || (type ? String(type) : "Khác");
+    }
+
+    function actorLabel(id) {
+        if (id == null || id === "") return "Hệ thống";
+        return `NV #${id}`;
+    }
+
+    function entityRef(type, id) {
+        const name = entityLabel(type);
+        if (id == null || id === "") return name;
+        return `${name} #${id}`;
+    }
+
+    function timeParts(value) {
+        if (!value) return { day: "—", clock: "" };
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) {
+            return {
+                day: typeof formatDate === "function" ? formatDate(value) : String(value),
+                clock: ""
+            };
+        }
+        return {
+            day: d.toLocaleDateString("vi-VN"),
+            clock: d.toLocaleTimeString("vi-VN", {
+                hour: "2-digit",
+                minute: "2-digit"
+            })
+        };
+    }
+
+    function parsePayload(raw) {
+        if (raw == null || raw === "") return null;
+        if (typeof raw === "object") return raw;
         try {
-            const data = await apiRequest(`/api/admin/audit-logs?${qs}`);
-            const items = data.items || data || [];
-            document.getElementById("auditMeta").textContent =
-                `Trang ${data.page || page} · ${data.total != null ? data.total : items.length} bản ghi`;
-            if (!items.length) {
-                body.innerHTML = `<tr><td colspan="7">Chưa có nhật ký.</td></tr>`;
-                return;
-            }
-            body.innerHTML = items.map((row) => {
-                let payload = row.payload_json;
-                if (payload && typeof payload === "object") {
-                    payload = JSON.stringify(payload);
-                }
-                return `<tr>
-                    <td>${row.id}</td>
-                    <td>${row.created_at ? formatDate(row.created_at) : "—"}</td>
-                    <td>${row.actor_id ?? "—"}</td>
-                    <td><code>${escapeHtml(row.action || "")}</code></td>
-                    <td>${escapeHtml(row.entity_type || "")} #${row.entity_id ?? "—"}</td>
-                    <td>${escapeHtml(row.ip || "—")}</td>
-                    <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(payload || "")}">${escapeHtml(payload || "—")}</td>
-                </tr>`;
-            }).join("");
-        } catch (error) {
-            body.innerHTML = `<tr><td colspan="7">${escapeHtml(error.message)}</td></tr>`;
+            return JSON.parse(raw);
+        } catch {
+            return { raw: String(raw) };
         }
     }
 
-    document.getElementById("refreshAudit")?.addEventListener("click", loadAudit);
-    document.getElementById("applyFilter")?.addEventListener("click", () => { page = 1; loadAudit(); });
+    function payloadHint(payload) {
+        if (!payload || typeof payload !== "object") return "";
+        if (payload.username != null) return `TK ${payload.username}`;
+        if (payload.reason != null) return String(payload.reason);
+        if (payload.name != null) return String(payload.name);
+        if (payload.sku != null) return `SKU ${payload.sku}`;
+        const amount = payload.amount ?? payload.total ?? payload.total_amount;
+        if (amount != null && typeof formatCurrency === "function") {
+            return formatCurrency(amount);
+        }
+        return "";
+    }
+
+    function emptyRow(message, icon) {
+        return `
+            <tr>
+                <td colspan="6">
+                    <div class="audit-empty">
+                        <i class="ph ${icon || "ph-notebook"}"></i>
+                        ${escapeHtml(message)}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    function detailHtml(row) {
+        const payload = parsePayload(row.payload_json);
+        const pretty = payload ? escapeHtml(JSON.stringify(payload, null, 2)) : "";
+        const t = timeParts(row.created_at);
+        return `
+            <tr class="audit-detail-row" data-detail-for="${row.id}">
+                <td colspan="6">
+                    <div class="audit-detail">
+                        <div class="audit-detail-grid">
+                            <div>
+                                <span>Sự kiện</span>
+                                <strong>${escapeHtml(actionMeta(row.action).label)}</strong>
+                            </div>
+                            <div>
+                                <span>Đối tượng</span>
+                                <strong>${escapeHtml(entityRef(row.entity_type, row.entity_id))}</strong>
+                            </div>
+                            <div>
+                                <span>Người thao tác</span>
+                                <strong>${escapeHtml(actorLabel(row.actor_id))}</strong>
+                            </div>
+                            <div>
+                                <span>IP</span>
+                                <strong>${escapeHtml(row.ip || "Không ghi nhận")}</strong>
+                            </div>
+                            <div>
+                                <span>Thời điểm</span>
+                                <strong>${escapeHtml([t.day, t.clock].filter(Boolean).join(" "))} · #${row.id}</strong>
+                            </div>
+                        </div>
+                        ${
+                            pretty
+                                ? `<pre class="audit-payload">${pretty}</pre>`
+                                : `<p class="audit-action-sub" style="margin:0;">Không có chi tiết kèm theo.</p>`
+                        }
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    function renderRows(items) {
+        if (!items.length) {
+            bodyEl.innerHTML = emptyRow("Chưa có hoạt động trong phạm vi này.");
+            return;
+        }
+
+        bodyEl.innerHTML = items.map((row) => {
+            const meta = actionMeta(row.action);
+            const t = timeParts(row.created_at);
+            const hint = payloadHint(parsePayload(row.payload_json));
+            const isOpen = openId != null && Number(openId) === Number(row.id);
+
+            return `
+                <tr class="${isOpen ? "is-open" : ""}" data-row-id="${row.id}">
+                    <td>
+                        <div class="audit-meta">
+                            ${escapeHtml(t.day)}
+                            ${t.clock ? `<small>${escapeHtml(t.clock)}</small>` : ""}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="audit-action">
+                            <strong>${escapeHtml(meta.label)}</strong>
+                            ${hint ? `<span class="audit-action-sub">${escapeHtml(hint)}</span>` : ""}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="audit-tag ${meta.tone}">${escapeHtml(entityRef(row.entity_type, row.entity_id))}</span>
+                    </td>
+                    <td class="audit-meta">${escapeHtml(actorLabel(row.actor_id))}</td>
+                    <td class="audit-meta audit-col-ip">${escapeHtml(row.ip || "—")}</td>
+                    <td style="text-align:right;">
+                        <button class="btn btn-secondary btn-sm" type="button" data-detail="${row.id}">
+                            ${isOpen ? "Thu gọn" : "Chi tiết"}
+                        </button>
+                    </td>
+                </tr>
+                ${isOpen ? detailHtml(row) : ""}
+            `;
+        }).join("");
+
+        bodyEl.querySelectorAll("[data-detail]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const id = Number(btn.getAttribute("data-detail"));
+                openId = openId != null && Number(openId) === id ? null : id;
+                renderRows(items);
+            });
+        });
+    }
+
+    function updatePager(itemCount) {
+        const count = Number(itemCount) || 0;
+        const from = count === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+        const to = count === 0 ? 0 : from + count - 1;
+
+        if (total != null && Number.isFinite(Number(total))) {
+            const totalPages = Math.max(1, Math.ceil(Number(total) / PAGE_SIZE) || 1);
+            metaEl.textContent = Number(total) === 0
+                ? "Không có sự kiện"
+                : `${from}–${to} / ${total} sự kiện · Trang ${page}/${totalPages}`;
+            prevBtn.disabled = page <= 1;
+            nextBtn.disabled = page >= totalPages || Number(total) === 0;
+            return;
+        }
+
+        // Fast path: backend skipped COUNT(*) and only returns has_more
+        if (count === 0 && page === 1) {
+            metaEl.textContent = "Không có sự kiện";
+        } else if (hasMore) {
+            metaEl.textContent = `${from}–${to} · Trang ${page} · còn tiếp`;
+        } else {
+            metaEl.textContent = `${from}–${to} · Trang ${page}`;
+        }
+
+        prevBtn.disabled = page <= 1;
+        nextBtn.disabled = !hasMore;
+    }
+
+    async function loadAudit() {
+        bodyEl.innerHTML = emptyRow("Đang tải…", "ph-circle-notch");
+        const entity = entityEl?.value || "";
+        // Default API skips exact COUNT(*) for faster first paint
+        const qs = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
+        if (entity) qs.set("entity_type", entity);
+
+        try {
+            const data = await apiRequest(`/api/admin/audit-logs?${qs}`);
+            const items = Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
+            hasMore = Boolean(data.has_more);
+            total = data.total != null ? Number(data.total) : null;
+            if (data.page != null) page = Number(data.page) || page;
+            renderRows(items);
+            updatePager(items.length);
+        } catch (error) {
+            total = 0;
+            hasMore = false;
+            bodyEl.innerHTML = emptyRow(error.message || "Không tải được nhật ký.", "ph-warning-circle");
+            updatePager(0);
+        }
+    }
+
+    document.getElementById("refreshAudit")?.addEventListener("click", () => {
+        openId = null;
+        loadAudit();
+    });
+
+    document.getElementById("applyFilter")?.addEventListener("click", () => {
+        page = 1;
+        openId = null;
+        loadAudit();
+    });
+
+    entityEl?.addEventListener("change", () => {
+        page = 1;
+        openId = null;
+        loadAudit();
+    });
+
+    prevBtn?.addEventListener("click", () => {
+        if (page <= 1) return;
+        page -= 1;
+        openId = null;
+        loadAudit();
+    });
+
+    nextBtn?.addEventListener("click", () => {
+        if (!hasMore && total != null) {
+            const totalPages = Math.max(1, Math.ceil((Number(total) || 0) / PAGE_SIZE) || 1);
+            if (page >= totalPages) return;
+        } else if (!hasMore) {
+            return;
+        }
+        page += 1;
+        openId = null;
+        loadAudit();
+    });
+
     if (user) loadAudit();
+})();
 </script>
 </body>
 </html>

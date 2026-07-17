@@ -25,9 +25,19 @@ function createAuditRepository(db) {
             }
         },
 
-        async list({ page = 1, limit = 50, entity_type } = {}) {
+        /**
+         * List audit events newest-first.
+         *
+         * Performance notes:
+         * - No COUNT(*) (full-table count is the main cost on large audit_logs).
+         * - Fetches limit+1 rows to derive has_more for next-page UI.
+         * - Orders by primary key id DESC (index-friendly).
+         * - entity_type filter uses idx_audit_logs_entity_id (entity_type, id).
+         * - Optional include_total=true for rare callers that need exact totals.
+         */
+        async list({ page = 1, limit = 50, entity_type, include_total = false } = {}) {
             const safePage = Math.max(1, Number.parseInt(page, 10) || 1);
-            const safeLimit = Math.min(200, Math.max(1, Number.parseInt(limit, 10) || 50));
+            const safeLimit = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 50));
             const offset = (safePage - 1) * safeLimit;
             const params = [];
             let where = "";
@@ -37,24 +47,54 @@ function createAuditRepository(db) {
                 params.push(String(entity_type));
             }
 
-            const [countRows] = await db.execute(
-                `SELECT COUNT(*) AS total FROM audit_logs ${where}`,
-                params
-            );
-            const [rows] = await db.execute(
-                `SELECT id, actor_id, action, entity_type, entity_id, payload_json, ip, created_at
+            // limit+1 avoids COUNT(*) while still knowing if another page exists
+            const fetchLimit = safeLimit + 1;
+            const listSql = `
+                SELECT id, actor_id, action, entity_type, entity_id, payload_json, ip, created_at
                 FROM audit_logs
                 ${where}
                 ORDER BY id DESC
-                LIMIT ${safeLimit} OFFSET ${offset}`,
-                params
-            );
+                LIMIT ${fetchLimit} OFFSET ${offset}
+            `;
+
+            const runList = () =>
+                typeof db.query === "function"
+                    ? db.query(listSql, params)
+                    : db.execute(listSql, params);
+
+            let rows;
+            let total = null;
+
+            if (include_total === true || include_total === "1" || include_total === 1) {
+                const countSql = `SELECT COUNT(*) AS total FROM audit_logs ${where}`;
+                const runCount = () =>
+                    typeof db.query === "function"
+                        ? db.query(countSql, params)
+                        : db.execute(countSql, params);
+
+                const [countResult, listResult] = await Promise.all([runCount(), runList()]);
+                const countRows = countResult[0] || [];
+                rows = listResult[0] || [];
+                total = Number(countRows[0]?.total || 0);
+            } else {
+                const listResult = await runList();
+                rows = listResult[0] || [];
+            }
+
+            const hasMore = Array.isArray(rows) && rows.length > safeLimit;
+            const items = hasMore ? rows.slice(0, safeLimit) : (rows || []);
+
+            // Soft total for UI when we hit the last page without counting
+            if (total == null && !hasMore) {
+                total = offset + items.length;
+            }
 
             return {
-                items: rows,
+                items,
                 page: safePage,
                 limit: safeLimit,
-                total: Number(countRows[0]?.total || 0)
+                has_more: hasMore,
+                total
             };
         }
     };

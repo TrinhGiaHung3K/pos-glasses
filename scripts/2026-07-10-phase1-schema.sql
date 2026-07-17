@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_audit_logs_entity` (`entity_type`, `entity_id`),
+  KEY `idx_audit_logs_entity_id` (`entity_type`, `id`),
   KEY `idx_audit_logs_actor` (`actor_id`),
   KEY `idx_audit_logs_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
