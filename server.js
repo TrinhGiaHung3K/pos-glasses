@@ -105,6 +105,7 @@ process.on("uncaughtException", (error) => {
     shutdown("uncaughtException", 1);
 });
 
+//comment 1
 process.on("unhandledRejection", (reason) => {
     logger.error("Unhandled promise rejection", reason);
     shutdown("unhandledRejection", 1);
