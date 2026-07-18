@@ -1,3 +1,4 @@
+// Revenue thresholds use the same products.price scale (nghìn đồng) as checkout totals.
 const STAFF_LEVELS = [
     {
         code: "NULL",
@@ -10,28 +11,28 @@ const STAFF_LEVELS = [
         code: "Bronze",
         label: "Bronze",
         min_member_orders: 5,
-        min_revenue: 5000000,
+        min_revenue: 5_000,
         discount_percent: 1
     },
     {
         code: "Silver",
         label: "Silver",
         min_member_orders: 20,
-        min_revenue: 20000000,
+        min_revenue: 20_000,
         discount_percent: 3
     },
     {
         code: "Gold",
         label: "Gold",
         min_member_orders: 50,
-        min_revenue: 60000000,
+        min_revenue: 60_000,
         discount_percent: 5
     },
     {
         code: "Platinum",
         label: "Platinum",
         min_member_orders: 100,
-        min_revenue: 150000000,
+        min_revenue: 150_000,
         discount_percent: 8
     }
 ];

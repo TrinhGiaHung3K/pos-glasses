@@ -5,6 +5,7 @@ const declarations = [
         name: "search_products",
         description:
             "Tra cứu catalog sản phẩm kính mắt trong POS. Dùng cho mọi câu hỏi về sản phẩm, giá, SKU, thương hiệu, tồn kho. " +
+            "Giá catalog theo products.price (thang nghìn đồng, khung ~1690–9490). " +
             "Với 'rẻ nhất/giá thấp nhất' đặt sort_by=price_asc và q rỗng (hoặc từ khóa hãng). " +
             "Với 'đắt nhất/giá cao nhất' đặt sort_by=price_desc. " +
             "Không bịa giá — chỉ dùng kết quả tool.",
@@ -17,11 +18,11 @@ const declarations = [
                 },
                 min_price: {
                     type: "NUMBER",
-                    description: "Giá tối thiểu (VND)."
+                    description: "Giá tối thiểu theo thang nghìn đồng (vd 3 triệu ≈ 3000, không dùng 3000000)."
                 },
                 max_price: {
                     type: "NUMBER",
-                    description: "Giá tối đa (VND)."
+                    description: "Giá tối đa theo thang nghìn đồng (vd dưới 3 triệu → 3000)."
                 },
                 in_stock: {
                     type: "BOOLEAN",

@@ -1,20 +1,21 @@
 /**
  * POS Glasses loyalty policy (eyewear retail).
  *
- * Earn: 1 point per 100.000đ paid (net total after discounts).
- * Redeem: 1 point = 1.000đ, max 20% of subtotal, only for active members.
+ * Catalog / checkout amounts use products.price (nghìn đồng).
+ * Earn: 1 point per 100đ paid (net total after discounts).
+ * Redeem: 1 point = 1đ, max 20% of subtotal, only for active members.
  * Auto-tier by lifetime_spend (completed orders net).
  */
 
-const POINTS_PER_VND_UNIT = 100_000;
-const VND_PER_POINT_REDEEM = 1_000;
+const POINTS_PER_VND_UNIT = 100;
+const VND_PER_POINT_REDEEM = 1;
 const MAX_REDEEM_PERCENT_OF_SUBTOTAL = 20;
 
-/** Lifetime spend thresholds (VND) for membership_tier. */
+/** Lifetime spend thresholds (nghìn đồng scale) for membership_tier. */
 const TIER_THRESHOLDS = Object.freeze([
     { code: "standard", min_spend: 0 },
-    { code: "silver", min_spend: 10_000_000 },
-    { code: "gold", min_spend: 30_000_000 }
+    { code: "silver", min_spend: 10_000 },
+    { code: "gold", min_spend: 30_000 }
 ]);
 
 function earnPointsFromTotal(totalAmount) {

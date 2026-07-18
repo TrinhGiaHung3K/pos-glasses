@@ -4,8 +4,8 @@ function buildInClause(values) {
 
 /** Whitelist only — never interpolate raw client sort into SQL. */
 function commercialPriceExpr() {
-    // Prefer original (commercial) price for filters/sort when dual-price is enabled.
-    return "COALESCE(NULLIF(original_price, 0), price)";
+    // Canonical sell price is products.price (nghìn đồng) for all payments & UI.
+    return "price";
 }
 
 function resolveProductOrder(sort) {
@@ -155,10 +155,8 @@ function createProductsRepository(db) {
                             product.category_id,
                             product.name,
                             product.sku,
-                            product.original_price != null ? product.original_price : product.price,
-                            product.original_cost_price != null
-                                ? product.original_cost_price
-                                : (product.cost_price != null ? product.cost_price : 0),
+                            product.price,
+                            product.cost_price != null ? product.cost_price : 0,
                             product.quantity,
                             product.image || null
                         ]
@@ -217,10 +215,8 @@ function createProductsRepository(db) {
                             product.category_id,
                             product.name,
                             product.sku,
-                            product.original_price != null ? product.original_price : product.price,
-                            product.original_cost_price != null
-                                ? product.original_cost_price
-                                : (product.cost_price != null ? product.cost_price : 0),
+                            product.price,
+                            product.cost_price != null ? product.cost_price : 0,
                             product.quantity,
                             product.image || null,
                             id

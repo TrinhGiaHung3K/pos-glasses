@@ -101,42 +101,32 @@ function normalizeBrand(value, productName) {
     return first ? first.slice(0, 80) : null;
 }
 
-function deriveChargePrice(commercialPrice, explicitCharge) {
-    if (explicitCharge != null && explicitCharge !== "") {
-        return normalizeProductPrice(explicitCharge);
-    }
-    // Keep dual-price model for bank-transfer test charges: store demo amount
-    // in products.price while commercial amount lives in original_price.
-    if (commercialPrice >= 100000) {
-        return Math.max(1000, Math.round(commercialPrice / 1000));
-    }
-    return commercialPrice;
-}
-
 function normalizeProductPayload(payload = {}) {
     const name = normalizeProductName(payload.name);
-    const commercialPrice = normalizeProductPrice(payload.price);
-    const commercialCost = normalizeProductCost(payload.cost_price);
-    const chargePrice = deriveChargePrice(
-        commercialPrice,
-        payload.charge_price != null ? payload.charge_price : payload.demo_price
+    // Single price: products.price is the sell price for display + all payments.
+    // Prefer explicit charge/demo override only when provided by admin tools.
+    const sellPrice = normalizeProductPrice(
+        payload.charge_price != null && payload.charge_price !== ""
+            ? payload.charge_price
+            : (payload.demo_price != null && payload.demo_price !== ""
+                ? payload.demo_price
+                : payload.price)
     );
-    let chargeCost = commercialCost;
-    if (payload.charge_cost_price != null && payload.charge_cost_price !== "") {
-        chargeCost = normalizeProductCost(payload.charge_cost_price);
-    } else if (commercialCost >= 100000) {
-        chargeCost = Math.max(0, Math.round(commercialCost / 1000));
-    }
+    const sellCost = normalizeProductCost(
+        payload.charge_cost_price != null && payload.charge_cost_price !== ""
+            ? payload.charge_cost_price
+            : payload.cost_price
+    );
     return {
         category_id: Number(payload.category_id || 1) || 1,
         name,
         brand: normalizeBrand(payload.brand, name),
         sku: normalizeProductSku(payload.sku),
-        // DB: price = charge/demo, original_price = commercial catalog sell price
-        price: chargePrice,
-        original_price: commercialPrice,
-        cost_price: chargeCost,
-        original_cost_price: commercialCost,
+        // DB: price is the canonical sell amount (nghìn đồng). Keep original_* in sync.
+        price: sellPrice,
+        original_price: sellPrice,
+        cost_price: sellCost,
+        original_cost_price: sellCost,
         quantity: normalizeProductQuantity(payload.quantity),
         image: payload.image ? String(payload.image).trim() || null : null
     };

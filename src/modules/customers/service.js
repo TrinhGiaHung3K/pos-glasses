@@ -264,7 +264,7 @@ function decorateCustomer(customer) {
             lifetime_spend: lifetime,
             points_per_vnd_unit: POINTS_PER_VND_UNIT,
             vnd_per_point: VND_PER_POINT_REDEEM,
-            max_redeem_points_example: maxRedeemablePoints(3_000_000, points)
+            max_redeem_points_example: maxRedeemablePoints(3_000, points)
         }
     };
 }

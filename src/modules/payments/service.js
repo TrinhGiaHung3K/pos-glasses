@@ -73,8 +73,7 @@ function createPaymentsService(repository, options = {}) {
                 ...meta,
                 deferPayment: true
             });
-            // Invoice/order totals use original_price. Bank-transfer QR always uses
-            // products.price so the project can be demonstrated with thousand-VND charges.
+            // Invoice, cash, and bank-transfer QR all use products.price (nghìn đồng).
             const commercialTotal = Math.max(0, Number(pendingOrder.total_amount) || 0);
             const chargeTotal = Math.max(0, Number(pendingOrder.charge_amount != null
                 ? pendingOrder.charge_amount

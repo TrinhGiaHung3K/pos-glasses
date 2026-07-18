@@ -719,7 +719,7 @@
                 <section class="pos-page-intro">
                     <div>
                         <h2>Điều phối mã giảm giá</h2>
-                        <p>Coupon bám ngữ cảnh POS Glasses: giá kính triệu đồng, quét barcode quầy, margin an toàn — không tạo mã lung tung.</p>
+                        <p>Coupon bám ngữ cảnh POS Glasses: giá catalog thang nghìn đồng (~1.5–10k/khung), quét barcode quầy, margin an toàn — không tạo mã lung tung.</p>
                     </div>
                     <div class="promo-toolbar">
                         <span class="promo-status" id="promoStatus" role="status" aria-live="polite">
@@ -1026,15 +1026,14 @@
                 return "Phần trăm giảm chỉ từ 1–30%";
             }
         } else {
-            if (!Number.isFinite(value) || value < 50000 || value > 2000000) {
-                return "Giảm tiền chỉ từ 50.000–2.000.000đ";
+            if (!Number.isFinite(value) || value < 50 || value > 2000) {
+                return "Giảm tiền chỉ từ 50–2.000đ (thang nghìn đồng)";
             }
-            if (value % 1000 !== 0) return "Số tiền giảm phải bội số 1.000đ";
         }
         const minOrder = Number(payload.min_order_amount || 0);
-        const elevated = (type === "percent" && value >= 15) || (type === "amount" && value >= 500000);
-        if (elevated && minOrder < 1500000) {
-            return "Giảm mạnh cần đơn tối thiểu ≥ 1.500.000đ";
+        const elevated = (type === "percent" && value >= 15) || (type === "amount" && value >= 500);
+        if (elevated && minOrder < 1500) {
+            return "Giảm mạnh cần đơn tối thiểu ≥ 1.500đ";
         }
         if (type === "amount" && minOrder > 0 && value > Math.round(minOrder * 0.5)) {
             return "Giảm tiền không được vượt 50% đơn tối thiểu";
@@ -1048,7 +1047,7 @@
         if (String(payload.start_date) > String(payload.end_date)) {
             return "Ngày kết thúc phải ≥ ngày bắt đầu";
         }
-        const aggressive = (type === "percent" && value >= 20) || (type === "amount" && value >= 1000000);
+        const aggressive = (type === "percent" && value >= 20) || (type === "amount" && value >= 1000);
         if (aggressive && String(payload.description || "").trim().length < 8) {
             return "Giảm mạnh cần mô tả chiến dịch (≥ 8 ký tự)";
         }
@@ -1362,7 +1361,7 @@
             : {
                 ...defaults,
                 ...windowDates,
-                min_order_amount: defaults.min_order_amount ?? 1500000,
+                min_order_amount: defaults.min_order_amount ?? 1500,
                 max_uses: defaults.max_uses ?? 100,
                 ...(templatePayload || {})
             };
@@ -1388,7 +1387,7 @@
                 value: seed.discount_type || "percent",
                 options: [
                     { value: "percent", label: "Phần trăm 1–30%" },
-                    { value: "amount", label: "Số tiền 50k–2tr đ" }
+                    { value: "amount", label: "Số tiền 50–2.000đ" }
                 ]
             },
             {
@@ -1402,10 +1401,10 @@
             },
             {
                 name: "min_order_amount",
-                label: "Đơn tối thiểu (đ) — ≥ 1.500.000 nếu giảm mạnh",
+                label: "Đơn tối thiểu (đ) — ≥ 1.500 nếu giảm mạnh",
                 type: "money",
                 money: true,
-                value: seed.min_order_amount ?? 1500000,
+                value: seed.min_order_amount ?? 1500,
                 required: true
             },
             {

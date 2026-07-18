@@ -332,10 +332,9 @@ function createOrdersService(repository, options = {}) {
                     product_id: item.product_id,
                     variant_id: item.variant_id || null,
                     quantity: item.quantity,
-                    // Invoice / reports / dashboard always snapshot commercial prices.
+                    // Snapshot products.price for invoice, cash, bank transfer, reports.
                     price: commercialUnitPrice(product),
                     cost_price: commercialUnitCost(product),
-                    // Bank-transfer charge uses products.price (scaled for project demo).
                     charge_price: chargeUnitPrice(product)
                 });
             }
@@ -404,8 +403,7 @@ function createOrdersService(repository, options = {}) {
             await enforceStaffDiscountCap(repository, user, subtotal, manualDiscountAmount);
 
             const total = subtotal - discountAmount;
-            // Mirror commercial discounts onto the demo charge total so the QR
-            // amount stays proportional while using products.price.
+            // Charge total uses the same products.price basis as the invoice.
             const chargeCouponDiscount = couponDiscountPercent > 0
                 ? Math.round(chargeSubtotal * couponDiscountPercent / 100)
                 : scaleAbsoluteDiscount(couponDiscount, subtotal, chargeSubtotal);

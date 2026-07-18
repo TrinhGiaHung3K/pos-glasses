@@ -910,9 +910,9 @@
                                     oninput="handleAmountPaidInput(this)">
                                 <div class="pos-quick-cash-row">
                                     <button class="btn btn-secondary" type="button" onclick="setCashReceived(provisionalTotals().total)">Đủ</button>
-                                    <button class="btn btn-secondary" type="button" onclick="setCashReceived(500000)">500K</button>
-                                    <button class="btn btn-secondary" type="button" onclick="setCashReceived(1000000)">1M</button>
-                                    <button class="btn btn-secondary" type="button" onclick="setCashReceived(2000000)">2M</button>
+                                    <button class="btn btn-secondary" type="button" onclick="setCashReceived(5000)">5K</button>
+                                    <button class="btn btn-secondary" type="button" onclick="setCashReceived(10000)">10K</button>
+                                    <button class="btn btn-secondary" type="button" onclick="setCashReceived(20000)">20K</button>
                                 </div>
                             </div>
 
@@ -1387,7 +1387,7 @@
         if (customer) {
             row.style.setProperty("display", "flex", "important");
             const tier = customer.membership_tier || "standard";
-            hint.textContent = `Hạng ${tier} · ${points.toLocaleString("vi-VN")} điểm · 1 điểm = 1.000đ (tối đa 20% đơn)`;
+            hint.textContent = `Hạng ${tier} · ${points.toLocaleString("vi-VN")} điểm · 1 điểm = 1đ (tối đa 20% đơn)`;
         } else {
             row.style.setProperty("display", "none", "important");
             hint.textContent = "";
@@ -1401,7 +1401,8 @@
         if (!customer) return;
         const balance = Number(customer.points_balance || 0);
         const subtotal = typeof cartSubtotal === "function" ? cartSubtotal() : 0;
-        const maxBySub = Math.floor((subtotal * 0.2) / 1000);
+        // Align with backend loyalty policy: 1 point = 1đ, max 20% of subtotal.
+        const maxBySub = Math.floor(Math.max(0, subtotal) * 0.2);
         const maxPts = Math.max(0, Math.min(balance, maxBySub));
         document.getElementById("redeemPoints").value = String(maxPts);
         renderCart();
@@ -1864,13 +1865,13 @@
                 || 0
             ) || 0)
         );
-        // Policy: 1 điểm = 1.000đ, tối đa 20% tạm tính + không vượt số dư
-        const maxBySubtotal = Math.floor((Math.max(0, subtotal) * 0.2) / 1000);
+        // Policy (nghìn đồng catalog): 1 điểm = 1đ, tối đa 20% tạm tính + không vượt số dư
+        const maxBySubtotal = Math.floor(Math.max(0, subtotal) * 0.2);
         const maxPts = Math.max(0, Math.min(balance, maxBySubtotal));
         redeemPts = Math.min(redeemPts, maxPts);
         return {
             redeemPts,
-            pointsDiscount: redeemPts * 1000
+            pointsDiscount: redeemPts
         };
     }
 

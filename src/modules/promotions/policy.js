@@ -2,7 +2,7 @@
  * POS Glasses promotion policy.
  *
  * Context constraints (eyewear retail POS):
- * - Catalog prices roughly 1.69M–9.49M VND per frame
+ * - Catalog uses products.price in nghìn đồng (roughly 1.690–9.490 per frame)
  * - Staff manual discount cap tops at Platinum 8% (coupon may exceed, but not absurd)
  * - Coupon input shares the counter with SKU / EAN-13 member scan (prefix 29)
  * - Avoid free-order / unlimited mega-discounts that break margin discipline
@@ -10,8 +10,8 @@
 
 const { createHttpError } = require("../../middleware/httpError");
 
-/** Lowest meaningful catalog band used for min-order floors. */
-const CATALOG_MIN_PRICE_BAND = 1_500_000;
+/** Lowest meaningful catalog band used for min-order floors (nghìn đồng). */
+const CATALOG_MIN_PRICE_BAND = 1_500;
 
 /** Staff ladder peak (Platinum) — coupons may go higher for campaigns. */
 const STAFF_MAX_DISCOUNT_PERCENT = 8;
@@ -32,14 +32,14 @@ const POS_PROMO_POLICY = Object.freeze({
         aggressive: 20
     }),
     amount: Object.freeze({
-        min: 50_000,
-        max: 2_000_000,
-        step: 1_000,
-        elevated: 500_000,
-        aggressive: 1_000_000
+        min: 50,
+        max: 2_000,
+        step: 1,
+        elevated: 500,
+        aggressive: 1_000
     }),
     minOrder: Object.freeze({
-        max: 50_000_000,
+        max: 50_000,
         /** Floor when elevated discount requires min order. */
         requiredFloor: CATALOG_MIN_PRICE_BAND,
         /** Amount discount must leave at least this share of min_order. */
@@ -131,7 +131,7 @@ function getPromotionPolicyPublic() {
         notes: [
             "Mã phải bắt đầu bằng chữ cái, không trùng barcode hội viên (29…) hay SKU số thuần.",
             `Giảm % tối đa ${POS_PROMO_POLICY.percent.max}% (cao hơn cap tay NV Platinum ${STAFF_MAX_DISCOUNT_PERCENT}%).`,
-            `Giảm tiền ${POS_PROMO_POLICY.amount.min.toLocaleString("vi-VN")}–${POS_PROMO_POLICY.amount.max.toLocaleString("vi-VN")}đ, bội số 1.000đ.`,
+            `Giảm tiền ${POS_PROMO_POLICY.amount.min.toLocaleString("vi-VN")}–${POS_PROMO_POLICY.amount.max.toLocaleString("vi-VN")}đ (thang nghìn đồng catalog).`,
             `Giảm mạnh (≥${POS_PROMO_POLICY.percent.elevated}% hoặc ≥${POS_PROMO_POLICY.amount.elevated.toLocaleString("vi-VN")}đ) bắt buộc đơn tối thiểu ≥ ${CATALOG_MIN_PRICE_BAND.toLocaleString("vi-VN")}đ.`,
             "Bắt buộc khung ngày; tối đa 180 ngày/campaign.",
             "Mã giảm mạnh bắt buộc giới hạn lượt dùng và mô tả chiến dịch."
@@ -140,14 +140,14 @@ function getPromotionPolicyPublic() {
             {
                 id: "sale10",
                 label: "SALE10",
-                description: "Giảm 10% đơn từ 1.5tr",
+                description: "Giảm 10% đơn từ 1.500đ",
                 payload: {
                     code: "SALE10",
                     discount_type: "percent",
                     discount_value: 10,
                     min_order_amount: CATALOG_MIN_PRICE_BAND,
                     max_uses: 200,
-                    description: "Giảm 10% cho đơn kính từ 1.500.000đ"
+                    description: "Giảm 10% cho đơn kính từ 1.500đ"
                 }
             },
             {
@@ -158,9 +158,9 @@ function getPromotionPolicyPublic() {
                     code: "SUMMER15",
                     discount_type: "percent",
                     discount_value: 15,
-                    min_order_amount: 2_000_000,
+                    min_order_amount: 2_000,
                     max_uses: 150,
-                    description: "Khuyến mãi hè giảm 15% đơn từ 2.000.000đ"
+                    description: "Khuyến mãi hè giảm 15% đơn từ 2.000đ"
                 }
             },
             {
@@ -171,35 +171,35 @@ function getPromotionPolicyPublic() {
                     code: "VIP20",
                     discount_type: "percent",
                     discount_value: 20,
-                    min_order_amount: 3_000_000,
+                    min_order_amount: 3_000,
                     max_uses: 80,
-                    description: "Ưu đãi VIP giảm 20% đơn từ 3.000.000đ"
+                    description: "Ưu đãi VIP giảm 20% đơn từ 3.000đ"
                 }
             },
             {
-                id: "fix200k",
-                label: "FIX200K",
-                description: "Trừ 200k",
+                id: "fix200",
+                label: "FIX200",
+                description: "Trừ 200đ",
                 payload: {
-                    code: "FIX200K",
+                    code: "FIX200",
                     discount_type: "amount",
-                    discount_value: 200_000,
+                    discount_value: 200,
                     min_order_amount: CATALOG_MIN_PRICE_BAND,
                     max_uses: 300,
-                    description: "Giảm cố định 200.000đ cho đơn từ 1.500.000đ"
+                    description: "Giảm cố định 200đ cho đơn từ 1.500đ"
                 }
             },
             {
                 id: "newmember",
                 label: "NEWMEMBER",
-                description: "Khách mới 100k",
+                description: "Khách mới 100đ",
                 payload: {
                     code: "NEWMEMBER",
                     discount_type: "amount",
-                    discount_value: 100_000,
+                    discount_value: 100,
                     min_order_amount: CATALOG_MIN_PRICE_BAND,
                     max_uses: 500,
-                    description: "Chào khách mới giảm 100.000đ"
+                    description: "Chào khách mới giảm 100đ"
                 }
             }
         ]
@@ -278,7 +278,7 @@ function enforcePromotionPolicy(promo, options = {}) {
             );
         }
         if (value % POS_PROMO_POLICY.amount.step !== 0) {
-            throw createHttpError(400, "Số tiền giảm phải là bội số 1.000đ");
+            throw createHttpError(400, "Số tiền giảm không hợp lệ");
         }
     }
 
@@ -286,8 +286,8 @@ function enforcePromotionPolicy(promo, options = {}) {
     if (minOrder < 0 || minOrder > POS_PROMO_POLICY.minOrder.max) {
         throw createHttpError(400, "Đơn tối thiểu không hợp lệ");
     }
-    if (minOrder > 0 && minOrder % 1000 !== 0) {
-        throw createHttpError(400, "Đơn tối thiểu phải là bội số 1.000đ");
+    if (minOrder > 0 && !Number.isInteger(minOrder)) {
+        throw createHttpError(400, "Đơn tối thiểu phải là số nguyên");
     }
 
     const elevated =
